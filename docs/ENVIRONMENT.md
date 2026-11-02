@@ -91,6 +91,9 @@ Wine-префиксу. Вручную: Vinegar → **Продвинутые на
 
 ## Что фактически проверено
 
+- Первый push: коммит `5d9a532`. GitHub Actions выполнил установку инструментов,
+  подготовку данных и все проверки на чистом runner Ubuntu 24.04 —
+  [успешный запуск](https://github.com/Danil-super/roblox-life/actions/runs/41474384906).
 - `bash scripts/dev.sh check` завершился с кодом 0: StyLua, Selene, 9 standalone
   Luau-тестов, Roblox strict-анализ через luau-lsp, чистые модули/тесты через
   luau-analyze и сборка Rojo.
