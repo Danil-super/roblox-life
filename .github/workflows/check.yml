@@ -1,0 +1,32 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned tools and verify SHA-256
+        run: python3 scripts/bootstrap.py
+      - name: Prepare Roblox analysis data
+        run: bash scripts/dev.sh prepare
+      - name: Check helper syntax
+        run: |
+          python3 -m compileall -q scripts
+          bash -n scripts/dev.sh
+      - name: Format, lint, types, tests and build
+        run: bash scripts/dev.sh check

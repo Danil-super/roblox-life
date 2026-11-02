@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Check all", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "check"], "group": { "kind": "test", "isDefault": true }, "problemMatcher": [] },
+    { "label": "Rojo: build", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "build"], "group": { "kind": "build", "isDefault": true }, "problemMatcher": [] },
+    { "label": "Rojo: serve", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "serve"], "problemMatcher": [] },
+    { "label": "Rojo: sourcemap", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "sourcemap"], "problemMatcher": [] },
+    { "label": "Format Luau", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "format"], "problemMatcher": [] }
+  ]
+}

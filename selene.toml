@@ -1,0 +1,2 @@
+std = "roblox"
+exclude = [".tools/**", "build/**", "graphify-out/**", ".codegraph/**"]

@@ -1,0 +1,26 @@
+# Build output, downloaded tools, editor caches
+/build/
+/.tools/
+/sourcemap.json
+/graphify-out/
+/.codegraph/
+/roblox.yml
+/*.local.code-workspace
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+*.log
+*.tmp
+__pycache__/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+/backups/
+/data/
+/uploads/
+/logs/

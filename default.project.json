@@ -1,0 +1,104 @@
+{
+  "name": "RobloxLife",
+  "serveAddress": "127.0.0.1",
+  "servePort": 34872,
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Server": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "Client": { "$path": "src/client" }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": { "Gravity": 196.2, "FallenPartsDestroyHeight": -50 },
+      "Apartment": {
+        "$className": "Model",
+        "Floor": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Size": [32, 1, 24],
+            "CFrame": [0, -0.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+            "Color": [0.62, 0.48, 0.34],
+            "Material": "WoodPlanks"
+          }
+        },
+        "BackWall": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Size": [32, 10, 1],
+            "CFrame": [0, 5, -12, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+            "Color": [0.88, 0.9, 0.85]
+          }
+        },
+        "SideWall": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Size": [1, 10, 24],
+            "CFrame": [-16, 5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+            "Color": [0.88, 0.9, 0.85]
+          }
+        },
+        "Sink": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Size": [5, 3, 3],
+            "CFrame": [0, 1.5, -8, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+            "Color": [0.28, 0.43, 0.48],
+            "Material": "SmoothPlastic"
+          },
+          "Basin": {
+            "$className": "Part",
+            "$properties": {
+              "Anchored": true,
+              "Size": [3.5, 0.2, 2],
+              "CFrame": [0, 3.1, -8, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+              "Color": [0.82, 0.87, 0.9],
+              "Material": "Metal"
+            }
+          },
+          "Faucet": {
+            "$className": "Part",
+            "$properties": {
+              "Anchored": true,
+              "Size": [0.3, 1, 0.3],
+              "CFrame": [0, 3.6, -8.8, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+              "Color": [0.6, 0.65, 0.7],
+              "Material": "Metal"
+            }
+          },
+          "WashPrompt": { "$className": "ProximityPrompt" }
+        }
+      },
+      "Spawn": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "Neutral": true,
+          "Duration": 0,
+          "Size": [4, 0.3, 4],
+          "CFrame": [0, 0.15, 4, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.4, 0.7, 0.55]
+        }
+      }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": { "ClockTime": 14, "Brightness": 2, "Ambient": [0.5, 0.5, 0.5] }
+    }
+  }
+}
