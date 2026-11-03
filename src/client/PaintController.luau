@@ -35,6 +35,7 @@ function Controller.start(
 	local sound: Sound? = nil
 	local held = false
 	local touch: InputObject? = nil
+	local deathConnection: RBXScriptConnection? = nil
 	local pointer = Vector2.zero
 	local queue: { Segment } = {}
 	local current: Segment? = nil
@@ -88,6 +89,10 @@ function Controller.start(
 			return
 		end
 		active = false
+		if deathConnection then
+			deathConnection:Disconnect()
+			deathConnection = nil
+		end
 		held = false
 		touch = nil
 		queue = {}
@@ -199,10 +204,13 @@ function Controller.start(
 			return
 		end
 		local camera = workspace.CurrentCamera
-		if camera == nil then
+		local character = player.Character
+		local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
+		if camera == nil or humanoid == nil or humanoid.Health <= 0 then
 			return
 		end
 		active = true
+		deathConnection = humanoid.Died:Once(stop)
 		wall = target
 		snapshot = s
 		sequence = s.sequence
