@@ -7,6 +7,12 @@ local Profile = require("./Domain/Profile")
 local RoomRules = require("./Domain/RoomRules")
 local Storage = require("./Storage")
 local World = require("./World")
+export type API = {
+	read: (Player) -> Profile.Profile?,
+	home: (Player) -> World.Home?,
+	change: (Player, (Profile.Profile) -> boolean, (() -> boolean)?) -> (boolean, string?),
+	changed: RBXScriptSignal,
+}
 type Context = {
 	session: Store.Session,
 	busy: boolean,
@@ -22,12 +28,13 @@ type Context = {
 local Service = {}
 local LEASE_SECONDS, HEARTBEAT_SECONDS = 120, 30
 
-function Service.start(): ()
+function Service.start(): API
 	Players.CharacterAutoLoads = false
 	local adapter = Storage.create()
 	local contexts: { [Player]: Context } = {}
 	local slots: { [number]: boolean } = {}
 	local shuttingDown = false
+	local changed = Instance.new("BindableEvent")
 	local remote = ReplicatedStorage:WaitForChild("ReturnHome")
 	assert(remote:IsA("RemoteEvent"), "ReturnHome must be a RemoteEvent")
 
@@ -48,6 +55,7 @@ function Service.start(): ()
 		dollars.Value = profile.wallet.dollars
 		player:SetAttribute("PaintingXP", profile.progression.paintingXP)
 		player:SetAttribute("ProfileStatus", "Ready")
+		changed:Fire(player)
 	end
 
 	local function recover(session: Store.Session): boolean
@@ -287,16 +295,9 @@ function Service.start(): ()
 				if root == nil or not root:IsA("BasePart") then
 					continue
 				end
-				for _, other in contexts do
-					local home, ownHome = other.home, context.home
-					if
-						home ~= nil
-						and ownHome ~= nil
-						and World.isIntruding(root.Position, home, player.UserId)
-					then
-						World.returnHome(player, ownHome)
-						break
-					end
+				local home = context.home
+				if home ~= nil and World.isPrivateIntrusion(root.Position, player.UserId) then
+					World.returnHome(player, home)
 				end
 			end
 		end
@@ -316,6 +317,43 @@ function Service.start(): ()
 		"[NeighborhoodFixer] Profile service ready; storage="
 			.. (if Storage.preview then "StudioMemoryPreview" else Storage.name)
 	)
+	return {
+		changed = changed.Event,
+		read = function(player: Player): Profile.Profile?
+			local context = contexts[player]
+			return if context ~= nil and not context.closing then context.session.read() else nil
+		end,
+		home = function(player: Player): World.Home?
+			local context = contexts[player]
+			return if context ~= nil and not context.closing then context.home else nil
+		end,
+		change = function(
+			player: Player,
+			mutate: (Profile.Profile) -> boolean,
+			guard: (() -> boolean)?
+		): (boolean, string?)
+			local context = contexts[player]
+			if context == nil or context.busy or context.closing or player.Parent ~= Players then
+				return false, "NotReady"
+			end
+			context.busy = true
+			player:SetAttribute("ProfileStatus", "Saving")
+			local ok, reason = context.session.transact(mutate, function(): boolean
+				return not context.closing
+					and player.Parent == Players
+					and (guard == nil or guard())
+			end)
+			context.busy = false
+			if not context.closing and player.Parent == Players then
+				if context.session.status() == "Ready" then
+					publish(player, context)
+				else
+					player:SetAttribute("ProfileStatus", "Error")
+				end
+			end
+			return ok, reason
+		end,
+	}
 end
 
 return Service

@@ -71,7 +71,7 @@ local World={
     isIntruding=function() return false end,
     returnHome=function() return true end,
 }
-local Instance={new=function() return {} end}
+local Instance={new=function(_,class) return {Event=signal,Fire=function() end} end}
 local services={Players=Players,HttpService=HttpService,ReplicatedStorage=ReplicatedStorage}
 local game={BindToClose=function() end,GetService=function(_,name) assert(services[name],name);return services[name] end}
 local dependencies={

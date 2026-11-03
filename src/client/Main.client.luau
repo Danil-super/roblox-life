@@ -1,6 +1,7 @@
 --!strict
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local JobController = require("./JobController")
 local Strings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Strings"))
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("ReturnHome")
@@ -68,14 +69,14 @@ local languageButton =
 	button(screen, "Language", UDim2.new(1, -86, 0, 12), UDim2.fromOffset(70, 44))
 local homeButton = button(screen, "Home", UDim2.new(1, -104, 1, -68), UDim2.fromOffset(88, 52))
 
-local objective = card("Objective", UDim2.new(0, 16, 1, -112), UDim2.new(1, -136, 0, 96))
+local objective = card("Objective", UDim2.new(0, 16, 1, -172), UDim2.new(1, -136, 0, 156))
 local objectiveLimit = Instance.new("UISizeConstraint")
-objectiveLimit.MaxSize = Vector2.new(520, 96)
+objectiveLimit.MaxSize = Vector2.new(520, 156)
 objectiveLimit.Parent = objective
 local objectiveTitle =
 	text(objective, "Title", UDim2.fromOffset(14, 8), UDim2.new(1, -28, 0, 25), 16)
 local objectiveHint =
-	text(objective, "Hint", UDim2.fromOffset(14, 35), UDim2.new(1, -28, 0, 52), 13)
+	text(objective, "Hint", UDim2.fromOffset(14, 35), UDim2.new(1, -28, 0, 48), 13)
 objectiveHint.TextColor3 = muted
 
 local panel = card("HomePanel", UDim2.fromScale(0.5, 0.5), UDim2.new(1, -32, 0, 328))
@@ -94,6 +95,22 @@ local description =
 local status = text(panel, "Storage", UDim2.fromOffset(20, 188), UDim2.new(1, -40, 0, 48), 13)
 status.TextColor3 = muted
 local returnButton = button(panel, "ReturnHome", UDim2.new(0, 20, 1, -72), UDim2.new(1, -40, 0, 52))
+description.Position = UDim2.fromOffset(20, 160)
+description.Size = UDim2.new(1, -40, 0, 46)
+description.TextSize = 15
+status.Position = UDim2.fromOffset(20, 210)
+status.Size = UDim2.new(1, -40, 0, 36)
+local jobsButton = button(panel, "Jobs", UDim2.fromOffset(20, 108), UDim2.new(0.5, -24, 0, 44))
+local mapButton = button(panel, "Map", UDim2.new(0.5, 4, 0, 108), UDim2.new(0.5, -24, 0, 44))
+local jobs = JobController.start(screen, panel, function(): string
+	return language
+end)
+jobsButton.Activated:Connect(function()
+	jobs.show("Jobs")
+end)
+mapButton.Activated:Connect(function()
+	jobs.show("Map")
+end)
 for _, child in panel:GetChildren() do
 	if child:IsA("GuiObject") then
 		child.ZIndex = 6
@@ -123,9 +140,11 @@ local function render(): ()
 	objectiveHint.Text = if ready then t("hint") else status.Text
 	returnButton.Active, returnButton.AutoButtonColor = ready, ready
 	returnButton.BackgroundTransparency = if ready then 0 else 0.6
-	closeButton:SetAttribute("AccessibleName", t("close"))
+	jobsButton.Text, mapButton.Text = t("jobs"), t("map")
+	jobs.render()
 end
 homeButton.Activated:Connect(function()
+	jobs.hide()
 	panel.Visible = not panel.Visible
 end)
 closeButton.Activated:Connect(function()

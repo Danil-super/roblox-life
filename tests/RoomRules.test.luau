@@ -13,7 +13,7 @@ assert(not Rules.mayEnter(0 / 0, 0 / 0), "Invalid identifiers cannot grant acces
 local firstX, firstZ = Rules.origin(1)
 local lastX, lastZ = Rules.origin(16)
 assert(
-	firstX == 0 and firstZ == 0 and lastX == 192 and lastZ == 240,
+	firstX == 0 and firstZ == 0 and lastX == 192 and lastZ == 384,
 	"Slots must fit the compact neighborhood"
 )
 local occupied: { [string]: boolean } = {}

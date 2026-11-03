@@ -7,7 +7,7 @@ RoomRules.HEIGHT = 10
 RoomRules.SLOTS = 16
 function RoomRules.origin(slot: number): (number, number)
 	assert(slot % 1 == 0 and slot >= 1 and slot <= RoomRules.SLOTS, "Invalid room slot")
-	return ((slot - 1) % 4) * 64, math.floor((slot - 1) / 4) * 80
+	return ((slot - 1) % 4) * 64, math.floor((slot - 1) / 4) * 128
 end
 
 local function finite(n: number): boolean
