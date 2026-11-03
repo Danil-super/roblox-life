@@ -221,6 +221,15 @@ function Controller.start(
 		end
 	end
 	local navigation = Navigation.start(screen, activate)
+	local function revealActions(): ()
+		if jobs.Visible then
+			local phase = if state then state.phase else "Offer"
+			local bottom = if phase == "Offer" or phase == "Completed" then 212 else 268
+			jobBody.CanvasPosition = Vector2.new(0, math.max(0, bottom - jobBody.AbsoluteSize.Y))
+		end
+	end
+	jobs:GetPropertyChangedSignal("Visible"):Connect(revealActions)
+	jobBody:GetPropertyChangedSignal("AbsoluteSize"):Connect(revealActions)
 	local function stepHint(phase: string): string
 		if lastError and os.clock() < errorUntil then
 			return t("jobError" .. lastError)

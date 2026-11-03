@@ -1,18 +1,25 @@
 --!strict
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UIS = game:GetService("UserInputService")
 local JobController = require("./JobController")
 local HomeController = require("./HomeController")
+local ModalControls = require("./ModalControls")
 local Strings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Strings"))
+local Layout = require(ReplicatedStorage.Shared.HudLayout)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("ReturnHome")
 assert(remote:IsA("RemoteEvent"), "ReturnHome remote missing")
 local language = if string.sub(player.LocaleId, 1, 2) == "ru" then "ru" else "en"
 local dollars: IntValue? = nil
-local background = Color3.fromRGB(26, 43, 43)
-local paper = Color3.fromRGB(244, 239, 224)
-local muted = Color3.fromRGB(181, 198, 187)
-local accent = Color3.fromRGB(55, 120, 102)
+local function color(rgb: { number }): Color3
+	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
+end
+local background = color(Theme.colors.ink)
+local paper = color(Theme.colors.paper)
+local muted = color(Theme.colors.muted)
+local accent = color(Theme.colors.accent)
 
 local screen = Instance.new("ScreenGui")
 screen.Name = "NeighborhoodHUD"
@@ -122,6 +129,7 @@ end, jobs.hide)
 openHousing = function(tab: string): ()
 	housing.show(tab)
 end
+ModalControls.start(screen)
 jobsButton.Activated:Connect(function()
 	housing.hide()
 	jobs.show("Jobs")
@@ -191,7 +199,54 @@ returnButton.Activated:Connect(function()
 	remote:FireServer()
 	panel.Visible = false
 end)
+local function place(gui: GuiObject, rect: Layout.Rect): ()
+	gui.AnchorPoint = Vector2.zero
+	gui.Position = UDim2.fromOffset(rect.x, rect.y)
+	gui.Size = UDim2.fromOffset(rect.w, rect.h)
+end
+local function resize(): ()
+	local size = screen.AbsoluteSize
+	if size.X < 280 or size.Y < 240 then
+		return
+	end
+	local touch = UIS.TouchEnabled
+	local ready = player:GetAttribute("ProfileStatus") == "Ready"
+	local layout = Layout.compute(size.X, size.Y, touch, ready)
+	place(wallet, layout.wallet)
+	place(languageButton, layout.language)
+	place(homeButton, layout.home)
+	objectiveLimit.MaxSize = Vector2.new(layout.objective.w, layout.objective.h)
+	place(objective, layout.objective)
+	title.Visible = not touch
+	balance.Position = UDim2.fromOffset(14, if touch then 8 else 28)
+	balance.Size = if touch then UDim2.new(1, -28, 1, -16) else UDim2.new(1, -28, 0, 36)
+	balance.TextSize = if touch then 24 else 28
+	objectiveTitle.Visible = not layout.minimal
+	objectiveTitle.TextSize = if layout.compact then 14 else 16
+	objectiveTitle.Size =
+		UDim2.new(1, -28, 0, if not ready then 100 elseif layout.compact then 36 else 25)
+	objectiveHint.Visible = ready and not layout.compact
+	local action = objective:FindFirstChild("NextAction")
+	if action and action:IsA("GuiObject") then
+		action.Visible = ready
+		action.Position =
+			UDim2.fromOffset(14, if layout.minimal then 8 elseif layout.compact then 48 else 92)
+		action.Size = UDim2.new(1, -28, 0, if layout.compact then Theme.touchTarget else 48)
+	end
+	local routes: { [string]: Layout.Rect } =
+		{ JobNavigation = layout.navigation, ShopRoute = layout.shopRoute }
+	for name, rect in routes do
+		local gui = screen:FindFirstChild(name)
+		if gui and gui:IsA("GuiObject") then
+			place(gui, rect)
+		end
+	end
+end
+screen:GetPropertyChangedSignal("AbsoluteSize"):Connect(resize)
+UIS:GetPropertyChangedSignal("TouchEnabled"):Connect(resize)
+resize()
 player:GetAttributeChangedSignal("ProfileStatus"):Connect(render)
+player:GetAttributeChangedSignal("ProfileStatus"):Connect(resize)
 player:GetAttributeChangedSignal("StorageMode"):Connect(render)
 render()
 -- A rejected profile deliberately has no leaderstats. Observe optional replication
