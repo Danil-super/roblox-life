@@ -5,13 +5,15 @@
 - Luau + Rojo. Исходники на диске — источник истины. MCP Studio необязателен.
 - Сейчас: подтверждённый профиль, личная/клиентская комнаты, Jobs/Map,
   покраска валиком и однократная выплата, магазин/склад и редактор Grid/Free,
-  HUD долларов и Home.
+  HUD долларов и Home. Три контракта покраски с XP-порогами,
+  общей палитрой и серверным открытием широкого валика; docs/CONTRACTS.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
 - Profile/ProfileStore подключены к runtime. Jobs/Painting вызывают Economy
   при серверной приёмке; HomeService использует Economy для покупок и Furniture
-  для размещения. Каталог содержит три тестовых предмета.
+  для размещения. Каталог содержит три тестовых предмета. Контракты/награды в EconomyConfig,
+  радиусы/материалы в PaintConfig. Клиент не назначает XP, доступ и радиус.
   Studio использует явно обозначенный MemoryPreview;
   в production только DataStore. Облачную приёмку не объявлять завершённой.
 - PurchaseFlow удерживает requestId/catalogId до доказанной покупки или
