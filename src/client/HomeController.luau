@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local Strings = require(RS.Shared.Strings)
 local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
+local PurchaseFlow = require(RS.Shared.PurchaseFlow)
 local Build = require("./BuildController")
 local Controller = {}
 function Controller.start(
@@ -25,8 +26,8 @@ function Controller.start(
 	local state: Types.Snapshot? = nil
 	local lastError: string? = nil
 	local errorUntil = 0
-	local pendingId: string? = nil
-	local pendingProduct: string? = nil
+	local purchase: PurchaseFlow.Pending? = nil
+	local purchasedItem: string? = nil
 	local routeActive = false
 	local syncAt = 0
 	local listKey = ""
@@ -199,20 +200,26 @@ function Controller.start(
 			errorUntil = os.clock() + 4
 			return
 		end
-		if pendingId and pendingProduct ~= product.id then
+		local nextPurchase, shouldSend = PurchaseFlow.request(
+			purchase,
+			product.id,
+			if purchase then purchase.requestId else Http:GenerateGUID(false),
+			os.clock()
+		)
+		if not shouldSend then
 			return
 		end
-		pendingId = pendingId or Http:GenerateGUID(false)
-		pendingProduct = product.id
+		purchase = nextPurchase
 		listKey = ""
-		local packet: { [string]: unknown } = { catalogId = product.id, requestId = pendingId }
+		local packet: { [string]: unknown } =
+			{ catalogId = product.id, requestId = nextPurchase.requestId }
 		send("buy", packet)
 	end
 	local function render(): ()
 		local s = state
 		shopTitle.Text = t("shopTitle") .. (if s then " · $" .. s.dollars else "")
 		inventoryTitle.Text = t("inventoryTitle")
-		shopBack.Text = t("backHome")
+		shopBack.Text = t(if purchasedItem then "openInventory" else "backHome")
 		inventoryBack.Text = t("backHome")
 		returnButton.Text = t("returnHome")
 		routeButton.Text = t("showShopRoute")
@@ -220,13 +227,13 @@ function Controller.start(
 		local errorText = if lastError and os.clock() < errorUntil
 			then t("homeError" .. lastError)
 			else nil
-		shopInfo.Text = errorText
-			or (
-				if pendingId
-					then t("purchasePending")
-					elseif s and s.nearShop then t("shopReady")
-					else t("shopTravel")
+		shopInfo.Text = if purchase
+			then t(
+				if PurchaseFlow.canRetry(purchase, os.clock())
+					then "purchaseUncertain"
+					else "purchasePending"
 			)
+			else errorText or t(if s and s.nearShop then "shopReady" else "shopTravel")
 		inventoryInfo.Text = errorText
 			or t(if s and s.nearHome then "inventoryHint" else "inventoryGoHome")
 		builder.render()
@@ -239,7 +246,11 @@ function Controller.start(
 			.. tostring(s.nearShop)
 			.. s.dollars
 			.. s.revision
-			.. (pendingId or "")
+			.. (
+				if purchase
+					then purchase.requestId .. tostring(PurchaseFlow.canRetry(purchase, os.clock()))
+					else ""
+			)
 		for _, owned in s.items do
 			key ..= owned.id .. (if owned.placed then "placed" else "stored")
 		end
@@ -262,17 +273,29 @@ function Controller.start(
 			local b = button(card, "Buy")
 			b.Position = UDim2.new(1, -132, 0, 48)
 			b.Size = UDim2.fromOffset(124, 44)
-			b.Text =
-				t(if pendingId and pendingProduct == product.id then "retryPurchase" else "buyItem")
+			b.Text = t(
+				if purchase and purchase.catalogId == product.id
+					then (if PurchaseFlow.canRetry(purchase, os.clock())
+						then "retryPurchase"
+						else "purchaseBusy")
+					else "buyItem"
+			)
 			b.Active = s.available
 				and s.nearShop
-				and s.dollars >= product.dollars
-				and (pendingId == nil or pendingProduct == product.id)
+				and (
+					if purchase
+						then purchase.catalogId == product.id and PurchaseFlow.canRetry(
+							purchase,
+							os.clock()
+						)
+						else s.dollars >= product.dollars
+				)
 			b.AutoButtonColor = b.Active
 			b.BackgroundTransparency = if b.Active then 0 else 0.6
 			b.Activated:Connect(function()
 				if b.Active then
 					buy(product)
+					render()
 				end
 			end)
 		end
@@ -330,8 +353,14 @@ function Controller.start(
 	end
 	for _, back in { shopBack, inventoryBack } do
 		back.Activated:Connect(function()
-			hidePanels()
-			homePanel.Visible = true
+			if back == shopBack and purchasedItem then
+				purchasedItem = nil
+				show("Furniture")
+				render()
+			else
+				hidePanels()
+				homePanel.Visible = true
+			end
 		end)
 	end
 	returnButton.Activated:Connect(function()
@@ -355,25 +384,13 @@ function Controller.start(
 			lastError = s.error
 			errorUntil = os.clock() + 4
 		end
-		if pendingId then
-			for _, owned in s.items do
-				if owned.purchaseOperationId == "purchase:" .. pendingId then
-					pendingId = nil
-					pendingProduct = nil
-					lastError = "Bought"
-					errorUntil = os.clock() + 4
-					routeActive = false
-					break
-				end
-			end
-			if s.ack == pendingId then
-				pendingId = nil
-				pendingProduct = nil
-			end
-			if s.error and s.error ~= "Unavailable" and s.error ~= "Restart" then
-				pendingId = nil
-				pendingProduct = nil
-			end
+		local nextPurchase, outcome, itemId =
+			PurchaseFlow.observe(purchase, s.items, s.ack, s.error)
+		purchase = nextPurchase
+		if outcome == "Confirmed" then
+			purchasedItem = itemId
+			lastError, errorUntil = "Bought", os.clock() + 4
+			routeActive = false
 		end
 		if s.openShop then
 			show("Shop")

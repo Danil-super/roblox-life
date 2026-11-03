@@ -22,6 +22,7 @@ export type Snapshot = {
 	catalog: { Product },
 	onboarding: string,
 	error: string?,
+	-- Correlates a purchase response, including refusal; ownership proves success.
 	ack: string?,
 	openShop: boolean?,
 }

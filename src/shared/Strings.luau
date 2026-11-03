@@ -177,9 +177,16 @@ en["buyItem"] = "Buy"
 ru["buyItem"] = "Купить"
 en["retryPurchase"] = "Retry purchase"
 ru["retryPurchase"] = "Повторить"
-en["purchasePending"] = "Confirming purchase. Retry uses the same request."
-ru["purchasePending"] =
-	"Подтверждаем покупку. Повтор не спишет деньги ещё раз."
+en["purchasePending"] = "Confirming purchase. Please wait."
+ru["purchasePending"] = "Подтверждаем покупку. Подожди ответа."
+en["purchaseUncertain"] =
+	"No confirmation yet. Check this purchase with Retry; it keeps the same payment ID."
+ru["purchaseUncertain"] =
+	"Ответ ещё не пришёл. Проверь эту покупку кнопкой «Повторить»: номер платежа сохранён."
+en["purchaseBusy"] = "Confirming…"
+ru["purchaseBusy"] = "Проверяем…"
+en["openInventory"] = "Open inventory"
+ru["openInventory"] = "Открыть склад"
 en["inventoryHint"] = "Choose a piece to place or move."
 ru["inventoryHint"] =
 	"Выбери предмет для установки или переноса."

@@ -276,6 +276,12 @@ function Service.start(profiles: ProfileService.API): ()
 		if type(action) ~= "string" or #action > 12 then
 			return
 		end
+		local purchaseRequestId = if action == "buy"
+				and type(d.requestId) == "string"
+				and #d.requestId <= 80
+				and Profile.identifier(d.requestId)
+			then d.requestId
+			else nil
 		if action == "sync" then
 			send(player, nil, nil, nil)
 			return
@@ -285,7 +291,7 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local p = profiles.read(player)
 		if p == nil then
-			send(player, "Unavailable", nil, nil)
+			send(player, "Unavailable", purchaseRequestId, nil)
 			return
 		end
 		if action ~= "buy" and d.editorId ~= c.editorId then
@@ -325,7 +331,7 @@ function Service.start(profiles: ProfileService.API): ()
 				and (if action == "buy" then atShop(player) else atHome(player))
 		end
 		if not guard() then
-			send(player, if action == "buy" then "GoShop" else "GoHome", nil, nil)
+			send(player, if action == "buy" then "GoShop" else "GoHome", purchaseRequestId, nil)
 			return
 		end
 		local reason: string? = nil
@@ -349,7 +355,7 @@ function Service.start(profiles: ProfileService.API): ()
 				reason = why
 				return receipt ~= nil
 			end, guard)
-			ack = if ok then requestId else nil
+			ack = requestId
 		elseif action == "place" or action == "store" then
 			if type(d.itemId) ~= "string" or type(d.revision) ~= "number" then
 				return
