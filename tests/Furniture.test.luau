@@ -147,4 +147,17 @@ test("persisted placement and neighboring model versions cannot bypass validatio
 		"Owner must be able to recover unsupported placement to storage"
 	)
 end)
+test("rectangular table footprint changes wall clearance when rotated", function()
+	local p = profile()
+	assert(Economy.purchase(p, "buy-table", "side-table-v1", "table-a", 3), "Buy table")
+	assert(Furniture.place(p, "table-a", pose(5, 10.2, 0, "Free"), 0), "Unrotated table should fit")
+	assert(
+		not Furniture.place(p, "table-a", pose(5, 10.2, 90, "Free"), 1),
+		"Rotated long edge crosses wall"
+	)
+	assert(
+		Furniture.place(p, "table-a", pose(5, 9, 90, "Free"), 1),
+		"Rotated table moved inward should fit"
+	)
+end)
 print(passed .. " furniture tests passed")
