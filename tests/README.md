@@ -46,6 +46,25 @@ leaderstats, немедленная/поздняя репликация, нев�
 
 ## Текущая игра: проверка в Studio
 
+Восстановление профиля: `ProfileRecovery.test.luau` выполняет настоящий
+ProfileStore на отказе загрузки/неизвестном commit/Locked/освобождённом lease/
+Lost/Corrupt/заблокированной конфигурации. `ProfileRetry.test.py` исполняет
+серверный обработчик на конкурентных запросах, границе cooldown, двух независимых
+контекстах, недоверенном payload, уходе и Exit. Это не двухклиентский Play.
+`ProfileRecoveryUI.test.py` и `RecoveryCamera.test.py` исполняют настоящие
+render/callback/восстановление камеры. ModalControls включает ProfilePanel.
+
+Сценарии Studio: отказ первой загрузки не создаёт персонажа/leaderstats; Retry
+после восстановления транспорта даёт один профиль/$0/Custom. Покупка с потерянным
+ответом → Error → тот же pending write → один предмет/$70. Проверить сохранение
+в Build/Paint при отказе хранилища, снятие режима/превью и Custom; после Retry
+сохранены данные и jobId. Потеря fence запрещает Retry/I/O, Exit удаляет игрока.
+Факты QA-инъекций и ограничения: [PROFILE_RECOVERY.md](../docs/PROFILE_RECOVERY.md).
+
+`StudioTest.test.py`: восемь сценариев выбора проекта/режимов/ошибок/гонки
+переключения DataModel. `studio_test.py` сообщает только наблюдаемый режим,
+не результат игровых проверок. Play/Stop используют официальный StudioTestService.
+
 3 ноября 2026 в `neighborhood-fixer.rbxlx` выполнен настоящий Play через
 официальный MCP. Подтверждены Ready-профиль, личная комната, правильный
 RespawnLocation, один баланс Dollars 0 и отсутствие Coins. Реальные клики
