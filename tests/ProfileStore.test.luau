@@ -302,4 +302,58 @@ test("one yielding adapter call blocks reentrant work for the same key", functio
 	)
 end)
 
+test("commit eligibility is rechecked inside the yielding storage boundary", function()
+	local record: unknown = nil
+	local allowed, interrupt = true, false
+	local adapter: Store.Adapter = {
+		update = function(_key: string, transform: (unknown) -> unknown): (boolean, unknown)
+			if interrupt then
+				allowed = false
+			end
+			local result = transform(record)
+			if result ~= nil then
+				record = result
+			end
+			return true, result
+		end,
+	}
+	local session = Store.new(adapter, 1, "guarded", function(): number
+		return 100
+	end, 60)
+	assert(session.load(), "Load failed")
+	interrupt = true
+	local ok, reason = session.transact(function(p: Profile.Profile): boolean
+		p.wallet.dollars = 250
+		return true
+	end, function(): boolean
+		return allowed
+	end)
+	assert(not ok and reason == "Cancelled", "Departed character must be rejected at commit time")
+	assert(
+		(session.read() :: Profile.Profile).wallet.dollars == 0,
+		"Cancelled transaction must not publish money"
+	)
+end)
+
+test("a committed outcome is acknowledged even when its guard later becomes false", function()
+	local f = fixture()
+	local session = f.new("guarded")
+	assert(session.load(), "Load failed")
+	local allowed = true
+	f.after(true)
+	assert(not session.transact(function(p: Profile.Profile): boolean
+		p.wallet.dollars = 250
+		return true
+	end, function(): boolean
+		return allowed
+	end), "Unknown outcome must remain pending")
+	allowed = false
+	f.after(false)
+	assert(session.retry(), "A known commit must not be re-executed or denied by a later guard")
+	assert(
+		(session.read() :: Profile.Profile).wallet.dollars == 250,
+		"Committed reward must remain exactly once"
+	)
+end)
+
 print(string.format("%d profile store tests passed", passed))

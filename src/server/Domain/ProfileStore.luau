@@ -5,7 +5,7 @@ type Data = Profile.Profile
 export type Adapter = { update: (string, (unknown) -> unknown) -> (boolean, unknown) }
 export type Session = {
 	load: () -> (boolean, string?),
-	transact: ((Data) -> boolean) -> (boolean, string?),
+	transact: ((Data) -> boolean, (() -> boolean)?) -> (boolean, string?),
 	renew: () -> (boolean, string?),
 	retry: () -> (boolean, string?),
 	close: () -> (boolean, string?),
@@ -20,7 +20,13 @@ type Record = {
 	leaseUntil: number,
 	commitId: string,
 }
-type Intent = { kind: string, profile: Data?, baseRevision: number, writeId: string }
+type Intent = {
+	kind: string,
+	profile: Data?,
+	baseRevision: number,
+	writeId: string,
+	guard: (() -> boolean)?,
+}
 local MAX = 9007199254740991
 local Store = {}
 
@@ -179,6 +185,11 @@ function Store.new(
 				denial = "StaleRevision"
 				return nil
 			end
+			local guard = intent.guard
+			if guard ~= nil and not guard() then
+				denial = "Cancelled"
+				return nil
+			end
 			if intent.profile ~= nil then
 				current.profile = Profile.copy(intent.profile)
 			end
@@ -194,7 +205,10 @@ function Store.new(
 		end
 		if result == nil then
 			pending = nil
-			state = if intent.kind == "load" then "Blocked" else "Lost"
+			state = if denial == "Cancelled"
+				then "Ready"
+				elseif intent.kind == "load" then "Blocked"
+				else "Lost"
 			return false, denial
 		end
 		local saved = decode(result, userId)
@@ -213,7 +227,11 @@ function Store.new(
 		return true, nil
 	end
 
-	local function prepare(kind: string, profile: Data?): (boolean, string?)
+	local function prepare(
+		kind: string,
+		profile: Data?,
+		guard: (() -> boolean)?
+	): (boolean, string?)
 		sequence += 1
 		if sequence > 1000000000 then
 			state = "Lost"
@@ -224,6 +242,7 @@ function Store.new(
 			profile = profile,
 			baseRevision = if confirmed then confirmed.profile.revision else 0,
 			writeId = token .. ":" .. sequence,
+			guard = guard,
 		}
 		return resolve()
 	end
@@ -240,7 +259,7 @@ function Store.new(
 			end
 			return prepare("load", nil)
 		end,
-		transact = function(change: (Data) -> boolean): (boolean, string?)
+		transact = function(change: (Data) -> boolean, guard: (() -> boolean)?): (boolean, string?)
 			local current = confirmed
 			if not usable() or current == nil then
 				return false, "NotReady"
@@ -260,7 +279,7 @@ function Store.new(
 			if validated == nil then
 				return false, "InvalidMutation"
 			end
-			return prepare("commit", validated)
+			return prepare("commit", validated, guard)
 		end,
 		renew = function(): (boolean, string?)
 			if not usable() then
