@@ -6,6 +6,13 @@ Ubuntu + VS Code/Codex + Luau + Rojo. Минимальная сцена: ква�
 
 Фактические результаты настройки и оставшиеся ограничения: [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
+Начата реализация «Мастер на районе / Neighborhood Fixer» по
+[ТЗ v0.7](Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md). Подробный разбор:
+[docs/GDD_REVIEW.md](docs/GDD_REVIEW.md); порядок и статус:
+[tasks/plan.md](tasks/plan.md), [tasks/todo.md](tasks/todo.md).
+Серверная основа профиля, миграции и однократных операций уже покрыта тестами,
+но ещё не подключена к сцене и DataStore. Текущий Play сохраняет прежний прототип.
+
 Репозиторий: [Danil-super/roblox-life](https://github.com/Danil-super/roblox-life).
 Локальный `origin` настроен на `https://github.com/Danil-super/roblox-life.git`;
 GitHub CLI авторизован, Git использует его credential helper. Перед push запускать `bash scripts/dev.sh check`,
@@ -119,6 +126,40 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
 Масштаб Studio по просьбе пользователя возвращён к **100% (96 DPI)**. Изменить его можно через
 Vinegar → **Продвинутые настройки Wine** (Advanced Wine Settings) → Graphics → Screen resolution; затем
 перезапустить Studio. 96 DPI соответствует 100%, 192 DPI — 200%.
+
+Если поверх Studio появляется чёрный квадрат, это может быть служебное окно
+Wine, а не объект сцены. На этой машине подтверждён
+[известный сбой Vinegar](https://github.com/vinegarhq/vinegar/issues/973).
+Первоначальный обход **Virtual Desktops** убрал квадрат, но в установленной
+сборке Wine внутреннее окно осталось около 800×600. Для динамического размера
+используется обычное окно Studio; **Virtual Desktops выключен**. Настройка в
+`~/.var/app/org.vinegarhq.Vinegar/config/vinegar/config.toml`:
+
+```toml
+[studio]
+virtual_desktop = ""
+```
+
+Локальный контроллер скрывает только известное пустое окно `RobloxStudio`
+100×100. При запуске и изменении монитора/рабочей области он подгоняет Studio
+под доступное место, учитывая рамку и панели. Ручное изменение размера между
+такими событиями сохраняется. DPI остаётся 96 (100%).
+
+```bash
+# На этой машине служба уже включена. Для повторной настройки:
+python3 scripts/desktop_window.py --install-service
+systemctl --user status roblox-life-desktop.service
+# Разовая подгонка или проверка размера:
+python3 scripts/desktop_window.py --once
+python3 scripts/desktop_window.py --once --size 1280x800
+# Отключить автоподгонку и скрытие служебного окна:
+systemctl --user disable --now roblox-life-desktop.service
+```
+
+Контроллер рассчитан на GNOME/XWayland, Python 3, libX11 и libXrandr. Он не
+меняет разрешение монитора, файлы сцены или масштаб системы. При переносе
+репозитория нужно повторно установить службу из нового каталога. После смены
+Virtual Desktops полностью перезапустить Vinegar, предварительно сохранив сцену.
 
 Сборка: `bash scripts/dev.sh build` создаёт `build/roblox-life.rbxlx`. Открыть
 её через **File → Open from File** в Studio. Если Flatpak не видит каталог,
