@@ -4,7 +4,8 @@ Ubuntu + VS Code/Codex + Luau + Rojo. Текущая игра: бесплатн�
 стандартный персонаж, небольшой район, HUD долларов и панель «Дом» с возвратом
 домой. Интерфейс EN/RU. Комната создаётся сервером после подтверждения профиля.
 Есть заказы на покраску: маршрут к клиенту, осмотр, защита пола, выбор цвета,
-валик и серверная приёмка за $250. Магазин и установка покупок — следующий этап.
+валик и серверная приёмка за $250. Есть магазин с тремя предметами, склад
+и редактор собственной комнаты с Grid/Free, поворотом, переносом и возвратом на склад.
 
 Фактические результаты настройки и оставшиеся ограничения: [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
@@ -22,7 +23,7 @@ Ubuntu + VS Code/Codex + Luau + Rojo. Текущая игра: бесплатн�
 
 | Файл | Назначение |
 | --- | --- |
-| `build/roblox-life.rbxlx` | Текущий Neighborhood Fixer: профиль, комнаты, Jobs/Map, покраска и HUD |
+| `build/roblox-life.rbxlx` | Текущий Neighborhood Fixer: профиль, комнаты, Jobs/Map, покраска, магазин и мебель |
 | `build/sink-prototype.rbxlx` | Контрольный прототип раковины из `prototype.project.json` |
 
 В основной сцене есть только `leaderstats.Dollars`; старые Coins не запускаются.
@@ -242,17 +243,25 @@ Rojo слушает только loopback. Проверить `curl http://127.0
 заново. Сенсорный ввод реализован, но отдельная mobile-приёмка ещё не выполнена.
 Подробности: [docs/PAINTING.md](docs/PAINTING.md).
 
+После первой работы жёлтая кнопка предложит **Магазин мебели**. Нажми
+**Где магазин**, дойди до прилавка и купи растение за $180. Затем
+**ДОМ → Обустроить → Вернуться домой → Установить**. Наведи предмет и кликни
+на пол для фиксации позиции, выбери **Сетка / Свободно**, поверни кнопкой или **R** и подтверди зелёную
+позицию. Предмет можно перенести или убрать на склад. **Escape / Отмена**
+возвращает обычную камеру без изменений. Подробнее: [docs/FURNITURE.md](docs/FURNITURE.md).
+
 Контрольная раковина открывается отдельно из `build/sink-prototype.rbxlx`:
 E запускает мойку на 2 секунды, сервер проверяет условия и начисляет 10 Coins,
 затем действует пауза 3 секунды. Она не добавляет деньги основному профилю игры.
 
 ```text
-src/server/Domain/   Profile, ProfileStore, Economy, Jobs, Painting, RoomRules — чистые правила
-src/server/         ProfileService, JobService, Storage, World — серверные адаптеры
-src/client/         Main, JobController, JobNavigation, PaintController — UI/ввод
+src/server/Domain/   Profile, ProfileStore, Economy, Jobs, Painting, Furniture, RoomRules — правила
+src/server/         ProfileService, JobService, HomeService, Storage, World — адаптеры
+src/client/         HUD, Jobs/Map, покраска, каталог/склад и BuildController
 src/shared/         Strings, PaintConfig, JobTypes, RouteMath; правила контрольного прототипа
 src/legacy/         отдельная раковина, не запускается главным проектом
 tests/              unit, lifecycle-регрессии, проверки XML и сценарии Studio
+src/assets/         общая фабрика Roblox-моделей мебели
 scripts/            установка инструментов и проверки
 ```
 
