@@ -8,6 +8,7 @@ local Types = require(ReplicatedStorage.Shared.JobTypes)
 local PaintController = require("./PaintController")
 local Navigation = require("./JobNavigation")
 local MapController = require("./MapController")
+local JobOffers = require("./JobOffersController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -24,13 +25,13 @@ function Controller.start(
 	local lastError: string? = nil
 	local errorUntil = 0
 	local actions = {
-		Offer = "acceptJob",
+		Offer = "openJobs",
 		Inspect = "inspectWall",
 		Prepare = "protectFloor",
 		ChooseMaterial = "choosePaint",
 		Painting = "useRoller",
 		Ready = "submitJob",
-		Completed = "anotherJob",
+		Completed = "openJobs",
 	}
 	local phaseKeys = {
 		Inspect = "jobInspect",
@@ -115,6 +116,17 @@ function Controller.start(
 	colors.Position = UDim2.fromOffset(16, 168)
 	colors.Visible = false
 	colors.Parent = jobBody
+	local tools = Instance.new("Frame")
+	tools.Name, tools.Position, tools.Size =
+		"Tools", UDim2.fromOffset(16, 116), UDim2.new(1, -32, 0, 44)
+	tools.BackgroundTransparency, tools.Visible, tools.Parent = 1, false, jobBody
+	local toolButtons: { TextButton } = {}
+	for index, id in { "basic", "wide" } do
+		local b = button(tools, id, 0)
+		b.Position, b.Size = UDim2.new((index - 1) / 2, 2, 0, 0), UDim2.new(0.5, -4, 1, 0)
+		b.TextSize = 13
+		table.insert(toolButtons, b)
+	end
 	local swatches: { TextButton } = {}
 	for index, colorId in { "rose", Config.colorId, "mint" } do
 		local b = Instance.new("TextButton")
@@ -127,10 +139,7 @@ function Controller.start(
 		b.TextSize = 13
 		b.Font = Enum.Font.GothamMedium
 		b.TextColor3 = Color3.fromRGB(26, 43, 43)
-		b.BackgroundColor3 = if colorId == "rose"
-			then Color3.fromRGB(211, 160, 158)
-			elseif colorId == "mint" then Color3.fromRGB(144, 185, 164)
-			else Color3.new(table.unpack(Config.color))
+		b.BackgroundColor3 = Color3.new(table.unpack(Config.palette[colorId] or Config.color))
 		b.Parent = colors
 		table.insert(swatches, b)
 	end
@@ -179,6 +188,10 @@ function Controller.start(
 		end
 		command:FireServer(data)
 	end
+	local offers = JobOffers.start(jobs, jobBody, back, language, function(id: string)
+		local fields: { [string]: unknown } = { offerId = id }
+		send("accept", fields)
+	end)
 	local painter = PaintController.start(screen, send, language)
 	local function hidePanels(): ()
 		jobs.Visible = false
@@ -186,6 +199,9 @@ function Controller.start(
 		results.Visible = false
 	end
 	local function returnPhone(): ()
+		if offers.back() then
+			return
+		end
 		hidePanels()
 		homePanel.Visible = true
 	end
@@ -216,7 +232,10 @@ function Controller.start(
 				if player:GetAttribute("OnboardingStep") == "BUY" then "Shop" else "Furniture"
 			)
 		elseif s.phase == "Offer" or s.phase == "Completed" then
-			send("accept", nil)
+			homePanel.Visible, jobs.Visible = false, true
+			map.hide()
+			offers.show()
+			send("sync", nil)
 		elseif not nearWall then
 			jobs.Visible = false
 			map.show()
@@ -241,7 +260,11 @@ function Controller.start(
 	local function revealActions(): ()
 		if jobs.Visible then
 			local phase = if state then state.phase else "Offer"
-			local bottom = if phase == "Offer" or phase == "Completed" then 212 else 268
+			local bottom = if phase == "Offer"
+					or phase == "Completed"
+					or phase == "ChooseMaterial"
+				then 212
+				else 268
 			jobBody.CanvasPosition = Vector2.new(0, math.max(0, bottom - jobBody.AbsoluteSize.Y))
 		end
 	end
@@ -249,6 +272,12 @@ function Controller.start(
 	jobBody:GetPropertyChangedSignal("AbsoluteSize"):Connect(revealActions)
 	local function stepHint(phase: string): string
 		if lastError and os.clock() < errorUntil then
+			if lastError == "Color" then
+				local id = if state then state.requiredColorId or Config.colorId else Config.colorId
+				return string.format(t("contractMaterial"), t(Config.colorKeys[id] or "warmWhite"))
+					.. " · "
+					.. t("colorRetry")
+			end
 			return t("jobError" .. lastError)
 		end
 		if phase == "Offer" then
@@ -267,6 +296,10 @@ function Controller.start(
 		if not nearWall then
 			return t("jobRouteHint")
 		end
+		if phase == "ChooseMaterial" then
+			local id = if state then state.requiredColorId or Config.colorId else Config.colorId
+			return string.format(t("contractMaterial"), t(Config.colorKeys[id] or "warmWhite"))
+		end
 		local hints = {
 			Inspect = "inspectHint",
 			Prepare = "prepareHint",
@@ -282,6 +315,9 @@ function Controller.start(
 		heading.Text = t("jobs")
 		back.Text = t("backHome")
 		description.Text = t(phaseKeys[phase] or "jobOffer")
+		if phase == "ChooseMaterial" then
+			description.Text ..= "\n" .. stepHint(phase)
+		end
 		progress.Text = if phase == "Offer"
 			then "$" .. (if s then s.reward else 0)
 			elseif phase == "Completed" then "+$" .. (if s then s.reward else 0)
@@ -290,6 +326,26 @@ function Controller.start(
 				math.floor((if s then s.count else 0) / (Config.columns * Config.rows) * 100)
 			)
 		hint.Text = stepHint(phase)
+		hint.Visible = phase ~= "ChooseMaterial"
+		tools.Visible = phase == "ChooseMaterial"
+		for index, b in toolButtons do
+			local id = if index == 1 then "basic" else "wide"
+			local xp = if s then s.paintingXP or 0 else 0
+			b.Text = t(if id == "basic" then "basicRoller" else "wideRoller")
+				.. (
+					if s and s.toolId == id
+						then " " .. t("toolSelected")
+						elseif id == "wide" and xp < Config.wideRollerXP then " · "
+							.. Config.wideRollerXP
+							.. " XP"
+						else ""
+				)
+			b.Active = s ~= nil
+				and s.available
+				and phase == "ChooseMaterial"
+				and (id == "basic" or xp >= Config.wideRollerXP)
+			b.AutoButtonColor, b.BackgroundTransparency = b.Active, if b.Active then 0 else 0.6
+		end
 		cancel.Text = t("cancelJob")
 		cancel.Visible = phase ~= "Offer" and phase ~= "Completed"
 		colors.Visible = phase == "ChooseMaterial"
@@ -302,6 +358,7 @@ function Controller.start(
 			b.Active = s ~= nil and s.available
 		end
 		map.render(s)
+		offers.render(s)
 		painter.render()
 		local onboarding = player:GetAttribute("OnboardingStep")
 		local nextKey = if phase == "Completed" and onboarding == "BUY"
@@ -320,6 +377,17 @@ function Controller.start(
 		resultXP.Text = if receipt then string.format(t("resultXP"), receipt.xp) else ""
 		resultQuality.Text = t("resultAccepted")
 		resultHint.Text = t("resultNext")
+		if
+			receipt
+			and s
+			and s.paintingXP
+			and s.paintingXP >= Config.wideRollerXP
+			and s.paintingXP - receipt.xp < Config.wideRollerXP
+		then
+			resultHint.Text = t("wideUnlockedResult") .. "\n" .. resultHint.Text
+		end
+		local required = if s then s.requiredColorId or Config.colorId else Config.colorId
+		after.BackgroundColor3 = Color3.new(table.unpack(Config.palette[required] or Config.color))
 		resultContinue.Text = t(
 			if onboarding == "BUY"
 				then "shopTitle"
@@ -361,6 +429,15 @@ function Controller.start(
 			send("choose", fields)
 		end)
 	end
+	for index, b in toolButtons do
+		b.Activated:Connect(function()
+			if b.Active then
+				local fields: { [string]: unknown } =
+					{ toolId = if index == 1 then "basic" else "wide" }
+				send("tool", fields)
+			end
+		end)
+	end
 	stateEvent.OnClientEvent:Connect(function(s: Types.Snapshot)
 		local old = state
 		if old == nil or old.phase ~= s.phase then
@@ -399,6 +476,9 @@ function Controller.start(
 			results.Visible = false
 		end
 		render()
+		if old == nil or old.phase ~= s.phase then
+			revealActions()
+		end
 	end)
 	for _, rootPanel in { jobs, results } do
 		for _, item in rootPanel:GetDescendants() do
@@ -458,6 +538,9 @@ function Controller.start(
 			homePanel.Visible = false
 			hidePanels()
 			jobs.Visible = tab == "Jobs"
+			if tab == "Jobs" then
+				offers.show()
+			end
 			if tab == "Map" then
 				map.show()
 			end

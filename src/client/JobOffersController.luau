@@ -1,0 +1,207 @@
+--!strict
+local RS = game:GetService("ReplicatedStorage")
+local Strings = require(RS.Shared.Strings)
+local Types = require(RS.Shared.JobTypes)
+local Config = require(RS.Shared.PaintConfig)
+local Theme = require(RS.Shared.Theme)
+export type API = { render: (Types.Snapshot?) -> (), show: () -> (), back: () -> boolean }
+local Controller = {}
+function Controller.start(
+	panel: Frame,
+	workBody: ScrollingFrame,
+	back: TextButton,
+	language: () -> string,
+	accept: (string) -> ()
+): API
+	local function color(values: { number }): Color3
+		return Color3.fromRGB(values[1], values[2], values[3])
+	end
+	local paper, accent = color(Theme.colors.paper), color(Theme.colors.accent)
+	local state: Types.Snapshot? = nil
+	local selected: string? = nil
+	local awaiting, epoch = false, 0
+	local listKey = ""
+	local root = Instance.new("Frame")
+	root.Name, root.Position, root.Size =
+		"Offers", UDim2.fromOffset(0, 54), UDim2.new(1, 0, 1, -122)
+	root.BackgroundTransparency, root.Visible, root.ZIndex, root.Parent = 1, false, 9, panel
+	local function scroll(name: string): ScrollingFrame
+		local f = Instance.new("ScrollingFrame")
+		f.Name, f.Size = name, UDim2.fromScale(1, 1)
+		f.BackgroundTransparency, f.BorderSizePixel, f.ScrollBarThickness = 1, 0, 4
+		f.ZIndex, f.Parent = 9, root
+		return f
+	end
+	local list, details = scroll("List"), scroll("Details")
+	details.CanvasSize = UDim2.fromOffset(0, 280)
+	local function label(
+		parent: Instance,
+		name: string,
+		y: number,
+		height: number,
+		size: number
+	): TextLabel
+		local l = Instance.new("TextLabel")
+		l.Name, l.Position, l.Size = name, UDim2.fromOffset(16, y), UDim2.new(1, -32, 0, height)
+		l.BackgroundTransparency, l.TextWrapped, l.TextSize = 1, true, size
+		l.Font, l.TextColor3, l.ZIndex, l.Parent = Enum.Font.GothamMedium, paper, 10, parent
+		return l
+	end
+	local xpLabel = label(list, "Experience", 0, 54, 14)
+	local title = label(details, "Title", 0, 40, 18)
+	local reward = label(details, "Reward", 44, 28, 16)
+	local requirements = label(details, "Requirements", 78, 62, 14)
+	local brief = label(details, "Brief", 148, 72, 14)
+	local locked = label(details, "Availability", 228, 44, 14)
+	local confirm = Instance.new("TextButton")
+	confirm.Name, confirm.Position, confirm.Size =
+		"AcceptOffer", UDim2.new(0.5, 8, 1, -56), UDim2.new(0.5, -24, 0, 44)
+	confirm.BackgroundColor3, confirm.TextColor3 = accent, paper
+	confirm.TextSize, confirm.TextWrapped, confirm.Font = 14, true, Enum.Font.GothamBold
+	confirm.ZIndex, confirm.Visible, confirm.Parent = 10, false, panel
+	local function t(key: string): string
+		return Strings.text(language(), key)
+	end
+	local function selectedOffer(): Types.Offer?
+		local s = state
+		if s and s.offers then
+			for _, offer in s.offers do
+				if offer.id == selected then
+					return offer
+				end
+			end
+		end
+		return nil
+	end
+	local render: () -> ()
+	render = function(): ()
+		local s = state
+		local visible = s ~= nil and (s.phase == "Offer" or s.phase == "Completed")
+		root.Visible, workBody.Visible = visible, not visible
+		if not visible then
+			selected, awaiting = nil, false
+		end
+		local offer = selectedOffer()
+		list.Visible, details.Visible = offer == nil, offer ~= nil
+		confirm.Visible = visible and offer ~= nil
+		back.Size = if confirm.Visible then UDim2.new(0.5, -24, 0, 44) else UDim2.new(1, -32, 0, 44)
+		back.Text = t(if confirm.Visible then "backOffers" else "backHome")
+		confirm.Text = t(
+			if awaiting
+				then "acceptingJob"
+				elseif offer and not offer.unlocked then "offerLocked"
+				else "acceptJob"
+		)
+		confirm.Active = offer ~= nil
+			and offer.unlocked
+			and s ~= nil
+			and s.available
+			and not awaiting
+		confirm.AutoButtonColor, confirm.BackgroundTransparency =
+			confirm.Active, if confirm.Active then 0 else 0.6
+		local experience = if s then s.paintingXP or 0 else 0
+		xpLabel.Text = if s and s.available
+			then string.format(t("paintingExperience"), experience) .. "\n" .. (if experience
+					>= Config.wideRollerXP
+				then t("wideRollerUnlocked")
+				else string.format(t("wideRollerGoal"), Config.wideRollerXP - experience))
+			else t("offerWaiting")
+		if offer then
+			title.Text, brief.Text = t(offer.titleKey), t(offer.briefKey)
+			reward.Text = string.format(t("contractReward"), offer.reward, offer.xp)
+			requirements.Text = string.format(
+				t("contractMaterial"),
+				t(Config.colorKeys[offer.colorId] or "warmWhite")
+			) .. "\n" .. t("contractAddress")
+			locked.Text = if offer.unlocked
+				then t("offerReady")
+				else string.format(
+					t("offerXPNeeded"),
+					math.max(0, offer.requiredXP - experience)
+				)
+		end
+		local key = language() .. tostring(experience) .. tostring(s ~= nil and s.available)
+		if s and s.offers then
+			for _, o in s.offers do
+				key ..= o.id .. o.reward .. o.xp .. tostring(o.unlocked)
+			end
+		end
+		if key == listKey then
+			return
+		end
+		listKey = key
+		for _, child in list:GetChildren() do
+			if child ~= xpLabel then
+				child:Destroy()
+			end
+		end
+		local offers: { Types.Offer } = if s then s.offers or {} else {}
+		for index, o in offers do
+			local b = Instance.new("TextButton")
+			b.Name, b.Position, b.Size =
+				o.id, UDim2.fromOffset(16, 64 + (index - 1) * 112), UDim2.new(1, -32, 0, 104)
+			b.Text, b.BackgroundColor3, b.ZIndex, b.Parent =
+				"", color(Theme.colors.surface), 9, list
+			local name = label(b, "Title", 8, 36, 16)
+			name.Text = t(o.titleKey)
+			local info = label(b, "Info", 46, 50, 13)
+			info.Text = string.format(t("contractReward"), o.reward, o.xp)
+				.. " · "
+				.. t(Config.colorKeys[o.colorId] or "warmWhite")
+				.. "\n"
+				.. (
+					if o.unlocked
+						then t("offerReady")
+						else string.format(
+							t("offerXPNeeded"),
+							math.max(0, o.requiredXP - experience)
+						)
+				)
+			b.Activated:Connect(function()
+				selected = o.id
+				details.CanvasPosition = Vector2.zero
+				render()
+			end)
+		end
+		list.CanvasSize = UDim2.fromOffset(0, 64 + #offers * 112)
+	end
+	confirm.Activated:Connect(function()
+		local offer = selectedOffer()
+		if not confirm.Active or offer == nil then
+			return
+		end
+		awaiting, epoch = true, epoch + 1
+		local attempt = epoch
+		render()
+		accept(offer.id)
+		task.delay(8, function()
+			if epoch == attempt and panel.Parent ~= nil then
+				awaiting = false
+				render()
+			end
+		end)
+	end)
+	return {
+		render = function(s: Types.Snapshot?): ()
+			state = s
+			if s and s.error then
+				awaiting = false
+			end
+			render()
+		end,
+		show = function(): ()
+			selected = nil
+			list.CanvasPosition = Vector2.zero
+			render()
+		end,
+		back = function(): boolean
+			if selected then
+				selected = nil
+				render()
+				return true
+			end
+			return false
+		end,
+	}
+end
+return Controller

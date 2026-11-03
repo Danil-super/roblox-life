@@ -8,5 +8,6 @@ return table.freeze({
 		paper = table.freeze({ 244, 239, 224 }),
 		muted = table.freeze({ 181, 198, 187 }),
 		accent = table.freeze({ 55, 120, 102 }),
+		surface = table.freeze({ 41, 62, 60 }),
 	}),
 })

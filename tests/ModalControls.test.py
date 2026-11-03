@@ -90,7 +90,11 @@ local jobBody = {{AbsoluteSize={{Y={height}}}}}
 revealActions()
 local offset = jobBody.CanvasPosition.Y
 assert(168-offset >= 0 and 212-offset <= jobBody.AbsoluteSize.Y,"Primary action clipped")
-if state.phase~="Offer" and state.phase~="Completed" then
+if state.phase=="ChooseMaterial" then
+    assert(116-offset >= 0 and 160-offset <= jobBody.AbsoluteSize.Y,"Tool choice clipped")
+    local cancelOffset=math.max(0,268-jobBody.AbsoluteSize.Y)
+    assert(224-cancelOffset>=0 and 268-cancelOffset<=jobBody.AbsoluteSize.Y,"Cancel not reachable by scrolling")
+elseif state.phase~="Offer" and state.phase~="Completed" then
     assert(224-offset >= 0 and 268-offset <= jobBody.AbsoluteSize.Y,"Cancel clipped")
 end
 jobs.Visible=false;jobBody.CanvasPosition={Y=7};revealActions()

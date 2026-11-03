@@ -21,6 +21,15 @@ function Controller.start(
 	local active = false
 	local wall: BasePart? = nil
 	local snapshot: Types.Snapshot? = nil
+	local function paintColor(): Color3
+		local id = if snapshot then snapshot.requiredColorId or Config.colorId else Config.colorId
+		return Color3.new(table.unpack(Config.palette[id] or Config.color))
+	end
+	local function brushScale(): number
+		return if snapshot and snapshot.toolId == "wide"
+			then Config.wideRollerRadius / Config.rollerRadius
+			else 1
+	end
 	local previousCameraType: Enum.CameraType? = nil
 	local previousSubject: Instance? = nil
 	local previousFrame = CFrame.identity
@@ -264,7 +273,7 @@ function Controller.start(
 				cell.BorderSizePixel = 0
 				cell.Position = UDim2.fromScale(col / Config.columns, row / Config.rows)
 				cell.Size = UDim2.fromScale(1 / Config.columns + 0.001, 1 / Config.rows + 0.001)
-				cell.BackgroundColor3 = Color3.new(table.unpack(Config.color))
+				cell.BackgroundColor3 = paintColor()
 				cell.BackgroundTransparency = 1
 				cell.Parent = gui
 				local stroke = Instance.new("UIStroke")
@@ -290,7 +299,7 @@ function Controller.start(
 			p.Parent = model
 			return p
 		end
-		local roll = part(Vector3.new(1.1, 0.38, 0.38), Color3.new(table.unpack(Config.color)))
+		local roll = part(Vector3.new(1.1 * brushScale(), 0.38, 0.38), paintColor())
 		roll.Shape = Enum.PartType.Cylinder
 		cylinder = roll
 		handle = part(Vector3.new(0.12, 1.1, 0.12), Color3.fromRGB(65, 91, 91))
@@ -423,8 +432,11 @@ function Controller.start(
 							local stamp = Instance.new("Frame")
 							stamp.AnchorPoint = Vector2.new(0.5, 0.5)
 							stamp.Position = UDim2.fromScale(p.u, p.v)
-							stamp.Size = UDim2.fromScale(1.3 / Config.columns, 1.3 / Config.rows)
-							stamp.BackgroundColor3 = Color3.new(table.unpack(Config.color))
+							stamp.Size = UDim2.fromScale(
+								1.3 * brushScale() / Config.columns,
+								1.3 * brushScale() / Config.rows
+							)
+							stamp.BackgroundColor3 = paintColor()
 							stamp.BackgroundTransparency = 0.15
 							stamp.BorderSizePixel = 0
 							stamp.Parent = surface
