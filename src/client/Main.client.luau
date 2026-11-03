@@ -5,6 +5,7 @@ local UIS = game:GetService("UserInputService")
 local JobController = require("./JobController")
 local HomeController = require("./HomeController")
 local ModalControls = require("./ModalControls")
+local ProfileRecovery = require("./ProfileRecoveryController")
 local Strings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Strings"))
 local Layout = require(ReplicatedStorage.Shared.HudLayout)
 local Theme = require(ReplicatedStorage.Shared.Theme)
@@ -130,6 +131,16 @@ end, jobs.hide)
 openHousing = function(tab: string): ()
 	housing.show(tab)
 end
+local toggleLanguage: () -> () = function(): () end
+local recovery = ProfileRecovery.start(screen, function(): string
+	return language
+end, function()
+	jobs.suspend()
+	housing.hide()
+	panel.Visible = false
+end, function()
+	toggleLanguage()
+end)
 ModalControls.start(screen)
 jobsButton.Activated:Connect(function()
 	housing.hide()
@@ -158,7 +169,9 @@ local function render(): ()
 		return Strings.text(language, key)
 	end
 	title.Text, heading.Text, private.Text = t("title"), t("room"), t("private")
-	balance.Text = if dollars ~= nil then string.format("$%d", dollars.Value) else "$—"
+	balance.Text = if dollars ~= nil and (ready or state == "Saving")
+		then string.format("$%d", dollars.Value)
+		else "$—"
 	languageButton.Text = if language == "ru" then "EN" else "RU"
 	homeButton.Text, returnButton.Text = t("home"), t("returnHome")
 	description.Text = if ready
@@ -180,6 +193,7 @@ local function render(): ()
 	hintsButton.Text =
 		t(if screen:GetAttribute("ShowHints") == false then "showHints" else "hideHints")
 	housing.render()
+	recovery.render()
 end
 homeButton.Activated:Connect(function()
 	jobs.hide()
@@ -189,10 +203,11 @@ end)
 closeButton.Activated:Connect(function()
 	panel.Visible = false
 end)
-languageButton.Activated:Connect(function()
+toggleLanguage = function(): ()
 	language = if language == "ru" then "en" else "ru"
 	render()
-end)
+end
+languageButton.Activated:Connect(toggleLanguage)
 local lastReturn = -math.huge
 returnButton.Activated:Connect(function()
 	if player:GetAttribute("ProfileStatus") ~= "Ready" or os.clock() - lastReturn < 2 then

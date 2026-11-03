@@ -26,6 +26,10 @@ case "${1:-check}" in
     done
     python3 tests/Desktop.test.py
     python3 tests/ProfileLifecycle.test.py
+    python3 tests/ProfileRetry.test.py
+    python3 tests/ProfileRecoveryUI.test.py
+    python3 tests/RecoveryCamera.test.py
+    python3 tests/StudioTest.test.py
     python3 tests/BuildRecovery.test.py
     python3 tests/BuildLifecycle.test.py
     python3 tests/PaintLifecycle.test.py

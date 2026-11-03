@@ -318,6 +318,53 @@ en["homeErrorOperationConflict"] =
 	"This request belongs to a different purchase. Check your inventory."
 ru["homeErrorOperationConflict"] =
 	"Запрос относится к другой покупке. Проверь склад."
+en["profileErrorTitle"] = "Progress is protected"
+ru["profileErrorTitle"] = "Прогресс защищён"
+en["profileRecoveringTitle"] = "Restoring your session"
+ru["profileRecoveringTitle"] = "Восстанавливаем сессию"
+en["profileRecovering"] =
+	"Checking the same saved operation. Purchases and work are paused until your data is confirmed."
+ru["profileRecovering"] =
+	"Проверяем ту же сохранённую операцию. Покупки и работа приостановлены до подтверждения данных."
+en["profileRetry"] = "Retry"
+ru["profileRetry"] = "Повторить"
+en["profileRetrying"] = "Checking…"
+ru["profileRetrying"] = "Проверяем…"
+en["profileRetryWait"] = "Please wait"
+ru["profileRetryWait"] = "Подожди"
+en["profileNoRetry"] = "Unavailable"
+ru["profileNoRetry"] = "Недоступно"
+en["profileExit"] = "Leave game"
+ru["profileExit"] = "Выйти"
+en["profileReasonUnavailable"] =
+	"Your data is temporarily unavailable. Your money and items are protected. Wait and retry."
+ru["profileReasonUnavailable"] =
+	"Данные временно недоступны. Деньги и вещи защищены. Подожди и повтори загрузку."
+en["profileReasonLocked"] = "Your profile is open in another session. Close it, wait, then retry."
+ru["profileReasonLocked"] =
+	"Профиль открыт в другой сессии. Закрой её, подожди и нажми «Повторить»."
+en["profileReasonCorrupt"] =
+	"Your profile could not be verified. No replacement data was saved. Leave and try again later."
+ru["profileReasonCorrupt"] =
+	"Не удалось проверить профиль. Новые данные не записаны. Выйди и зайди позже."
+en["profileReasonSessionLost"] =
+	"The data session has ended. Operations are paused for safety. Leave and rejoin."
+ru["profileReasonSessionLost"] =
+	"Сессия данных потеряна. Операции остановлены для безопасности. Выйди и зайди снова."
+en["profileReasonRoomVersion"] =
+	"This room version is not supported yet. Your items are unchanged. Please return later."
+ru["profileReasonRoomVersion"] =
+	"Эта версия комнаты пока не поддерживается. Предметы не изменены. Зайди позже."
+en["profileReasonCharacterLoad"] = "Your character could not load. Your profile is safe. Try again."
+ru["profileReasonCharacterLoad"] =
+	"Не удалось загрузить персонажа. Профиль защищён. Попробуй ещё раз."
+en["profileReasonConfiguration"] =
+	"This version cannot load player data yet. Leave and try again later."
+ru["profileReasonConfiguration"] =
+	"Эта версия игры пока не может загрузить данные. Выйди и зайди позже."
+en["profileReasonInvalidOwner"] = "Your account could not be verified. Leave and rejoin."
+ru["profileReasonInvalidOwner"] =
+	"Не удалось подтвердить аккаунт. Выйди и зайди снова."
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

@@ -11,6 +11,7 @@ function Controller.start(screen: ScreenGui): ()
 		InventoryPanel = true,
 		PaintToolbar = true,
 		BuildToolbar = true,
+		ProfilePanel = true,
 	}
 	local panels: { GuiObject } = {}
 	local previous: boolean? = nil

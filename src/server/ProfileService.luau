@@ -7,6 +7,8 @@ local Profile = require("./Domain/Profile")
 local RoomRules = require("./Domain/RoomRules")
 local Storage = require("./Storage")
 local World = require("./World")
+local Recovery = require("./Domain/ProfileRecovery")
+local Diagnostics = require("./Diagnostics")
 export type API = {
 	read: (Player) -> Profile.Profile?,
 	home: (Player) -> World.Home?,
@@ -24,6 +26,9 @@ type Context = {
 	spawnRequested: boolean,
 	spawning: boolean,
 	nextSpawnAt: number,
+	failure: string?,
+	lastRetry: number,
+	trace: string,
 }
 local Service = {}
 local LEASE_SECONDS, HEARTBEAT_SECONDS = 120, 30
@@ -37,6 +42,44 @@ function Service.start(): API
 	local changed = Instance.new("BindableEvent")
 	local remote = ReplicatedStorage:WaitForChild("ReturnHome")
 	assert(remote:IsA("RemoteEvent"), "ReturnHome must be a RemoteEvent")
+	local profileRemote = ReplicatedStorage:WaitForChild("ProfileCommand")
+	assert(profileRemote:IsA("RemoteEvent"), "ProfileCommand must be a RemoteEvent")
+	local RETRY_SECONDS = 10
+	local function refreshRecovery(player: Player, context: Context): ()
+		if contexts[player] ~= context or context.closing or player.Parent ~= Players then
+			return
+		end
+		local allowed = Recovery.action(context.session.status(), context.failure, Storage.blocked)
+			~= nil
+		player:SetAttribute("ProfileRecoveryAllowed", allowed)
+		player:SetAttribute(
+			"ProfileCanRetry",
+			allowed and not context.busy and os.clock() - context.lastRetry >= RETRY_SECONDS
+		)
+	end
+	local function fail(
+		player: Player,
+		context: Context,
+		reason: string?,
+		entry: Diagnostics.Entry
+	): ()
+		context.failure = reason or "StorageUnavailable"
+		player:SetAttribute(
+			"ProfileErrorCode",
+			Recovery.code(context.session.status(), context.failure, Storage.blocked)
+		)
+		refreshRecovery(player, context)
+		player:SetAttribute("ProfileStatus", "Error")
+		Diagnostics.emit("profile_failure", context.trace, entry, false, context.failure)
+		local delay = math.max(0, RETRY_SECONDS - (os.clock() - context.lastRetry))
+		if delay > 0 then
+			task.delay(delay, function()
+				if player:GetAttribute("ProfileStatus") == "Error" then
+					refreshRecovery(player, context)
+				end
+			end)
+		end
+	end
 
 	local function publish(player: Player, context: Context): ()
 		local profile = context.session.read()
@@ -55,21 +98,28 @@ function Service.start(): API
 		dollars.Value = profile.wallet.dollars
 		player:SetAttribute("PaintingXP", profile.progression.paintingXP)
 		player:SetAttribute("OnboardingStep", profile.onboarding.step)
+		context.failure = nil
+		player:SetAttribute("ProfileErrorCode", nil)
+		player:SetAttribute("ProfileRecoveryAllowed", false)
+		player:SetAttribute("ProfileCanRetry", false)
 		player:SetAttribute("ProfileStatus", "Ready")
 		changed:Fire(player)
 	end
 
-	local function recover(session: Store.Session): boolean
+	local function recover(session: Store.Session): (boolean, string?)
+		local reason: string? = nil
 		for attempt = 1, 3 do
 			if session.status() ~= "Uncertain" then
-				return session.status() == "Ready" or session.status() == "Closed"
+				return session.status() == "Ready" or session.status() == "Closed", reason
 			end
 			task.wait(2 ^ (attempt - 1) + math.random() * 0.5)
-			if session.retry() then
-				return true
+			local ok, why = session.retry()
+			reason = why
+			if ok then
+				return true, nil
 			end
 		end
-		return false
+		return false, reason
 	end
 
 	local function close(player: Player, context: Context): ()
@@ -120,8 +170,7 @@ function Service.start(): API
 		context.spawning = false
 		if not ok and player.Parent == Players then
 			context.spawnRequested, context.nextSpawnAt = true, os.clock() + 3
-			player:SetAttribute("ProfileStatus", "Error")
-			warn("[NeighborhoodFixer] Character load failed")
+			fail(player, context, "CharacterLoad", "spawn")
 		end
 	end
 
@@ -137,7 +186,7 @@ function Service.start(): API
 			profile.housing.roomTemplateId ~= "StarterDormTemplate_v1"
 			or profile.housing.roomTemplateVersion ~= 1
 		then
-			player:SetAttribute("ProfileStatus", "Error")
+			fail(player, context, "RoomVersion", "join")
 			return
 		end
 		if context.home == nil then
@@ -172,6 +221,7 @@ function Service.start(): API
 		if not Profile.integer(ownerId, 1, 9007199254740991) then
 			slots[slot] = nil
 			player:SetAttribute("ProfileStatus", "Error")
+			player:SetAttribute("ProfileErrorCode", "InvalidOwner")
 			return
 		end
 		local context: Context = {
@@ -191,6 +241,9 @@ function Service.start(): API
 			spawnRequested = true,
 			spawning = false,
 			nextSpawnAt = 0,
+			failure = nil,
+			lastRetry = -math.huge,
+			trace = HttpService:GenerateGUID(false),
 		}
 		contexts[player] = context
 		player.CharacterAdded:Connect(function(character: Model)
@@ -208,19 +261,19 @@ function Service.start(): API
 				end)
 			end)
 		end)
-		local loaded = context.session.load()
-		if not loaded then
-			loaded = recover(context.session)
+		local loaded, loadReason = context.session.load()
+		if not loaded and context.session.status() == "Uncertain" then
+			loaded, loadReason = recover(context.session)
 		end
 		context.busy = false
 		if context.closing or player.Parent ~= Players then
 			return
 		end
 		if not loaded then
-			player:SetAttribute("ProfileStatus", "Error")
-			warn("[NeighborhoodFixer] Profile load blocked: " .. context.session.status())
+			fail(player, context, loadReason, "join")
 			return
 		end
+		Diagnostics.emit("profile_load", context.trace, "join", true, nil)
 		finalizeReady(player, context)
 	end
 
@@ -234,6 +287,52 @@ function Service.start(): API
 	for _, player in Players:GetPlayers() do
 		task.spawn(addPlayer, player)
 	end
+
+	profileRemote.OnServerEvent:Connect(function(player: Player, action: unknown)
+		if type(action) ~= "string" then
+			return
+		end
+		if action == "exit" then
+			if
+				player:GetAttribute("ProfileStatus") == "Error"
+				or player:GetAttribute("ProfileStatus") == "Loading"
+			then
+				player:Kick(
+					"Session closed safely. Please rejoin. / Сессия закрыта. Можно зайти снова."
+				)
+			end
+			return
+		end
+		local context = contexts[player]
+		if
+			action ~= "retry"
+			or context == nil
+			or context.busy
+			or context.closing
+			or shuttingDown
+			or player:GetAttribute("ProfileStatus") ~= "Error"
+			or os.clock() - context.lastRetry < RETRY_SECONDS
+			or Recovery.action(context.session.status(), context.failure, Storage.blocked)
+				== nil
+		then
+			return
+		end
+		context.lastRetry, context.busy = os.clock(), true
+		player:SetAttribute("ProfileCanRetry", false)
+		player:SetAttribute("ProfileStatus", "Loading")
+		Diagnostics.emit("profile_recovery", context.trace, "manual", true, "Requested")
+		local ok, reason = Recovery.attempt(context.session, context.failure, Storage.blocked)
+		context.busy = false
+		if context.closing or player.Parent ~= Players then
+			return
+		end
+		Diagnostics.emit("profile_recovery", context.trace, "manual", ok, reason)
+		if ok then
+			finalizeReady(player, context)
+		else
+			fail(player, context, reason, "manual")
+		end
+	end)
 
 	remote.OnServerEvent:Connect(function(player: Player)
 		local context = contexts[player]
@@ -260,18 +359,22 @@ function Service.start(): API
 				end
 				context.busy = true
 				task.spawn(function()
-					local saved = if context.session.status() == "Uncertain"
-						then recover(context.session)
-						else context.session.renew()
+					local saved: boolean
+					local reason: string?
+					if context.session.status() == "Uncertain" then
+						saved, reason = recover(context.session)
+					else
+						saved, reason = context.session.renew()
+					end
 					if not saved then
-						saved = recover(context.session)
+						saved, reason = recover(context.session)
 					end
 					context.busy = false
 					if not context.closing and player.Parent == Players then
 						if saved then
 							finalizeReady(player, context)
 						else
-							player:SetAttribute("ProfileStatus", "Error")
+							fail(player, context, reason, "heartbeat")
 						end
 					end
 				end)
@@ -349,7 +452,7 @@ function Service.start(): API
 				if context.session.status() == "Ready" then
 					publish(player, context)
 				else
-					player:SetAttribute("ProfileStatus", "Error")
+					fail(player, context, reason, "change")
 				end
 			end
 			return ok, reason

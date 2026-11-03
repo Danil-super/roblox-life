@@ -77,6 +77,8 @@ local game={BindToClose=function() end,GetService=function(_,name) assert(servic
 local dependencies={
  ["./Domain/ProfileStore"]=Store,["./Domain/Profile"]=Profile,["./Domain/RoomRules"]=RoomRules,
  ["./Storage"]=Storage,["./World"]=World,
+ ["./Diagnostics"]={emit=function()end},
+ ["./Domain/ProfileRecovery"]={action=function(status)return if status=="Uncertain" then "retry" else nil end,code=function()return "Unavailable" end},
 }
 local function require(path) assert(dependencies[path],path);return dependencies[path] end
 local warn=print

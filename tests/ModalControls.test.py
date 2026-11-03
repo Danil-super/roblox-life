@@ -25,12 +25,18 @@ local function gui(name)
 end
 local phone, jobs, paint, nav = gui("HomePanel"),gui("JobsPanel"),gui("PaintToolbar"),gui("JobNavigation")
 local results = gui("ResultsPanel")
+local profile = gui("ProfilePanel")
 local screen = {Enabled=true, changed=signal(), Destroying=signal()}
-function screen:GetChildren() return {phone,jobs,paint,nav,results} end
+function screen:GetChildren() return {phone,jobs,paint,nav,results,profile} end
 function screen:GetPropertyChangedSignal() return self.changed end
 local GuiService = {TouchControlsEnabled=true}
 '''
 scenarios = {
+    "profile_recovery": '''
+Controller.start(screen);paint:set(true);profile:set(true);paint:set(false)
+assert(not GuiService.TouchControlsEnabled,"Recovery released movement controls")
+profile:set(false);assert(GuiService.TouchControlsEnabled,"Confirmed recovery did not release controls")
+''',
     "open_close": '''
 Controller.start(screen); assert(GuiService.TouchControlsEnabled)
 phone:set(true); assert(not GuiService.TouchControlsEnabled)

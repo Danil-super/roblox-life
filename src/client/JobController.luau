@@ -449,6 +449,10 @@ function Controller.start(
 	send("sync", nil)
 	return {
 		render = render,
+		suspend = function(): ()
+			painter.stop()
+			hidePanels()
+		end,
 		hide = hidePanels,
 		show = function(tab: string): ()
 			homePanel.Visible = false

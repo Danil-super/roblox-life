@@ -15,6 +15,9 @@
       "ReturnHome": {
         "$className": "RemoteEvent"
       },
+      "ProfileCommand": {
+        "$className": "RemoteEvent"
+      },
       "JobCommand": {
         "$className": "RemoteEvent"
       },
