@@ -18,6 +18,9 @@ Ubuntu + VS Code/Codex + Luau + Rojo. Текущая игра: бесплатн�
 написано в панели «Дом». В опубликованной игре используется DataStore без
 перехода в память при ошибке. Настоящее облачное сохранение ещё не проверено.
 Контракт и режимы: [docs/PROFILE_STORAGE.md](docs/PROFILE_STORAGE.md).
+Для отдельной облачной приёмки подготовлена [QA-сборка](docs/CLOUD_QA.md):
+она требует явных Universe/Place ID, использует изолированное хранилище и
+не переключает обычный проект из MemoryPreview.
 
 `bash scripts/dev.sh build` создаёт две независимые сцены:
 
@@ -196,9 +199,11 @@ flatpak override --user --filesystem="$PWD:ro" org.vinegarhq.Vinegar
 подготовлен в `.tools/downloads/Rojo.rbxm`, если загрузка завершилась успешно.
 SHA-256: `50a8d83db87deab4d65fd6100eb74396de232355b1ae89c641035d02c49db6f4`.
 
-На текущем компьютере плагин уже установлен в определённый через Wine каталог
-`~/.var/app/org.vinegarhq.Vinegar/data/vinegar/appdata/Roblox/Plugins/`.
-Шаги копирования ниже нужны при настройке другой машины.
+На текущем компьютере активный каталог задан настройкой Studio `PluginsDir`:
+`~/.var/app/org.vinegarhq.Vinegar/data/vinegar/prefixes/studio/drive_c/users/danil/AppData/Local/Roblox/Plugins/`.
+Плагин там установлен и загружается после перезапуска. Путь `%LOCALAPPDATA%`
+в Wine оказался другим: одного копирования туда недостаточно. На другой машине
+определить каталог через Studio, как описано ниже.
 
 1. В Studio выбрать **Plugins → Plugins Folder**. Это определит фактическую
    папку Plugins **Wine-префикса Vinegar**; не угадывать имя Windows-пользователя.
@@ -220,7 +225,8 @@ SHA-256: `50a8d83db87deab4d65fd6100eb74396de232355b1ae89c641035d02c49db6f4`.
 6. Вне Play сохранить изменение `.luau` и проверить обновлённый Source в Studio.
    Для нового поведения остановить и снова начать Play.
 
-Rojo слушает только loopback. Проверить `curl http://127.0.0.1:34872/api/rojo`.
+Rojo слушает только loopback. Проверить `curl --silent --output /dev/null --write-out "%{http_code}\n" http://127.0.0.1:34872/api/rojo`
+(ожидается 200; тело ответа бинарное).
 Если хост отвечает, а Studio не подключается, проверить наличие `shared=network`
 в `flatpak info --show-permissions org.vinegarhq.Vinegar`. При отсутствии добавить
 `flatpak override --user --share=network org.vinegarhq.Vinegar` и перезапустить.
@@ -288,3 +294,6 @@ Rojo-проекте используется сериализуемый `CFrame`
 [docs/ROBLOX_MCP.md](docs/ROBLOX_MCP.md). MCP необязателен; мосты автоматически
 не устанавливаются. На этой машине официальный MCP уже зарегистрирован в Codex
 через локальный launcher; для загрузки инструментов нужен новый сеанс Codex.
+
+Все исходники, ТЗ, тесты, инструменты проекта и сборки находятся в текущем
+корне. Карта файлов и локальные архивы сцен: [PROJECT_FILES.md](docs/PROJECT_FILES.md).
