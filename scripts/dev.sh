@@ -21,7 +21,10 @@ case "${1:-check}" in
     ;;
   test)
     require_tool luau
-    luau tests/ChoreRules.test.luau
+    for suite in tests/*.test.luau; do
+      luau "$suite"
+    done
+    python3 tests/Desktop.test.py
     ;;
   sourcemap)
     require_tool rojo
@@ -33,7 +36,7 @@ case "${1:-check}" in
     bash scripts/dev.sh sourcemap
     luau-lsp analyze --platform=roblox --definitions=.tools/definitions/roblox.d.luau --sourcemap=sourcemap.json src
     require_tool luau-analyze
-    luau-analyze src/shared tests
+    luau-analyze src/shared src/server/Domain tests
     ;;
   build)
     require_tool rojo
