@@ -27,6 +27,7 @@ case "${1:-check}" in
     python3 tests/Desktop.test.py
     python3 tests/ProfileLifecycle.test.py
     python3 tests/BuildRecovery.test.py
+    python3 tests/WalletDisplay.test.py
     python3 tests/StorageAdapter.test.py
     python3 tests/CloudBuild.test.py
     ;;

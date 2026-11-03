@@ -294,7 +294,11 @@ function Controller.start(
 		)
 		action.Text = t(nextKey)
 		local objective = screen:FindFirstChild("Objective")
-		if objective and objective:IsA("Frame") then
+		if
+			objective
+			and objective:IsA("Frame")
+			and player:GetAttribute("ProfileStatus") == "Ready"
+		then
 			local label = objective:FindFirstChild("Title")
 			local detail = objective:FindFirstChild("Hint")
 			if label and label:IsA("TextLabel") then

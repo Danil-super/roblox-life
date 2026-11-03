@@ -194,11 +194,32 @@ end)
 player:GetAttributeChangedSignal("ProfileStatus"):Connect(render)
 player:GetAttributeChangedSignal("StorageMode"):Connect(render)
 render()
-task.spawn(function()
-	local stats = player:WaitForChild("leaderstats")
-	local value = stats:WaitForChild("Dollars")
-	assert(value:IsA("IntValue"), "Dollars display must be an IntValue")
+-- A rejected profile deliberately has no leaderstats. Observe optional replication
+-- without leaving a waiting coroutine behind on the error screen.
+local dollarsChanged: RBXScriptConnection? = nil
+local function bindDollars(value: Instance): ()
+	if value.Name ~= "Dollars" or not value:IsA("IntValue") or dollars == value then
+		return
+	end
+	if dollarsChanged then
+		dollarsChanged:Disconnect()
+	end
 	dollars = value
-	value:GetPropertyChangedSignal("Value"):Connect(render)
+	dollarsChanged = value:GetPropertyChangedSignal("Value"):Connect(render)
 	render()
-end)
+end
+local function bindStats(stats: Instance): ()
+	if stats.Name ~= "leaderstats" or not stats:IsA("Folder") then
+		return
+	end
+	stats.ChildAdded:Connect(bindDollars)
+	local value = stats:FindFirstChild("Dollars")
+	if value then
+		bindDollars(value)
+	end
+end
+player.ChildAdded:Connect(bindStats)
+local stats = player:FindFirstChild("leaderstats")
+if stats then
+	bindStats(stats)
+end
