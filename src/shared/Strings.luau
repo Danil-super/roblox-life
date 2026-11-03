@@ -179,10 +179,9 @@ en["retryPurchase"] = "Retry purchase"
 ru["retryPurchase"] = "Повторить"
 en["purchasePending"] = "Confirming purchase. Please wait."
 ru["purchasePending"] = "Подтверждаем покупку. Подожди ответа."
-en["purchaseUncertain"] =
-	"No confirmation yet. Check this purchase with Retry; it keeps the same payment ID."
+en["purchaseUncertain"] = "No reply yet. Retry checks this same purchase."
 ru["purchaseUncertain"] =
-	"Ответ ещё не пришёл. Проверь эту покупку кнопкой «Повторить»: номер платежа сохранён."
+	"Нет ответа. «Повторить» проверит ту же покупку."
 en["purchaseBusy"] = "Confirming…"
 ru["purchaseBusy"] = "Проверяем…"
 en["openInventory"] = "Open inventory"
@@ -299,6 +298,15 @@ en["mapNoJob"] = "Accept a job in Jobs to choose a destination."
 ru["mapNoJob"] = "Прими заказ в Jobs, чтобы выбрать цель."
 en["mapUnavailable"] = "Profile not confirmed"
 ru["mapUnavailable"] = "Профиль не подтверждён"
+en["floor-plant-v1Description"] = "A little greenery for a cosy room."
+ru["floor-plant-v1Description"] = "Немного зелени для уютной комнаты."
+en["floor-lamp-v1Description"] = "A tall lamp for a reading corner."
+ru["floor-lamp-v1Description"] =
+	"Высокий светильник для уголка чтения."
+en["side-table-v1Description"] = "A small table for everyday things."
+ru["side-table-v1Description"] = "Небольшой стол для нужных мелочей."
+en["productSize"] = "%g × %g studs · floor"
+ru["productSize"] = "%g × %g studs · на пол"
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

@@ -103,13 +103,13 @@ function Controller.start(
 	local inventory, inventoryTitle, inventoryInfo, inventoryBody, inventoryBack =
 		panel("InventoryPanel")
 	local returnButton = button(inventory, "ReturnHome")
-	returnButton.Position = UDim2.new(1, -150, 0, 54)
-	returnButton.Size = UDim2.fromOffset(134, 44)
-	inventoryInfo.Size = UDim2.new(1, -182, 0, 54)
 	local routeButton = button(shop, "Route")
-	routeButton.Position = UDim2.new(1, -150, 0, 54)
-	routeButton.Size = UDim2.fromOffset(134, 44)
-	shopInfo.Size = UDim2.new(1, -182, 0, 54)
+	for _, back in { shopBack, inventoryBack } do
+		back.Size = UDim2.new(0.5, -24, 0, 48)
+	end
+	for _, action in { returnButton, routeButton } do
+		action.Position, action.Size = UDim2.new(0.5, 8, 1, -60), UDim2.new(0.5, -24, 0, 48)
+	end
 	local route = button(screen, "ShopRoute")
 	route.Position = UDim2.fromOffset(16, 172)
 	route.Size = UDim2.fromOffset(242, 52)
@@ -180,12 +180,13 @@ function Controller.start(
 		parent: ScrollingFrame,
 		name: string,
 		index: number,
-		catalogId: string
+		catalogId: string,
+		height: number
 	): Frame
 		local f = Instance.new("Frame")
 		f.Name = name
-		f.Size = UDim2.new(1, -8, 0, 100)
-		f.Position = UDim2.fromOffset(4, (index - 1) * 108)
+		f.Size = UDim2.new(1, -8, 0, height)
+		f.Position = UDim2.fromOffset(4, (index - 1) * (height + 8))
 		f.BackgroundColor3 = Color3.fromRGB(41, 62, 60)
 		f.BorderSizePixel = 0
 		f.Parent = parent
@@ -261,17 +262,25 @@ function Controller.start(
 		shopBody:ClearAllChildren()
 		inventoryBody:ClearAllChildren()
 		for index, product in s.catalog do
-			local card = row(shopBody, product.id, index, product.id)
+			local card = row(shopBody, product.id, index, product.id, 156)
 			local title = text(card, "Name", 4, 46, 15)
 			title.Position = UDim2.fromOffset(84, 4)
-			title.Size = UDim2.new(1, -92, 0, 42)
+			title.Size = UDim2.new(1, -92, 0, 32)
 			title.Text = t(product.id)
-			local price = text(card, "Price", 48, 40, 16)
-			price.Position = UDim2.fromOffset(84, 48)
-			price.Size = UDim2.fromOffset(52, 40)
+			local description = text(card, "Description", 38, 42, 12)
+			description.Position, description.Size =
+				UDim2.fromOffset(84, 38), UDim2.new(1, -92, 0, 42)
+			description.Text = t(product.id .. "Description")
+			local dimensions = text(card, "Dimensions", 80, 24, 12)
+			dimensions.Position, dimensions.Size =
+				UDim2.fromOffset(84, 80), UDim2.new(1, -92, 0, 24)
+			dimensions.Text = string.format(t("productSize"), product.width, product.depth)
+			local price = text(card, "Price", 108, 36, 16)
+			price.Position = UDim2.fromOffset(12, 108)
+			price.Size = UDim2.fromOffset(72, 36)
 			price.Text = "$" .. product.dollars
 			local b = button(card, "Buy")
-			b.Position = UDim2.new(1, -132, 0, 48)
+			b.Position = UDim2.new(1, -132, 0, 104)
 			b.Size = UDim2.fromOffset(124, 44)
 			b.Text = t(
 				if purchase and purchase.catalogId == product.id
@@ -299,9 +308,9 @@ function Controller.start(
 				end
 			end)
 		end
-		shopBody.CanvasSize = UDim2.fromOffset(0, #s.catalog * 108)
+		shopBody.CanvasSize = UDim2.fromOffset(0, #s.catalog * 164)
 		for index, owned in s.items do
-			local card = row(inventoryBody, owned.id, index, owned.catalogId)
+			local card = row(inventoryBody, owned.id, index, owned.catalogId, 100)
 			local title = text(card, "Name", 4, 40, 15)
 			title.Position = UDim2.fromOffset(84, 4)
 			title.Size = UDim2.new(1, -92, 0, 40)
