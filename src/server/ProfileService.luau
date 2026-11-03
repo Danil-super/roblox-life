@@ -54,6 +54,7 @@ function Service.start(): API
 		end
 		dollars.Value = profile.wallet.dollars
 		player:SetAttribute("PaintingXP", profile.progression.paintingXP)
+		player:SetAttribute("OnboardingStep", profile.onboarding.step)
 		player:SetAttribute("ProfileStatus", "Ready")
 		changed:Fire(player)
 	end

@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local JobController = require("./JobController")
+local HomeController = require("./HomeController")
 local Strings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Strings"))
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("ReturnHome")
@@ -79,39 +80,63 @@ local objectiveHint =
 	text(objective, "Hint", UDim2.fromOffset(14, 35), UDim2.new(1, -28, 0, 48), 13)
 objectiveHint.TextColor3 = muted
 
-local panel = card("HomePanel", UDim2.fromScale(0.5, 0.5), UDim2.new(1, -32, 0, 328))
+local panel = card("HomePanel", UDim2.fromScale(0.5, 0.5), UDim2.new(1, -32, 1, -24))
 panel.AnchorPoint, panel.Visible = Vector2.new(0.5, 0.5), false
 panel.ZIndex = 5
 local panelLimit = Instance.new("UISizeConstraint")
-panelLimit.MaxSize = Vector2.new(480, 328)
+panelLimit.MaxSize = Vector2.new(480, 388)
 panelLimit.Parent = panel
 local heading = text(panel, "Heading", UDim2.fromOffset(20, 18), UDim2.new(1, -88, 0, 36), 23)
 local closeButton = button(panel, "Close", UDim2.new(1, -64, 0, 16), UDim2.fromOffset(44, 44))
 closeButton.Text = "×"
 local private = text(panel, "Private", UDim2.fromOffset(20, 62), UDim2.new(1, -40, 0, 38), 13)
 private.TextColor3 = muted
+local apps = Instance.new("ScrollingFrame")
+apps.Name = "Apps"
+apps.Position = UDim2.fromOffset(0, 104)
+apps.Size = UDim2.new(1, 0, 1, -184)
+apps.CanvasSize = UDim2.fromOffset(0, 188)
+apps.BackgroundTransparency = 1
+apps.BorderSizePixel = 0
+apps.ScrollBarThickness = 4
+apps.Parent = panel
 local description =
-	text(panel, "Description", UDim2.fromOffset(20, 108), UDim2.new(1, -40, 0, 66), 17)
-local status = text(panel, "Storage", UDim2.fromOffset(20, 188), UDim2.new(1, -40, 0, 48), 13)
+	text(apps, "Description", UDim2.fromOffset(20, 108), UDim2.new(1, -40, 0, 38), 13)
+local status = text(apps, "Storage", UDim2.fromOffset(20, 150), UDim2.new(1, -40, 0, 36), 13)
 status.TextColor3 = muted
 local returnButton = button(panel, "ReturnHome", UDim2.new(0, 20, 1, -72), UDim2.new(1, -40, 0, 52))
-description.Position = UDim2.fromOffset(20, 160)
-description.Size = UDim2.new(1, -40, 0, 46)
-description.TextSize = 15
-status.Position = UDim2.fromOffset(20, 210)
-status.Size = UDim2.new(1, -40, 0, 36)
-local jobsButton = button(panel, "Jobs", UDim2.fromOffset(20, 108), UDim2.new(0.5, -24, 0, 44))
-local mapButton = button(panel, "Map", UDim2.new(0.5, 4, 0, 108), UDim2.new(0.5, -24, 0, 44))
+local jobsButton = button(apps, "Jobs", UDim2.fromOffset(20, 0), UDim2.new(0.5, -24, 0, 44))
+local mapButton = button(apps, "Map", UDim2.new(0.5, 4, 0, 0), UDim2.new(0.5, -24, 0, 44))
+local shopButton = button(apps, "Shop", UDim2.fromOffset(20, 52), UDim2.new(0.5, -24, 0, 44))
+local furnitureButton =
+	button(apps, "Furniture", UDim2.new(0.5, 4, 0, 52), UDim2.new(0.5, -24, 0, 44))
+local openHousing: (string) -> () = function(_tab: string): () end
 local jobs = JobController.start(screen, panel, function(): string
 	return language
+end, function(tab: string): ()
+	openHousing(tab)
 end)
+local housing = HomeController.start(screen, panel, function(): string
+	return language
+end, jobs.hide)
+openHousing = function(tab: string): ()
+	housing.show(tab)
+end
 jobsButton.Activated:Connect(function()
+	housing.hide()
 	jobs.show("Jobs")
 end)
 mapButton.Activated:Connect(function()
+	housing.hide()
 	jobs.show("Map")
 end)
-for _, child in panel:GetChildren() do
+shopButton.Activated:Connect(function()
+	housing.show("Shop")
+end)
+furnitureButton.Activated:Connect(function()
+	housing.show("Furniture")
+end)
+for _, child in panel:GetDescendants() do
 	if child:IsA("GuiObject") then
 		child.ZIndex = 6
 	end
@@ -142,9 +167,12 @@ local function render(): ()
 	returnButton.BackgroundTransparency = if ready then 0 else 0.6
 	jobsButton.Text, mapButton.Text = t("jobs"), t("map")
 	jobs.render()
+	shopButton.Text, furnitureButton.Text = t("shopTitle"), t("furnitureApp")
+	housing.render()
 end
 homeButton.Activated:Connect(function()
 	jobs.hide()
+	housing.hide()
 	panel.Visible = not panel.Visible
 end)
 closeButton.Activated:Connect(function()

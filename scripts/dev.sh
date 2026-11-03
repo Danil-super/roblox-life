@@ -26,6 +26,7 @@ case "${1:-check}" in
     done
     python3 tests/Desktop.test.py
     python3 tests/ProfileLifecycle.test.py
+    python3 tests/BuildRecovery.test.py
     ;;
   sourcemap)
     require_tool rojo

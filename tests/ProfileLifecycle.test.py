@@ -54,7 +54,7 @@ local remote={OnServerEvent=signal,IsA=function() return true end}
 local ReplicatedStorage={WaitForChild=function() return remote end}
 local HttpService={GenerateGUID=function() return "token" end}
 local phase, storeBusy, attempts="Loading",false,0
-local wallet={wallet={dollars=0},progression={paintingXP=0},housing={roomTemplateId="StarterDormTemplate_v1",roomTemplateVersion=1}}
+local wallet={onboarding={step="INTRO"},wallet={dollars=0},progression={paintingXP=0},housing={roomTemplateId="StarterDormTemplate_v1",roomTemplateVersion=1}}
 local session={
     load=function() phase=if scenario=="late_load" then "Uncertain" else "Ready";return phase=="Ready" end,
     status=function() return phase end,

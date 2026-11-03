@@ -9,6 +9,9 @@
       "Shared": {
         "$path": "src/shared"
       },
+      "Assets": {
+        "$path": "src/assets"
+      },
       "ReturnHome": {
         "$className": "RemoteEvent"
       },
@@ -16,6 +19,15 @@
         "$className": "RemoteEvent"
       },
       "JobState": {
+        "$className": "RemoteEvent"
+      },
+      "HomeCommand": {
+        "$className": "RemoteEvent"
+      },
+      "HomeState": {
+        "$className": "RemoteEvent"
+      },
+      "HomePreview": {
         "$className": "RemoteEvent"
       }
     },
@@ -416,6 +428,45 @@
       },
       "Homes": {
         "$className": "Folder"
+      },
+      "NeighborhoodShop": {
+        "$className": "Model",
+        "Floor": {
+          "$className": "Part",
+          "$properties": {"Anchored": true, "Size": [20, 1, 22], "CFrame": [32, -0.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.56, 0.58, 0.56], "Material": "Concrete", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
+        },
+        "Back": {
+          "$className": "Part",
+          "$properties": {"Anchored": true, "Size": [20, 9, 1], "CFrame": [32, 4.5, -11, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.88, 0.86, 0.8], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
+        },
+        "Left": {
+          "$className": "Part",
+          "$properties": {"Anchored": true, "Size": [1, 9, 22], "CFrame": [22, 4.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.88, 0.86, 0.8], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
+        },
+        "Right": {
+          "$className": "Part",
+          "$properties": {"Anchored": true, "Size": [1, 9, 22], "CFrame": [42, 4.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.88, 0.86, 0.8], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
+        },
+        "Counter": {
+          "$className": "Part",
+          "$properties": {"Anchored": true, "Size": [10, 3, 2], "CFrame": [32, 1.5, -4, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.6, 0.43, 0.3], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"},
+          "Prompt": {
+            "$className": "ProximityPrompt",
+            "$properties": {"ActionText": "Shop / Магазин", "ObjectText": "Furniture / Мебель", "HoldDuration": 0, "MaxActivationDistance": 12, "RequiresLineOfSight": true}
+          }
+        },
+        "Sign": {
+          "$className": "Part",
+          "$properties": {"Anchored": true, "Size": [20, 2, 1], "CFrame": [32, 8, 11, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.21, 0.43, 0.38], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"},
+          "Label": {
+            "$className": "SurfaceGui",
+            "$properties": {"Face": "Back", "CanvasSize": [800, 80]},
+            "Text": {
+              "$className": "TextLabel",
+              "$properties": {"Size": {"UDim2": [[1, 0], [1, 0]]}, "BackgroundTransparency": 1, "Text": "МЕБЕЛЬ  /  FURNITURE", "TextSize": 40, "TextColor3": [0.96, 0.94, 0.88], "Font": "GothamBold"}
+            }
+          }
+        }
       }
     },
     "Lighting": {

@@ -8,7 +8,12 @@ local Types = require(ReplicatedStorage.Shared.JobTypes)
 local PaintController = require("./PaintController")
 local Navigation = require("./JobNavigation")
 local Controller = {}
-function Controller.start(screen: ScreenGui, homePanel: Frame, language: () -> string)
+function Controller.start(
+	screen: ScreenGui,
+	homePanel: Frame,
+	language: () -> string,
+	homeAction: (string) -> ()
+)
 	local player = Players.LocalPlayer
 	local command = ReplicatedStorage:WaitForChild("JobCommand")
 	local stateEvent = ReplicatedStorage:WaitForChild("JobState")
@@ -185,7 +190,17 @@ function Controller.start(screen: ScreenGui, homePanel: Frame, language: () -> s
 		if s == nil or not s.available then
 			return
 		end
-		if s.phase == "Offer" or s.phase == "Completed" then
+		if
+			s.phase == "Completed"
+			and (
+				player:GetAttribute("OnboardingStep") == "BUY"
+				or player:GetAttribute("OnboardingStep") == "PLACE"
+			)
+		then
+			homeAction(
+				if player:GetAttribute("OnboardingStep") == "BUY" then "Shop" else "Furniture"
+			)
+		elseif s.phase == "Offer" or s.phase == "Completed" then
 			send("accept", nil)
 		elseif not nearWall then
 			homePanel.Visible, jobs.Visible, map.Visible = false, false, true
@@ -214,7 +229,14 @@ function Controller.start(screen: ScreenGui, homePanel: Frame, language: () -> s
 			return t("offerHint")
 		end
 		if phase == "Completed" then
-			return t("doneHint")
+			return t(
+				if player:GetAttribute("OnboardingStep") == "BUY"
+					then "firstPurchaseHint"
+					elseif
+						player:GetAttribute("OnboardingStep") == "PLACE"
+					then "firstPlacementHint"
+					else "doneHint"
+			)
 		end
 		if not nearWall then
 			return t("jobRouteHint")
@@ -261,16 +283,16 @@ function Controller.start(screen: ScreenGui, homePanel: Frame, language: () -> s
 			else t("noActiveRoute")
 		mapHint.Text = t("mapHint")
 		painter.render()
+		local onboarding = player:GetAttribute("OnboardingStep")
+		local nextKey = if phase == "Completed" and onboarding == "BUY"
+			then "shopTitle"
+			elseif phase == "Completed" and onboarding == "PLACE" then "furnitureApp"
+			else actions[phase] or "openJobs"
 		navigation.render(
-			t(
-				if s
-						and s.destination
-						and not nearWall
-					then "openMap"
-					else actions[phase] or "openJobs"
-			),
+			t(if s and s.destination and not nearWall then "openMap" else nextKey),
 			s ~= nil and s.available
 		)
+		action.Text = t(nextKey)
 		local objective = screen:FindFirstChild("Objective")
 		if objective and objective:IsA("Frame") then
 			local label = objective:FindFirstChild("Title")
@@ -344,6 +366,7 @@ function Controller.start(screen: ScreenGui, homePanel: Frame, language: () -> s
 			and s.phase ~= "Offer"
 			and s.phase ~= "Completed"
 			and not painter.isActive()
+			and not screen:GetAttribute("Building")
 		local wall = currentWall()
 		local rootPart = if root and root:IsA("BasePart") then root else nil
 		local close = s ~= nil
