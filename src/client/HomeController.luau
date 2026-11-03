@@ -149,8 +149,13 @@ function Controller.start(
 		listKey = ""
 		send("sync", nil)
 	end
-	local builder = Build.start(screen, send, language, function()
-		show("Furniture")
+	local builder = Build.start(screen, send, language, function(returnToInventory: boolean)
+		if returnToInventory then
+			show("Furniture")
+		else
+			hidePanels()
+			homePanel.Visible = false
+		end
 	end)
 	local function thumbnail(parent: Instance, catalogId: string): ()
 		local viewport = Instance.new("ViewportFrame")

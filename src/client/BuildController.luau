@@ -14,7 +14,7 @@ function Controller.start(
 	screen: ScreenGui,
 	send: (string, { [string]: unknown }?) -> (),
 	language: () -> string,
-	onExit: () -> ()
+	onExit: (boolean) -> ()
 )
 	local player = Players.LocalPlayer
 	local active = false
@@ -35,6 +35,7 @@ function Controller.start(
 	local reason = "Checking"
 	local pointer = Vector2.zero
 	local touch: InputObject? = nil
+	local deathConnection: RBXScriptConnection? = nil
 	local oldType = Enum.CameraType.Custom
 	local oldSubject: Instance? = nil
 	local oldFrame = CFrame.identity
@@ -114,11 +115,15 @@ function Controller.start(
 			end
 		end
 	end
-	local function stop(): ()
+	local function stop(returnToInventory: boolean?): ()
 		if not active then
 			return
 		end
 		active = false
+		if deathConnection then
+			deathConnection:Disconnect()
+			deathConnection = nil
+		end
 		screen:SetAttribute("Building", false)
 		waiting = false
 		valid = false
@@ -152,7 +157,7 @@ function Controller.start(
 		end
 		item = nil
 		floor = nil
-		onExit()
+		onExit(returnToInventory ~= false)
 	end
 	local function change(): ()
 		valid = false
@@ -179,7 +184,9 @@ function Controller.start(
 		rotation = (rotation + (if mode == "Grid" then 90 else 15)) % 360
 		change()
 	end)
-	buttons.Cancel.Activated:Connect(stop)
+	buttons.Cancel.Activated:Connect(function()
+		stop()
+	end)
 	buttons.Confirm.Activated:Connect(function()
 		local current = item
 		local s = snapshot
@@ -209,12 +216,16 @@ function Controller.start(
 		local room = if home then home:FindFirstChild(s.homeName) else nil
 		local base = if room then room:FindFirstChild("Floor") else nil
 		local camera = workspace.CurrentCamera
+		local character = player.Character
+		local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
 		if
 			not s.nearHome
 			or room == nil
 			or base == nil
 			or not base:IsA("BasePart")
 			or camera == nil
+			or humanoid == nil
+			or humanoid.Health <= 0
 		then
 			return
 		end
@@ -227,6 +238,9 @@ function Controller.start(
 		ghost = created
 		floor = base
 		active = true
+		deathConnection = humanoid.Died:Once(function()
+			stop(false)
+		end)
 		pinned = false
 		screen:SetAttribute("Building", true)
 		mode = if owned.placed then "Free" else "Grid"
@@ -379,7 +393,9 @@ function Controller.start(
 			end
 		end
 	end)
-	player.CharacterRemoving:Connect(stop)
+	player.CharacterRemoving:Connect(function()
+		stop(false)
+	end)
 	local event = RS:WaitForChild("HomePreview")
 	assert(event:IsA("RemoteEvent"), "Home preview missing")
 	event.OnClientEvent:Connect(function(result: Types.Preview)
@@ -423,7 +439,7 @@ function Controller.start(
 			or camera == nil
 			or owned == nil
 		then
-			stop()
+			stop(false)
 			return
 		end
 		local origin = Vector3.new(s.origin[1], s.origin[2], s.origin[3])
@@ -491,7 +507,7 @@ function Controller.start(
 					or not s.nearHome
 				)
 			then
-				stop()
+				stop(false)
 				return
 			end
 			if waiting and s.available then
