@@ -326,6 +326,7 @@ function Controller.start(
 				elseif onboarding == "PLACE" then "furnitureApp"
 				else "resultContinue"
 		)
+		screen:SetAttribute("JobHintError", lastError ~= nil and os.clock() < errorUntil)
 		local objective = screen:FindFirstChild("Objective")
 		if
 			objective
@@ -367,6 +368,12 @@ function Controller.start(
 		end
 		if s.error then
 			lastError, errorUntil = s.error, os.clock() + 4
+			local deadline = errorUntil
+			task.delay(4, function()
+				if errorUntil == deadline and screen.Parent ~= nil then
+					render()
+				end
+			end)
 		end
 		state = s
 		painter.update(s)

@@ -1,4 +1,5 @@
 --!strict
+-- Hiding teaching hints must preserve the primary action and route geometry.
 local Layout = require("../src/shared/HudLayout")
 type Rect = Layout.Rect
 local function overlaps(a: Rect, b: Rect): boolean
@@ -61,3 +62,16 @@ assert(
 	"Profile error collapsed"
 )
 print("HudLayout: 9 phone/tablet/desktop/rotation/error scenarios passed")
+for _, touch in { false, true } do
+	local shown = Layout.compute(1280, 720, touch, true, true)
+	local hidden = Layout.compute(1280, 720, touch, true, false)
+	assert(shown.hintVisible == true and hidden.hintVisible == false, "Hint preference ignored")
+	assert(shown.objective.h == hidden.objective.h, "Hiding hints moved primary action")
+	assert(shown.navigation.y == hidden.navigation.y, "Hiding hints moved route")
+	assert(
+		not Layout.compute(1280, 720, touch, false, true).hintVisible,
+		"Error became tutorial hint"
+	)
+end
+assert(not Layout.compute(568, 262, true, true, true).hintVisible, "Compact hint overlaps controls")
+print("HudLayout: hint preference preserves action/route and profile-error layout")

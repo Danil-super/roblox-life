@@ -307,6 +307,17 @@ en["side-table-v1Description"] = "A small table for everyday things."
 ru["side-table-v1Description"] = "Небольшой стол для нужных мелочей."
 en["productSize"] = "%g × %g studs · floor"
 ru["productSize"] = "%g × %g studs · на пол"
+en["hideHints"] = "Hide hints"
+ru["hideHints"] = "Скрыть подсказки"
+en["showHints"] = "Show hints"
+ru["showHints"] = "Показать подсказки"
+en["homeErrorInvalidRequest"] = "This purchase could not be processed. Choose the item again."
+ru["homeErrorInvalidRequest"] =
+	"Не удалось обработать покупку. Выбери предмет заново."
+en["homeErrorOperationConflict"] =
+	"This request belongs to a different purchase. Check your inventory."
+ru["homeErrorOperationConflict"] =
+	"Запрос относится к другой покупке. Проверь склад."
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

@@ -4,6 +4,7 @@ export type Rect = { x: number, y: number, w: number, h: number }
 export type Layout = {
 	compact: boolean,
 	minimal: boolean,
+	hintVisible: boolean,
 	wallet: Rect,
 	language: Rect,
 	home: Rect,
@@ -12,11 +13,18 @@ export type Layout = {
 	shopRoute: Rect,
 }
 local Layout = {}
-function Layout.compute(width: number, height: number, touch: boolean, ready: boolean?): Layout
+function Layout.compute(
+	width: number,
+	height: number,
+	touch: boolean,
+	ready: boolean?,
+	hints: boolean?
+): Layout
 	if not touch then
 		return {
 			compact = false,
 			minimal = false,
+			hintVisible = ready ~= false and hints ~= false,
 			wallet = { x = 16, y = 12, w = 184, h = 76 },
 			language = { x = width - 86, y = 12, w = 70, h = 44 },
 			home = { x = width - 104, y = height - 68, w = 88, h = 52 },
@@ -38,6 +46,7 @@ function Layout.compute(width: number, height: number, touch: boolean, ready: bo
 	return {
 		compact = compact,
 		minimal = minimal,
+		hintVisible = ready ~= false and not compact and hints ~= false,
 		wallet = { x = margin, y = margin, w = 116, h = 64 },
 		language = { x = width - margin - 44, y = margin, w = 44, h = 44 },
 		home = { x = width - margin - 44 - gap - 64, y = margin, w = 64, h = 44 },

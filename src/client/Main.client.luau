@@ -102,14 +102,14 @@ local apps = Instance.new("ScrollingFrame")
 apps.Name = "Apps"
 apps.Position = UDim2.fromOffset(0, 104)
 apps.Size = UDim2.new(1, 0, 1, -184)
-apps.CanvasSize = UDim2.fromOffset(0, 188)
+apps.CanvasSize = UDim2.fromOffset(0, 244)
 apps.BackgroundTransparency = 1
 apps.BorderSizePixel = 0
 apps.ScrollBarThickness = 4
 apps.Parent = panel
 local description =
-	text(apps, "Description", UDim2.fromOffset(20, 108), UDim2.new(1, -40, 0, 38), 13)
-local status = text(apps, "Storage", UDim2.fromOffset(20, 150), UDim2.new(1, -40, 0, 36), 13)
+	text(apps, "Description", UDim2.fromOffset(20, 164), UDim2.new(1, -40, 0, 38), 13)
+local status = text(apps, "Storage", UDim2.fromOffset(20, 206), UDim2.new(1, -40, 0, 36), 13)
 status.TextColor3 = muted
 local returnButton = button(panel, "ReturnHome", UDim2.new(0, 20, 1, -72), UDim2.new(1, -40, 0, 52))
 local jobsButton = button(apps, "Jobs", UDim2.fromOffset(20, 0), UDim2.new(0.5, -24, 0, 44))
@@ -117,6 +117,7 @@ local mapButton = button(apps, "Map", UDim2.new(0.5, 4, 0, 0), UDim2.new(0.5, -2
 local shopButton = button(apps, "Shop", UDim2.fromOffset(20, 52), UDim2.new(0.5, -24, 0, 44))
 local furnitureButton =
 	button(apps, "Furniture", UDim2.new(0.5, 4, 0, 52), UDim2.new(0.5, -24, 0, 44))
+local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 104), UDim2.new(1, -40, 0, 44))
 local openHousing: (string) -> () = function(_tab: string): () end
 local jobs = JobController.start(screen, panel, function(): string
 	return language
@@ -176,6 +177,8 @@ local function render(): ()
 	jobsButton.Text, mapButton.Text = t("jobs"), t("map")
 	jobs.render()
 	shopButton.Text, furnitureButton.Text = t("shopTitle"), t("furnitureApp")
+	hintsButton.Text =
+		t(if screen:GetAttribute("ShowHints") == false then "showHints" else "hideHints")
 	housing.render()
 end
 homeButton.Activated:Connect(function()
@@ -211,7 +214,9 @@ local function resize(): ()
 	end
 	local touch = UIS.TouchEnabled
 	local ready = player:GetAttribute("ProfileStatus") == "Ready"
-	local layout = Layout.compute(size.X, size.Y, touch, ready)
+	local hints = screen:GetAttribute("ShowHints") ~= false
+		or screen:GetAttribute("JobHintError") == true
+	local layout = Layout.compute(size.X, size.Y, touch, ready, hints)
 	place(wallet, layout.wallet)
 	place(languageButton, layout.language)
 	place(homeButton, layout.home)
@@ -225,7 +230,7 @@ local function resize(): ()
 	objectiveTitle.TextSize = if layout.compact then 14 else 16
 	objectiveTitle.Size =
 		UDim2.new(1, -28, 0, if not ready then 100 elseif layout.compact then 36 else 25)
-	objectiveHint.Visible = ready and not layout.compact
+	objectiveHint.Visible = layout.hintVisible
 	local action = objective:FindFirstChild("NextAction")
 	if action and action:IsA("GuiObject") then
 		action.Visible = ready
@@ -243,6 +248,12 @@ local function resize(): ()
 	end
 end
 screen:GetPropertyChangedSignal("AbsoluteSize"):Connect(resize)
+hintsButton.Activated:Connect(function()
+	screen:SetAttribute("ShowHints", screen:GetAttribute("ShowHints") == false)
+	render()
+	resize()
+end)
+screen:GetAttributeChangedSignal("JobHintError"):Connect(resize)
 UIS:GetPropertyChangedSignal("TouchEnabled"):Connect(resize)
 resize()
 player:GetAttributeChangedSignal("ProfileStatus"):Connect(render)
