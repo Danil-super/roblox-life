@@ -6,6 +6,7 @@ function Controller.start(screen: ScreenGui): ()
 		HomePanel = true,
 		JobsPanel = true,
 		MapPanel = true,
+		ResultsPanel = true,
 		ShopPanel = true,
 		InventoryPanel = true,
 		PaintToolbar = true,

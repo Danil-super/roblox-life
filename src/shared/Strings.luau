@@ -268,6 +268,22 @@ ru["homeErrorSaving"] = "Сохраняем комнату…"
 en["clickFloor"] = "Click the floor to lock this position, then confirm"
 ru["clickFloor"] =
 	"Кликни на пол, чтобы зафиксировать место, затем подтверди"
+en["resultTitle"] = "Work accepted"
+ru["resultTitle"] = "Работа принята"
+en["resultBefore"] = "Before · unpainted"
+ru["resultBefore"] = "До · без покраски"
+en["resultAfter"] = "After · accepted"
+ru["resultAfter"] = "После · принято"
+en["resultXP"] = "+%d painting XP"
+ru["resultXP"] = "+%d опыта покраски"
+en["resultAccepted"] = "Colour, preparation and coverage passed inspection. Payment confirmed."
+ru["resultAccepted"] =
+	"Цвет, подготовка и покрытие прошли проверку. Оплата подтверждена."
+en["resultNext"] = "Use your earnings to buy furniture and make your room your own."
+ru["resultNext"] =
+	"Купи мебель на заработанные деньги и обустрой свою комнату."
+en["resultContinue"] = "Continue"
+ru["resultContinue"] = "Продолжить"
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

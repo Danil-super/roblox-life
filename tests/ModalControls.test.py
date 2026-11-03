@@ -24,8 +24,9 @@ local function gui(name)
     return g
 end
 local phone, jobs, paint, nav = gui("HomePanel"),gui("JobsPanel"),gui("PaintToolbar"),gui("JobNavigation")
+local results = gui("ResultsPanel")
 local screen = {Enabled=true, changed=signal(), Destroying=signal()}
-function screen:GetChildren() return {phone,jobs,paint,nav} end
+function screen:GetChildren() return {phone,jobs,paint,nav,results} end
 function screen:GetPropertyChangedSignal() return self.changed end
 local GuiService = {TouchControlsEnabled=true}
 '''
@@ -54,6 +55,11 @@ screen.Destroying:Fire();assert(GuiService.TouchControlsEnabled)
 ''',
     "navigation_is_not_modal": '''
 Controller.start(screen);nav:set(true);assert(GuiService.TouchControlsEnabled)
+''',
+    "results_to_shop": '''
+Controller.start(screen);results:set(true);phone:set(true);results:set(false)
+assert(not GuiService.TouchControlsEnabled,"Result transition released modal lock")
+phone:set(false);assert(GuiService.TouchControlsEnabled)
 ''',
 }
 for name, assertions in scenarios.items():

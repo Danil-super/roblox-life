@@ -154,6 +154,40 @@ function Controller.start(
 	dot.BackgroundColor3 = Color3.fromRGB(245, 197, 98)
 	dot.Parent = canvas
 	local mapHint = text(mapBody, "Hint", 226, 38, 14)
+	local results, resultHeading, resultContinue, resultBody = panel("ResultsPanel")
+	resultContinue.Name = "Continue"
+	resultHeading.Size = UDim2.new(1, -90, 0, 36)
+	resultBody.CanvasSize = UDim2.fromOffset(0, 240)
+	local resultClose = button(results, "Close", 12)
+	resultClose.Position = UDim2.new(1, -60, 0, 12)
+	resultClose.Size = UDim2.fromOffset(44, 44)
+	resultClose.Text = "×"
+	local before = text(resultBody, "Before", 0, 48, 13)
+	before.Size = UDim2.new(0.5, -20, 0, 48)
+	before.BackgroundTransparency = 0
+	before.BackgroundColor3 = Color3.fromRGB(145, 148, 140)
+	before.TextColor3 = Color3.fromRGB(26, 43, 43)
+	local after = text(resultBody, "After", 0, 48, 13)
+	after.Position = UDim2.new(0.5, 4, 0, 0)
+	after.Size = UDim2.new(0.5, -20, 0, 48)
+	after.BackgroundTransparency = 0
+	after.BackgroundColor3 = Color3.new(table.unpack(Config.color))
+	after.TextColor3 = Color3.fromRGB(26, 43, 43)
+	local resultMoney = text(resultBody, "Dollars", 56, 32, 24)
+	local resultXP = text(resultBody, "XP", 92, 28, 16)
+	local resultQuality = text(resultBody, "Quality", 124, 44, 13)
+	local resultHint = text(resultBody, "Hint", 176, 56, 13)
+	local shownOperation: string? = nil
+	resultClose.Activated:Connect(function()
+		results.Visible = false
+	end)
+	resultContinue.Activated:Connect(function()
+		results.Visible = false
+		local step = player:GetAttribute("OnboardingStep")
+		if step == "BUY" or step == "PLACE" then
+			homeAction(if step == "BUY" then "Shop" else "Furniture")
+		end
+	end)
 	local function send(actionName: string, fields: { [string]: unknown }?): ()
 		local data: { [string]: unknown } = fields or {}
 		data.action = actionName
@@ -168,6 +202,7 @@ function Controller.start(
 	local function hidePanels(): ()
 		jobs.Visible = false
 		map.Visible = false
+		results.Visible = false
 	end
 	local function returnPhone(): ()
 		hidePanels()
@@ -302,6 +337,19 @@ function Controller.start(
 			s ~= nil and s.available
 		)
 		action.Text = t(nextKey)
+		resultHeading.Text = t("resultTitle")
+		before.Text, after.Text = t("resultBefore"), t("resultAfter")
+		local receipt = if s then s.result else nil
+		resultMoney.Text = if receipt then string.format("+$%d", receipt.dollars) else ""
+		resultXP.Text = if receipt then string.format(t("resultXP"), receipt.xp) else ""
+		resultQuality.Text = t("resultAccepted")
+		resultHint.Text = t("resultNext")
+		resultContinue.Text = t(
+			if onboarding == "BUY"
+				then "shopTitle"
+				elseif onboarding == "PLACE" then "furnitureApp"
+				else "resultContinue"
+		)
 		local objective = screen:FindFirstChild("Objective")
 		if
 			objective
@@ -358,9 +406,18 @@ function Controller.start(
 				painter.enter(wall, s)
 			end
 		end
+		local result = s.result
+		if result and s.available and result.operationId ~= shownOperation then
+			hidePanels()
+			homePanel.Visible = false
+			results.Visible = true
+			shownOperation = result.operationId
+		elseif result == nil then
+			results.Visible = false
+		end
 		render()
 	end)
-	for _, rootPanel in { jobs, map } do
+	for _, rootPanel in { jobs, map, results } do
 		for _, item in rootPanel:GetDescendants() do
 			if item:IsA("GuiObject") then
 				item.ZIndex = 9

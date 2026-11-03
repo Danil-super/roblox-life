@@ -5,6 +5,7 @@ local HttpService = game:GetService("HttpService")
 local ProfileService = require("./ProfileService")
 local Profile = require("./Domain/Profile")
 local Jobs = require("./Domain/Jobs")
+local Result = require("./Domain/JobResult")
 local Painting = require("./Domain/Painting")
 local EconomyConfig = require("./Domain/EconomyConfig")
 local World = require("./World")
@@ -139,6 +140,7 @@ function Service.start(profiles: ProfileService.API): ()
 			reward = if job and job.receipt
 				then job.receipt.dollarsDelta
 				else EconomyConfig.rewards["paint-tutorial-v1"].dollars,
+			result = if p then Result.read(p) else nil,
 			near = eligible(player, ctx),
 			error = reason,
 			location = if room then room.model.Name else nil,
