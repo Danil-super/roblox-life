@@ -33,6 +33,12 @@
     },
     "ServerStorage": {
       "$className": "ServerStorage",
+      "DevelopmentSettings": {
+        "$className": "Folder",
+        "StudioDataStoreTest": {"$className": "BoolValue", "$properties": {"Value": false}},
+        "TestUniverseId": {"$className": "IntValue", "$properties": {"Value": 0}},
+        "TestPlaceId": {"$className": "IntValue", "$properties": {"Value": 0}}
+      },
       "StarterDormTemplate_v1": {
         "$className": "Model",
         "Floor": {

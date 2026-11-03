@@ -2,14 +2,35 @@
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
 local Store = require("./Domain/ProfileStore")
+local Policy = require("./Domain/StoragePolicy")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Storage = {}
--- Explicit local preview. Never fall back to memory after a production load error.
-local STUDIO_USE_DATASTORE = false
-Storage.preview = RunService:IsStudio() and not STUDIO_USE_DATASTORE
-Storage.name = "NeighborhoodFixer_P0_v1"
+-- These server-only settings are overridden only in an explicit QA build.
+local settings = ServerStorage:WaitForChild("DevelopmentSettings")
+local enabled = settings:WaitForChild("StudioDataStoreTest")
+local universe = settings:WaitForChild("TestUniverseId")
+local place = settings:WaitForChild("TestPlaceId")
+assert(
+	enabled:IsA("BoolValue") and universe:IsA("IntValue") and place:IsA("IntValue"),
+	"Invalid development settings"
+)
+local config: Policy.Config =
+	{ enabled = enabled.Value, universeId = universe.Value, placeId = place.Value }
+local plan = Policy.select(RunService:IsStudio(), game.GameId, game.PlaceId, config)
+Storage.preview = plan.preview
+Storage.name = plan.name
+Storage.blocked = plan.blocked
 
 function Storage.create(): Store.Adapter
+	local blocked = Storage.blocked
+	if blocked then
+		return {
+			update = function(_key: string, _transform: (unknown) -> unknown): (boolean, unknown)
+				return false, blocked
+			end,
+		}
+	end
 	if Storage.preview then
 		local records: { [string]: unknown } = {}
 		return {
