@@ -8,6 +8,8 @@ export type ConfigData = {
 	packetInterval: number,
 	maxSegment: number,
 	rollerRadius: number,
+	wideRollerRadius: number,
+	wideRollerXP: number,
 	areaPerSecond: number,
 	areaBurst: number,
 	colorId: string,
@@ -25,6 +27,8 @@ export type State = {
 	startedAt: number,
 	tokens: number,
 	lastPoint: Point?,
+	toolId: string,
+	basicRadius: number,
 }
 local Painting = {}
 local function finite(n: unknown): boolean
@@ -52,6 +56,8 @@ local function settings(raw: unknown): ConfigData
 		packetInterval = number("packetInterval", 0.02, 1),
 		maxSegment = number("maxSegment", 0.01, 1),
 		rollerRadius = number("rollerRadius", 0.1, 2),
+		wideRollerRadius = number("wideRollerRadius", 0.1, 1.5),
+		wideRollerXP = number("wideRollerXP", 0, 1000000000),
 		areaPerSecond = number("areaPerSecond", 1, 128),
 		areaBurst = number("areaBurst", 1, 4096),
 		colorId = color,
@@ -77,7 +83,26 @@ function Painting.new(jobId: string, workId: string, now: number, rawConfig: unk
 		startedAt = now,
 		tokens = Config.areaBurst,
 		lastPoint = nil,
+		toolId = "basic",
+		basicRadius = Config.rollerRadius,
 	}
+end
+function Painting.tool(s: State, id: string, experience: number): boolean
+	if
+		s.phase ~= "ChooseMaterial"
+		or not finite(experience)
+		or experience < 0
+		or experience % 1 ~= 0
+		or (id ~= "basic" and id ~= "wide")
+	then
+		return false
+	end
+	if id == "wide" and experience < s.config.wideRollerXP then
+		return false
+	end
+	s.toolId = id
+	s.config.rollerRadius = if id == "wide" then s.config.wideRollerRadius else s.basicRadius
+	return true
 end
 function Painting.step(
 	s: State,

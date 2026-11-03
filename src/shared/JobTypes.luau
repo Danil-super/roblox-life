@@ -5,6 +5,16 @@ export type Result = {
 	dollars: number,
 	xp: number,
 }
+export type Offer = {
+	id: string,
+	titleKey: string,
+	briefKey: string,
+	colorId: string,
+	requiredXP: number,
+	unlocked: boolean,
+	reward: number,
+	xp: number,
+}
 export type Snapshot = {
 	available: boolean,
 	phase: string,
@@ -19,5 +29,10 @@ export type Snapshot = {
 	error: string?,
 	location: string?,
 	destination: { number }?,
+	offers: { Offer }?,
+	paintingXP: number?,
+	contractId: string?,
+	requiredColorId: string?,
+	toolId: string?,
 }
 return {}

@@ -2,11 +2,49 @@
 local Profile = require("./Profile")
 local Economy = require("./Economy")
 local Painting = require("./Painting")
+local Config = require("./EconomyConfig")
+export type Offer = {
+	id: string,
+	titleKey: string,
+	briefKey: string,
+	colorId: string,
+	requiredXP: number,
+	unlocked: boolean,
+	reward: number,
+	xp: number,
+}
 local Jobs = {}
-function Jobs.accept(p: Profile.Profile, id: string): boolean
+function Jobs.offers(p: Profile.Profile?): { Offer }
+	local result: { Offer } = {}
+	for id, contract in Config.contracts do
+		if contract.offered then
+			local reward = Config.rewards[id]
+			table.insert(result, {
+				id = id,
+				titleKey = contract.titleKey,
+				briefKey = contract.briefKey,
+				colorId = contract.colorId,
+				requiredXP = contract.minXP,
+				unlocked = p ~= nil and p.progression.paintingXP >= contract.minXP,
+				reward = reward.dollars,
+				xp = reward.xp,
+			})
+		end
+	end
+	table.sort(result, function(a: Offer, b: Offer): boolean
+		return if a.requiredXP == b.requiredXP then a.id < b.id else a.requiredXP < b.requiredXP
+	end)
+	return result
+end
+function Jobs.accept(p: Profile.Profile, id: string, offerId: string?): boolean
 	local old = p.jobs.active
+	local templateId = offerId or "paint-tutorial-v1"
+	local contract = Config.contracts[templateId]
 	if
 		not Profile.identifier(id)
+		or contract == nil
+		or not contract.offered
+		or p.progression.paintingXP < contract.minXP
 		or #id > 80
 		or p.jobs.issuedSequence >= 1000000000
 		or (
@@ -20,7 +58,7 @@ function Jobs.accept(p: Profile.Profile, id: string): boolean
 	p.jobs.active = {
 		id = id,
 		sequence = p.jobs.issuedSequence,
-		templateId = "paint-tutorial-v1",
+		templateId = templateId,
 		status = "Accepted",
 	}
 	if p.onboarding.step == "INTRO" or p.onboarding.step == "JOB_LIST" then

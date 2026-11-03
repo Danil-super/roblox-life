@@ -92,12 +92,10 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local old = ctx.work
 		if old == nil or old.jobId ~= job.id or ctx.character ~= player.Character then
-			ctx.work = Painting.new(
-				job.id,
-				HttpService:GenerateGUID(false),
-				os.clock(),
-				table.clone(Config)
-			)
+			local settings = table.clone(Config)
+			local contract = EconomyConfig.contracts[job.templateId]
+			settings.colorId = if contract then contract.colorId else Config.colorId
+			ctx.work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), settings)
 			ctx.character = player.Character
 			local wall = ctx.wall
 			if wall ~= nil then
@@ -116,6 +114,8 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local p = profiles.read(player)
 		local job = if p then p.jobs.active else nil
+		local contract = if job then EconomyConfig.contracts[job.templateId] else nil
+		local reward = if job then EconomyConfig.rewards[job.templateId] else nil
 		local work, room, wall = ctx.work, ctx.room, ctx.wall
 		local phase = if work then work.phase else "Offer"
 		if job and job.status == "Completed" then
@@ -139,12 +139,21 @@ function Service.start(profiles: ProfileService.API): ()
 			count = if work then work.count else 0,
 			reward = if job and job.receipt
 				then job.receipt.dollarsDelta
+				elseif reward then reward.dollars
 				else EconomyConfig.rewards["paint-tutorial-v1"].dollars,
 			result = if p then Result.read(p) else nil,
 			near = eligible(player, ctx),
 			error = reason,
 			location = if room then room.model.Name else nil,
 			destination = if target then { target.X, target.Y, target.Z } else nil,
+			offers = Jobs.offers(p),
+			paintingXP = if p then p.progression.paintingXP else 0,
+			contractId = if job then job.templateId else nil,
+			requiredColorId = if contract
+				then contract.colorId
+				elseif work then work.config.colorId
+				else Config.colorId,
+			toolId = if work then work.toolId else "basic",
 		}
 		stateEvent:FireClient(player, snapshot)
 	end
@@ -153,7 +162,13 @@ function Service.start(profiles: ProfileService.API): ()
 		ensure(player, ctx)
 		local p = profiles.read(player)
 		if p and p.jobs.active and p.jobs.active.status == "Completed" and ctx.wall then
-			ctx.wall.Color = Color3.new(table.unpack(Config.color))
+			local contract = EconomyConfig.contracts[p.jobs.active.templateId]
+			ctx.wall.Color = Color3.new(
+				table.unpack(
+					Config.palette[if contract then contract.colorId else Config.colorId]
+						or Config.color
+				)
+			)
 		end
 		send(player, ctx, nil)
 	end
@@ -207,6 +222,8 @@ function Service.start(profiles: ProfileService.API): ()
 			points = true,
 			starts = true,
 			color = true,
+			offerId = true,
+			toolId = true,
 		}
 		for key in next, data do
 			size += 1
@@ -232,10 +249,25 @@ function Service.start(profiles: ProfileService.API): ()
 			return
 		end
 		if action == "accept" then
+			if data.offerId ~= nil and (type(data.offerId) ~= "string" or #data.offerId > 80) then
+				return
+			end
+			local offerId = if type(data.offerId) == "string"
+				then data.offerId
+				else "paint-tutorial-v1"
+			local contract = EconomyConfig.contracts[offerId]
+			if contract == nil or not contract.offered then
+				send(player, ctx, "UnknownOffer")
+				return
+			end
+			if p.progression.paintingXP < contract.minXP then
+				send(player, ctx, "OfferLocked")
+				return
+			end
 			ctx.saving = true
 			local id = HttpService:GenerateGUID(false)
 			local ok = profiles.change(player, function(candidate: Profile.Profile): boolean
-				return Jobs.accept(candidate, id)
+				return Jobs.accept(candidate, id, offerId)
 			end)
 			ctx.saving = false
 			if ok then
@@ -285,6 +317,11 @@ function Service.start(profiles: ProfileService.API): ()
 				return
 			end
 			ok = Painting.batch(work, data.sequence, data.points, data.starts, now, valid)
+		elseif action == "tool" then
+			if type(data.toolId) ~= "string" or #data.toolId > 16 then
+				return
+			end
+			ok = valid and Painting.tool(work, data.toolId, p.progression.paintingXP)
 		elseif action == "submit" then
 			ctx.saving = true
 			local character = player.Character
@@ -298,7 +335,8 @@ function Service.start(profiles: ProfileService.API): ()
 			end)
 			ctx.saving = false
 			if ok and ctx.wall then
-				ctx.wall.Color = Color3.new(table.unpack(Config.color))
+				ctx.wall.Color =
+					Color3.new(table.unpack(Config.palette[work.config.colorId] or Config.color))
 			end
 		else
 			local color = if type(data.color) == "string" and #data.color <= 32
@@ -321,6 +359,7 @@ function Service.start(profiles: ProfileService.API): ()
 				elseif not valid then "TooFar"
 				elseif action == "choose" then "Color"
 				elseif action == "review" then "Coverage"
+				elseif action == "tool" then "ToolLocked"
 				else "Retry"
 		)
 	end)
