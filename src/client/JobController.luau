@@ -7,6 +7,7 @@ local Config = require(ReplicatedStorage.Shared.PaintConfig)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
 local PaintController = require("./PaintController")
 local Navigation = require("./JobNavigation")
+local MapController = require("./MapController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -133,27 +134,7 @@ function Controller.start(
 		b.Parent = colors
 		table.insert(swatches, b)
 	end
-	local map, mapHeading, mapBack, mapBody = panel("MapPanel")
-	local canvas = Instance.new("Frame")
-	canvas.Name = "Block"
-	canvas.Position = UDim2.fromOffset(16, 6)
-	canvas.Size = UDim2.new(1, -32, 0, 212)
-	canvas.BackgroundColor3 = Color3.fromRGB(91, 112, 90)
-	canvas.Parent = mapBody
-	local road = Instance.new("Frame")
-	road.Position = UDim2.fromScale(0, 0.35)
-	road.Size = UDim2.fromScale(1, 0.18)
-	road.BorderSizePixel = 0
-	road.BackgroundColor3 = Color3.fromRGB(70, 77, 78)
-	road.Parent = canvas
-	local homeMarker = text(canvas, "Home", 155, 32, 14)
-	local jobMarker = text(canvas, "Client", 2, 32, 14)
-	local dot = Instance.new("Frame")
-	dot.AnchorPoint = Vector2.new(0.5, 0.5)
-	dot.Size = UDim2.fromOffset(12, 12)
-	dot.BackgroundColor3 = Color3.fromRGB(245, 197, 98)
-	dot.Parent = canvas
-	local mapHint = text(mapBody, "Hint", 226, 38, 14)
+	local map = MapController.start(screen, homePanel, language)
 	local results, resultHeading, resultContinue, resultBody = panel("ResultsPanel")
 	resultContinue.Name = "Continue"
 	resultHeading.Size = UDim2.new(1, -90, 0, 36)
@@ -201,7 +182,7 @@ function Controller.start(
 	local painter = PaintController.start(screen, send, language)
 	local function hidePanels(): ()
 		jobs.Visible = false
-		map.Visible = false
+		map.hide()
 		results.Visible = false
 	end
 	local function returnPhone(): ()
@@ -209,7 +190,6 @@ function Controller.start(
 		homePanel.Visible = true
 	end
 	back.Activated:Connect(returnPhone)
-	mapBack.Activated:Connect(returnPhone)
 	local function currentWall(): BasePart?
 		local s = state
 		if s == nil or s.location == nil then
@@ -238,9 +218,11 @@ function Controller.start(
 		elseif s.phase == "Offer" or s.phase == "Completed" then
 			send("accept", nil)
 		elseif not nearWall then
-			homePanel.Visible, jobs.Visible, map.Visible = false, false, true
+			jobs.Visible = false
+			map.show()
 		elseif s.phase == "ChooseMaterial" then
-			homePanel.Visible, map.Visible, jobs.Visible = false, false, true
+			homePanel.Visible, jobs.Visible = false, true
+			map.hide()
 		elseif s.phase == "Painting" then
 			local wall = currentWall()
 			if wall then
@@ -298,9 +280,7 @@ function Controller.start(
 		local s = state
 		local phase = if s then s.phase else "Offer"
 		heading.Text = t("jobs")
-		mapHeading.Text = t("map")
 		back.Text = t("backHome")
-		mapBack.Text = t("backHome")
 		description.Text = t(phaseKeys[phase] or "jobOffer")
 		progress.Text = if phase == "Offer"
 			then "$" .. (if s then s.reward else 0)
@@ -321,11 +301,7 @@ function Controller.start(
 			b.Text = t(({ "rose", "warmWhite", "mint" })[index])
 			b.Active = s ~= nil and s.available
 		end
-		homeMarker.Text = "⌂ " .. t("home")
-		jobMarker.Text = if s and s.destination
-			then "◆ " .. t("clientApartment")
-			else t("noActiveRoute")
-		mapHint.Text = t("mapHint")
+		map.render(s)
 		painter.render()
 		local onboarding = player:GetAttribute("OnboardingStep")
 		local nextKey = if phase == "Completed" and onboarding == "BUY"
@@ -417,7 +393,7 @@ function Controller.start(
 		end
 		render()
 	end)
-	for _, rootPanel in { jobs, map, results } do
+	for _, rootPanel in { jobs, results } do
 		for _, item in rootPanel:GetDescendants() do
 			if item:IsA("GuiObject") then
 				item.ZIndex = 9
@@ -449,16 +425,9 @@ function Controller.start(
 			render()
 		end
 		navigation.update(s, wall, rootPart, navigating, nearWall, t)
-		if root and root:IsA("BasePart") then
-			local home = player:GetAttribute("HomePosition")
-			if typeof(home) == "Vector3" then
-				dot.Position = UDim2.fromScale(
-					math.clamp(0.5 + (root.Position.X - home.X) / 60, 0.03, 0.97),
-					math.clamp(0.8 - (root.Position.Z - home.Z) / 100, 0.03, 0.97)
-				)
-			end
-		end
-		if (navigating or jobs.Visible) and os.clock() - syncAt > 0.75 then
+		local home = player:GetAttribute("HomePosition")
+		map.update(rootPart, if typeof(home) == "Vector3" then home else nil, s)
+		if (navigating or jobs.Visible or map.isVisible()) and os.clock() - syncAt > 0.75 then
 			syncAt = os.clock()
 			send("sync", nil)
 			render()
@@ -478,7 +447,9 @@ function Controller.start(
 			homePanel.Visible = false
 			hidePanels()
 			jobs.Visible = tab == "Jobs"
-			map.Visible = tab == "Map"
+			if tab == "Map" then
+				map.show()
+			end
 			send("sync", nil)
 			render()
 		end,

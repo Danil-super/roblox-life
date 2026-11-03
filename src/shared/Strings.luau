@@ -284,6 +284,14 @@ ru["resultNext"] =
 	"Купи мебель на заработанные деньги и обустрой свою комнату."
 en["resultContinue"] = "Continue"
 ru["resultContinue"] = "Продолжить"
+en["followRoute"] = "Follow route"
+ru["followRoute"] = "К цели"
+en["mapYou"] = "You"
+ru["mapYou"] = "Ты"
+en["mapNoJob"] = "Accept a job in Jobs to choose a destination."
+ru["mapNoJob"] = "Прими заказ в Jobs, чтобы выбрать цель."
+en["mapUnavailable"] = "Profile not confirmed"
+ru["mapUnavailable"] = "Профиль не подтверждён"
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key
