@@ -25,6 +25,7 @@ case "${1:-check}" in
       luau "$suite"
     done
     python3 tests/Desktop.test.py
+    python3 tests/ProfileLifecycle.test.py
     ;;
   sourcemap)
     require_tool rojo
@@ -42,6 +43,7 @@ case "${1:-check}" in
     require_tool rojo
     mkdir -p build
     rojo build default.project.json --output build/roblox-life.rbxlx
+    rojo build prototype.project.json --output build/sink-prototype.rbxlx
     python3 tests/Scene.test.py
     ;;
   serve)
