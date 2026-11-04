@@ -452,6 +452,53 @@ ru["bookcase-v1"] = "Книжный шкаф"
 en["bookcase-v1Description"] = "Warm wooden shelves with a colourful book collection."
 ru["bookcase-v1Description"] =
 	"Деревянные полки с коллекцией разноцветных книг."
+en["residentNina"] = "Nina"
+ru["residentNina"] = "Нина"
+en["residentMila"] = "Mila"
+ru["residentMila"] = "Мила"
+en["residentLev"] = "Leo"
+ru["residentLev"] = "Лев"
+en["clientResident"] = "Client"
+ru["clientResident"] = "Заказчик"
+en["talkClient"] = "Talk"
+ru["talkClient"] = "Поговорить"
+en["meetClient"] = "Meet the client"
+ru["meetClient"] = "Поговорить с клиентом"
+en["handoverClient"] = "Show the client"
+ru["handoverClient"] = "Показать заказчику"
+en["meetClientHint"] = "Meet the resident by the wall. They will explain the job."
+ru["meetClientHint"] =
+	"Подойди к жителю у стены. Он расскажет о работе."
+en["handoverClientHint"] = "Show the finished wall to the client and confirm the handover."
+ru["handoverClientHint"] =
+	"Покажи готовую стену заказчику и подтверди сдачу."
+en["residentWelcome"] =
+	"Welcome! I would like to refresh this wall. Inspect it first, then protect the floor and choose my requested colour."
+ru["residentWelcome"] =
+	"Привет! Хочу обновить эту стену. Сначала осмотри её, затем защити пол и выбери указанный цвет."
+en["residentProtect"] =
+	"Please protect the floor before painting. The furniture is out of your way."
+ru["residentProtect"] =
+	"Перед покраской защити пол. Мебель не мешает работе."
+en["residentColour"] =
+	"Choose the colour listed below. You can change a mistaken choice without a penalty."
+ru["residentColour"] =
+	"Выбери цвет, указанный ниже. Ошибочный выбор можно исправить без штрафа."
+en["residentWorking"] = "Take your time with the roller. Cover the gaps, then review your work."
+ru["residentWorking"] =
+	"Спокойно пройди стену валиком. Закрась пропуски, затем проверь результат."
+en["residentReview"] =
+	"Ready to show your work? Confirm the handover and I will pay once the checks pass."
+ru["residentReview"] =
+	"Готов показать работу? Подтверди сдачу — после проверки получишь оплату."
+en["residentThanks"] =
+	"Thank you! This room feels fresh again. Your payment has been confirmed. Enjoy furnishing your own home!"
+ru["residentThanks"] =
+	"Спасибо! Комната стала уютнее. Оплата подтверждена. Теперь можно обустроить свой дом!"
+en["residentReward"] = "Contract reward: $%d"
+ru["residentReward"] = "Награда по заказу: $%d"
+en["closeClient"] = "Back to the room"
+ru["closeClient"] = "Вернуться в комнату"
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

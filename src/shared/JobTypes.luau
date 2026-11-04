@@ -1,4 +1,5 @@
 --!strict
+local ClientDialogue = require("./ClientDialogue")
 export type Result = {
 	jobId: string,
 	operationId: string,
@@ -6,6 +7,7 @@ export type Result = {
 	xp: number,
 }
 export type Offer = {
+	clientKey: string?,
 	id: string,
 	titleKey: string,
 	briefKey: string,
@@ -34,5 +36,8 @@ export type Snapshot = {
 	contractId: string?,
 	requiredColorId: string?,
 	toolId: string?,
+	clientKey: string?,
+	canTalk: boolean?,
+	conversation: ClientDialogue.Dialogue?,
 }
 return {}

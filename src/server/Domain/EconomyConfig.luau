@@ -13,12 +13,16 @@ local contracts: {
 		colorId: string,
 		minXP: number,
 		offered: boolean,
+		clientKey: string,
+		roomStyle: string,
 	},
 } =
 	{
 		["paint-tutorial-v1"] = {
 			titleKey = "contractTutorial",
 			briefKey = "briefTutorial",
+			clientKey = "residentNina",
+			roomStyle = "intro",
 			colorId = "warm-white",
 			minXP = 0,
 			offered = true,
@@ -26,6 +30,8 @@ local contracts: {
 		["paint-room-v1"] = {
 			titleKey = "contractTutorial",
 			briefKey = "briefTutorial",
+			clientKey = "residentNina",
+			roomStyle = "intro",
 			colorId = "warm-white",
 			minXP = 0,
 			offered = false,
@@ -33,6 +39,8 @@ local contracts: {
 		["paint-mint-v1"] = {
 			titleKey = "contractMint",
 			briefKey = "briefMint",
+			clientKey = "residentMila",
+			roomStyle = "mint",
 			colorId = "mint",
 			minXP = 50,
 			offered = true,
@@ -40,6 +48,8 @@ local contracts: {
 		["paint-rose-v1"] = {
 			titleKey = "contractRose",
 			briefKey = "briefRose",
+			clientKey = "residentLev",
+			roomStyle = "rose",
 			colorId = "rose",
 			minXP = 120,
 			offered = true,

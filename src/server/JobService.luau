@@ -9,6 +9,9 @@ local Result = require("./Domain/JobResult")
 local Painting = require("./Domain/Painting")
 local EconomyConfig = require("./Domain/EconomyConfig")
 local World = require("./World")
+local ClientScene = require("./ClientScene")
+local Meeting = require("./Domain/ClientMeeting")
+local Dialogue = require(ReplicatedStorage.Shared.ClientDialogue)
 local Config = require(ReplicatedStorage.Shared.PaintConfig)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
 type Context = {
@@ -19,6 +22,8 @@ type Context = {
 	saving: boolean,
 	tokens: number,
 	lastAt: number,
+	scene: ClientScene.API?,
+	lastTalk: number,
 }
 local Service = {}
 function Service.start(profiles: ProfileService.API): ()
@@ -26,6 +31,7 @@ function Service.start(profiles: ProfileService.API): ()
 	local stateEvent = ReplicatedStorage:WaitForChild("JobState")
 	assert(command:IsA("RemoteEvent") and stateEvent:IsA("RemoteEvent"), "Job remotes missing")
 	local contexts: { [Player]: Context } = {}
+	local talk: (Player, Context) -> ()
 	local function contextFor(player: Player): Context
 		local ctx = contexts[player]
 		if ctx == nil then
@@ -37,6 +43,8 @@ function Service.start(profiles: ProfileService.API): ()
 				saving = false,
 				tokens = 30,
 				lastAt = os.clock(),
+				scene = nil,
+				lastTalk = -math.huge,
 			}
 			contexts[player] = ctx
 		end
@@ -76,7 +84,7 @@ function Service.start(profiles: ProfileService.API): ()
 			return
 		end
 		local job = p.jobs.active
-		if job == nil or job.status == "Completed" or job.status == "Abandoned" then
+		if job == nil or job.status == "Abandoned" then
 			return
 		end
 		if ctx.room == nil then
@@ -89,11 +97,26 @@ function Service.start(profiles: ProfileService.API): ()
 			local wall = room.model:FindFirstChild("PaintableWall")
 			assert(wall ~= nil and wall:IsA("BasePart"), "Work wall missing")
 			ctx.wall = wall
+			local scene = ClientScene.create(room.model, player.UserId)
+			ctx.scene = scene
+			scene.prompt.Triggered:Connect(function(actor: Player)
+				if actor == player then
+					ensure(player, ctx)
+					talk(player, ctx)
+				end
+			end)
+		end
+		local contract = EconomyConfig.contracts[job.templateId]
+		if ctx.scene and contract then
+			ctx.scene.apply(contract.roomStyle, contract.clientKey)
+		end
+		if job.status == "Completed" then
+			ctx.character = player.Character
+			return
 		end
 		local old = ctx.work
 		if old == nil or old.jobId ~= job.id or ctx.character ~= player.Character then
 			local settings = table.clone(Config)
-			local contract = EconomyConfig.contracts[job.templateId]
 			settings.colorId = if contract then contract.colorId else Config.colorId
 			ctx.work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), settings)
 			ctx.character = player.Character
@@ -108,7 +131,57 @@ function Service.start(profiles: ProfileService.API): ()
 			end
 		end
 	end
-	local function send(player: Player, ctx: Context, reason: string?): ()
+	local function phaseOf(p: Profile.Profile?, ctx: Context): string
+		local job = if p then p.jobs.active else nil
+		if job == nil or job.status == "Abandoned" then
+			return "Offer"
+		end
+		if job.status == "Completed" then
+			return "Completed"
+		end
+		return if ctx.work then ctx.work.phase else "Inspect"
+	end
+	local function canTalk(player: Player, ctx: Context, phase: string, available: boolean): boolean
+		local scene, character = ctx.scene, player.Character
+		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if
+			scene == nil
+			or character == nil
+			or root == nil
+			or not root:IsA("BasePart")
+			or not scene.root:IsDescendantOf(workspace)
+		then
+			return false
+		end
+		if not available or not eligible(player, ctx) then
+			return false
+		end
+		local filter = RaycastParams.new()
+		filter.FilterType = Enum.RaycastFilterType.Exclude
+		filter.FilterDescendantsInstances = { character, scene.resident }
+		local direction = scene.root.Position - root.Position
+		local distance = direction.Magnitude
+		if distance ~= distance or distance > 8 then
+			return false
+		end
+		local hit = workspace:Raycast(root.Position, direction, filter)
+		local owner = scene.resident:GetAttribute("OwnerUserId")
+		return Meeting.allowed({
+			ownerId = if type(owner) == "number" then owner else -1,
+			actorId = player.UserId,
+			available = available,
+			alive = true,
+			distance = distance,
+			visible = hit == nil,
+			phase = phase,
+		})
+	end
+	local function send(
+		player: Player,
+		ctx: Context,
+		reason: string?,
+		conversation: Dialogue.Dialogue?
+	): ()
 		if player.Parent ~= Players then
 			return
 		end
@@ -117,11 +190,11 @@ function Service.start(profiles: ProfileService.API): ()
 		local contract = if job then EconomyConfig.contracts[job.templateId] else nil
 		local reward = if job then EconomyConfig.rewards[job.templateId] else nil
 		local work, room, wall = ctx.work, ctx.room, ctx.wall
-		local phase = if work then work.phase else "Offer"
-		if job and job.status == "Completed" then
-			phase = "Completed"
-		elseif job and job.status == "Abandoned" then
-			phase = "Offer"
+		local phase = phaseOf(p, ctx)
+		local available = p ~= nil and not ctx.saving
+		local scene = ctx.scene
+		if scene then
+			scene.prompt.Enabled = available and phase ~= "Offer"
 		end
 		local target = if wall
 				and job
@@ -129,8 +202,11 @@ function Service.start(profiles: ProfileService.API): ()
 				and job.status ~= "Abandoned"
 			then wall.CFrame:PointToWorldSpace(Vector3.new(0, -1.5, 7))
 			else nil
+		if target and scene and (phase == "Inspect" or phase == "Ready") then
+			target = scene.root.CFrame:PointToWorldSpace(Vector3.new(0, 0, -3))
+		end
 		local snapshot: Types.Snapshot = {
-			available = p ~= nil and not ctx.saving,
+			available = available,
 			phase = phase,
 			jobId = if job then job.id elseif work then work.jobId else "",
 			workId = if work then work.workId else "",
@@ -154,8 +230,27 @@ function Service.start(profiles: ProfileService.API): ()
 				elseif work then work.config.colorId
 				else Config.colorId,
 			toolId = if work then work.toolId else "basic",
+			clientKey = if contract then contract.clientKey else nil,
+			canTalk = canTalk(player, ctx, phase, available),
+			conversation = conversation,
 		}
 		stateEvent:FireClient(player, snapshot)
+	end
+	talk = function(player: Player, ctx: Context): ()
+		local now = os.clock()
+		if now - ctx.lastTalk < 1 then
+			return
+		end
+		ctx.lastTalk = now
+		local p = profiles.read(player)
+		local job = if p then p.jobs.active else nil
+		local contract = if job then EconomyConfig.contracts[job.templateId] else nil
+		local phase = phaseOf(p, ctx)
+		if contract == nil or not canTalk(player, ctx, phase, p ~= nil and not ctx.saving) then
+			send(player, ctx, "TooFar", nil)
+			return
+		end
+		send(player, ctx, nil, Dialogue.describe(contract.clientKey, phase))
 	end
 	local function changed(player: Player): ()
 		local ctx = contextFor(player)
@@ -169,6 +264,10 @@ function Service.start(profiles: ProfileService.API): ()
 						or Config.color
 				)
 			)
+			local cloth = if ctx.room then ctx.room.model:FindFirstChild("Protection") else nil
+			if cloth and cloth:IsA("BasePart") then
+				cloth.Transparency = 1
+			end
 		end
 		send(player, ctx, nil)
 	end
@@ -279,6 +378,18 @@ function Service.start(profiles: ProfileService.API): ()
 		ensure(player, ctx)
 		local work = ctx.work
 		local job = p.jobs.active
+		if action == "talk" then
+			if
+				job == nil
+				or data.jobId ~= job.id
+				or data.workId ~= (if work then work.workId else "")
+			then
+				send(player, ctx, "Stale", nil)
+				return
+			end
+			talk(player, ctx)
+			return
+		end
 		if action == "submit" and job and job.status == "Completed" and data.jobId == job.id then
 			send(player, ctx, nil)
 			return

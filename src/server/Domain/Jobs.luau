@@ -12,6 +12,7 @@ export type Offer = {
 	unlocked: boolean,
 	reward: number,
 	xp: number,
+	clientKey: string,
 }
 local Jobs = {}
 function Jobs.offers(p: Profile.Profile?): { Offer }
@@ -28,6 +29,7 @@ function Jobs.offers(p: Profile.Profile?): { Offer }
 				unlocked = p ~= nil and p.progression.paintingXP >= contract.minXP,
 				reward = reward.dollars,
 				xp = reward.xp,
+				clientKey = contract.clientKey,
 			})
 		end
 	end
