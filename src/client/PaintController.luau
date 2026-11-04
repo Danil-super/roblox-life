@@ -12,6 +12,7 @@ type Point = { u: number, v: number }
 type Segment = { points: { Point }, starts: boolean }
 local View = require(ReplicatedStorage.Shared.PaintView)
 local Aim = require(ReplicatedStorage.Shared.PaintAim)
+local PaintSurface = require("./PaintSurfaceController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -20,6 +21,7 @@ function Controller.start(
 )
 	local player = Players.LocalPlayer
 	local active = false
+	local disposed = false
 	local wall: BasePart? = nil
 	local snapshot: Types.Snapshot? = nil
 	local function paintColor(): Color3
@@ -37,7 +39,7 @@ function Controller.start(
 	local previousFov = 70
 	local altered: { [BasePart]: number } = {}
 	local surface: SurfaceGui? = nil
-	local cells: { Frame } = {}
+	local ink: PaintSurface.API? = nil
 	local strokes: { UIStroke } = {}
 	local roller: Model? = nil
 	local cylinder: Part? = nil
@@ -54,7 +56,6 @@ function Controller.start(
 	local sentAt = 0
 	local lastSample = 0
 	local lastHit = 0
-	local predictions: { [number]: number } = {}
 	local inspectPending = false
 	local missing = false
 	local toolbar = Instance.new("Frame")
@@ -104,6 +105,7 @@ function Controller.start(
 		b.TextColor3 = Color3.fromRGB(244, 239, 224)
 		b.Font = Enum.Font.GothamMedium
 		b.TextSize = 14
+		b.TextWrapped = true
 		b.ZIndex = 21
 		b.Parent = toolbar
 		return b
@@ -142,6 +144,10 @@ function Controller.start(
 			end
 		end
 		altered = {}
+		if ink then
+			ink.destroy()
+			ink = nil
+		end
 		if surface then
 			surface:Destroy()
 			surface = nil
@@ -153,9 +159,7 @@ function Controller.start(
 		cylinder = nil
 		handle = nil
 		sound = nil
-		cells = {}
 		strokes = {}
-		predictions = {}
 		for _, name in { "Objective", "Home", "Wallet", "Language" } do
 			local gui = screen:FindFirstChild(name)
 			if gui and gui:IsA("GuiObject") then
@@ -203,7 +207,7 @@ function Controller.start(
 	end
 	local function render(): ()
 		local s = snapshot
-		if s == nil then
+		if s == nil or disposed then
 			return
 		end
 		local t = function(k: string): string
@@ -232,17 +236,16 @@ function Controller.start(
 		fill.Size = UDim2.fromScale(coverage.fill, 1)
 		review.Text = t("inspectResult")
 		leave.Text = t("leaveWork")
-		for i, cell in cells do
-			local confirmed = string.sub(s.mask, i, i) == "1"
-			cell.BackgroundTransparency = if confirmed
-				then 0
-				elseif predictions[i] and os.clock() - predictions[i] < 0.45 then 0.25
-				else 1
-			strokes[i].Enabled = missing and not coverage.covered and not confirmed
+		if ink then
+			ink.update(s.mask)
+			ink.step(os.clock())
+		end
+		for i, stroke in strokes do
+			stroke.Enabled = missing and not coverage.covered and string.sub(s.mask, i, i) ~= "1"
 		end
 	end
 	local function enter(target: BasePart, s: Types.Snapshot): ()
-		if active then
+		if active or disposed then
 			return
 		end
 		local camera = workspace.CurrentCamera
@@ -297,15 +300,21 @@ function Controller.start(
 		gui.Adornee = target
 		gui.Face = Enum.NormalId.Back
 		gui.CanvasSize = Vector2.new(720, 480)
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+		gui.ClipsDescendants = true
 		gui.LightInfluence = 0
 		gui.Parent = player.PlayerGui
 		surface = gui
+		local visual = PaintSurface.new(gui, paintColor())
+		ink = visual
+		visual.update(s.mask, true)
 		for row = 0, Config.rows - 1 do
 			for col = 0, Config.columns - 1 do
 				local cell = Instance.new("Frame")
 				cell.BorderSizePixel = 0
 				cell.Position = UDim2.fromScale(col / Config.columns, row / Config.rows)
-				cell.Size = UDim2.fromScale(1 / Config.columns + 0.001, 1 / Config.rows + 0.001)
+				cell.Size = UDim2.fromScale(1 / Config.columns, 1 / Config.rows)
+				cell.ZIndex = 3
 				cell.BackgroundColor3 = paintColor()
 				cell.BackgroundTransparency = 1
 				cell.Parent = gui
@@ -314,7 +323,6 @@ function Controller.start(
 				stroke.Thickness = 2
 				stroke.Enabled = false
 				stroke.Parent = cell
-				table.insert(cells, cell)
 				table.insert(strokes, stroke)
 			end
 		end
@@ -354,8 +362,8 @@ function Controller.start(
 		flush()
 	end)
 	leave.Activated:Connect(stop)
-	player.CharacterRemoving:Connect(stop)
-	UIS.InputBegan:Connect(function(input: InputObject, processed: boolean)
+	local removingConnection = player.CharacterRemoving:Connect(stop)
+	local beganConnection = UIS.InputBegan:Connect(function(input: InputObject, processed: boolean)
 		if not active then
 			return
 		end
@@ -381,12 +389,12 @@ function Controller.start(
 			table.insert(queue, segment)
 		end
 	end)
-	UIS.InputChanged:Connect(function(input: InputObject)
+	local changedConnection = UIS.InputChanged:Connect(function(input: InputObject)
 		if input == touch then
 			pointer = Vector2.new(input.Position.X, input.Position.Y)
 		end
 	end)
-	UIS.InputEnded:Connect(function(input: InputObject)
+	local endedConnection = UIS.InputEnded:Connect(function(input: InputObject)
 		if input == touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
 			held = false
 			touch = nil
@@ -464,27 +472,8 @@ function Controller.start(
 					local last = segment.points[#segment.points]
 					if last == nil or (p.u - last.u) ^ 2 + (p.v - last.v) ^ 2 > 0.0001 then
 						table.insert(segment.points, p)
-						local col = math.min(Config.columns - 1, math.floor(p.u * Config.columns))
-						local row = math.min(Config.rows - 1, math.floor(p.v * Config.rows))
-						predictions[row * Config.columns + col + 1] = os.clock()
-						if surface then
-							local stamp = Instance.new("Frame")
-							stamp.AnchorPoint = Vector2.new(0.5, 0.5)
-							stamp.Position = UDim2.fromScale(p.u, p.v)
-							stamp.Size = UDim2.fromScale(
-								1.3 * brushScale() / Config.columns,
-								1.3 * brushScale() / Config.rows
-							)
-							stamp.BackgroundColor3 = paintColor()
-							stamp.BackgroundTransparency = 0.15
-							stamp.BorderSizePixel = 0
-							stamp.Parent = surface
-							local corner = Instance.new("UICorner")
-							corner.CornerRadius = UDim.new(0.5, 0)
-							corner.Parent = stamp
-							task.delay(0.35, function()
-								stamp:Destroy()
-							end)
+						if ink then
+							ink.predict(p.u, p.v, brushScale(), os.clock())
 						end
 					end
 				end
@@ -505,6 +494,15 @@ function Controller.start(
 			flush()
 		end
 		render()
+	end)
+	screen.Destroying:Once(function()
+		disposed = true
+		stop()
+		RunService:UnbindFromRenderStep("PaintingView")
+		removingConnection:Disconnect()
+		beganConnection:Disconnect()
+		changedConnection:Disconnect()
+		endedConnection:Disconnect()
 	end)
 	return {
 		enter = enter,

@@ -20,12 +20,15 @@ local UDim2={fromScale=function(x,y)return {x=x,y=y}end}
 local title,review,leave,fill={},{},{},{}
 local cells,strokes={},{}
 for i=1,96 do cells[i]={};strokes[i]={}end
-local predictions={[1]=os.clock()}
+local receivedMask=nil
+local ink={update=function(mask)receivedMask=mask end,step=function()end}
 local missing=false
+local disposed=false
 '''
 checks = '''
 render()
-assert(fill.Size.x==0 and cells[1].BackgroundTransparency==.25,"Prediction invented confirmed area")
+assert(fill.Size.x==0 and receivedMask==snapshot.mask,"Visual layer invented confirmed area")
+for _,s in strokes do assert(not s.Enabled,"Grid shown during normal painting")end
 snapshot.count=76;snapshot.mask=string.rep("1",76)..string.rep("0",20);missing=true
 render()
 assert(title.Text=="paintMissing · 79% / 80%","Missing area instruction unclear")
@@ -36,7 +39,7 @@ assert(title.Text=="paintCovered · 80% / 80%" and fill.Size.x==77/96,"Threshold
 for _,s in strokes do assert(not s.Enabled,"Unnecessary exact-coverage demand")end
 snapshot.error="Drying";render()
 assert(title.Text=="paintWait · 80% / 80%","Covered wall falsely asks for more paint")
-assert(snapshot.count==77 and snapshot.error=="Drying","Rendering changed authoritative state")
+assert(snapshot.count==77 and snapshot.error=="Drying" and receivedMask==snapshot.mask,"Rendering changed authoritative state")
 snapshot.error=nil;render();assert(title.Text:find("paintCovered",1,true))
 snapshot.count=96;render();assert(fill.Size.x==1,"Full bar failed")
 snapshot.surfaceIndex=2;snapshot.surfaceTotal=2;render()

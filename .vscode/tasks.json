@@ -6,6 +6,7 @@
     { "label": "Rojo: serve", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "serve"], "problemMatcher": [] },
     { "label": "Rojo: sourcemap", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "sourcemap"], "problemMatcher": [] },
     { "label": "Format Luau", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "format"], "problemMatcher": [] },
+    { "label": "Studio: open project", "type": "process", "command": "bash", "args": ["scripts/dev.sh", "studio"], "problemMatcher": [] },
     { "label": "Studio: solo Play", "type": "process", "command": "python3", "args": ["scripts/studio_test.py", "start"], "problemMatcher": [] },
     { "label": "Studio: stop test", "type": "process", "command": "python3", "args": ["scripts/studio_test.py", "stop"], "problemMatcher": [] }
   ]

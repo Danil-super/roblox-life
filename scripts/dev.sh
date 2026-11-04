@@ -40,6 +40,7 @@ case "${1:-check}" in
     python3 tests/PaintScopeAdapter.test.py
     python3 tests/PaintLifecycle.test.py
     python3 tests/PaintFeedbackUI.test.py
+    python3 tests/PaintSurfaceUI.test.py
     python3 tests/WalletDisplay.test.py
     python3 tests/ModalControls.test.py
     python3 tests/JobResultUI.test.py
@@ -74,6 +75,12 @@ case "${1:-check}" in
     rojo build prototype.project.json --output build/sink-prototype.rbxlx
     python3 tests/Scene.test.py
     ;;
+  studio)
+    test -f build/roblox-life.rbxlx || { echo "Build the place first: bash scripts/dev.sh build" >&2; exit 1; }
+    command -v flatpak >/dev/null || { echo "Install Vinegar Flatpak as described in README.md." >&2; exit 1; }
+    studio_place_path="Z:${PWD//\//\\}\\build\\roblox-life.rbxlx"
+    exec flatpak run org.vinegarhq.Vinegar --task EditFile --localPlaceFile "$studio_place_path"
+    ;;
   serve)
     require_tool rojo
     exec rojo serve default.project.json --address 127.0.0.1 --port 34872
@@ -86,5 +93,5 @@ case "${1:-check}" in
     bash scripts/dev.sh types
     bash scripts/dev.sh build
     ;;
-  *) echo "Usage: bash scripts/dev.sh {prepare|format|lint|test|sourcemap|types|build|serve|check}" >&2; exit 2 ;;
+  *) echo "Usage: bash scripts/dev.sh {prepare|format|lint|test|sourcemap|types|build|studio|serve|check}" >&2; exit 2 ;;
 esac
