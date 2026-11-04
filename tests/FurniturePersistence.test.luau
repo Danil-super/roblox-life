@@ -80,3 +80,37 @@ assert(
 print(
 	"FurniturePersistence: unknown placement commit, reload and purchase replay passed (memory adapter, not cloud)"
 )
+
+local storeMutations = 0
+failAfter = true
+assert(not second.transact(function(p: Profile.Profile): boolean
+	storeMutations += 1
+	local accepted = Furniture.store(p, "plant-1", p.housing.revision)
+	return accepted
+end), "Unknown store must not acknowledge")
+assert(second.read() == nil, "Unconfirmed store became visible")
+failAfter = false
+assert(second.retry() and storeMutations == 1, "Store retry repeated the mutation")
+local stored = second.read()
+assert(
+	stored
+		and stored.wallet.dollars == 70
+		and stored.inventory["plant-1"] ~= nil
+		and stored.housing.placements["plant-1"] == nil
+		and stored.housing.revision == 2,
+	"Store lost ownership or duplicated revision"
+)
+assert(second.close(), "Stored profile release failed")
+local third = Store.new(adapter, 1, "third", clock, 120)
+assert(third.load(), "Stored profile reacquire failed")
+local warehouse = third.read()
+assert(
+	warehouse
+		and warehouse.wallet.dollars == 70
+		and warehouse.inventory["plant-1"] ~= nil
+		and warehouse.housing.placements["plant-1"] == nil,
+	"Reload lost stored furniture"
+)
+print(
+	"FurniturePersistence: unknown store, same mutation retry and warehouse reload passed (memory only)"
+)
