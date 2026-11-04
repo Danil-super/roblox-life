@@ -111,7 +111,7 @@ Bootstrap также создаёт игнорируемый Git файл `roblo
 `python3 scripts/configure_editor.py` снова. Настройки других проектов не меняются.
 
 `.vscode/tasks.json`: **Check all**, **Rojo: build**, **Rojo: serve**,
-**Rojo: sourcemap**, **Format Luau**. Задачи сами добавляют `.tools/bin` в PATH.
+**Rojo: sourcemap**, **Format Luau**, **Studio: open project**. Задачи сами добавляют `.tools/bin` в PATH.
 Настроены strict-типы и формат Luau; Lua Language Server для обычного Lua
 не нужен. Sourcemap генерируется задачей/проверками. После изменения структуры
 src запустить задачу sourcemap либо watch в отдельном терминале:
@@ -146,6 +146,19 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
 Первый запуск загружает Windows Studio и подготавливает Wine. Войти в Roblox
 самостоятельно. Требуются графическая сессия и совместимый драйвер GPU. Не
 устанавливать вторую копию Wine на хост специально для Vinegar.
+
+Открыть собранную локальную сцену напрямую, минуя стартовый экран:
+
+```bash
+bash scripts/dev.sh build
+bash scripts/dev.sh studio
+```
+
+Либо выполнить задачу **Studio: open project** в VS Code после сборки.
+Команда передаёт Windows-путь с пробелами/кириллицей через документированные
+[--task EditFile / --localPlaceFile](https://create.roblox.com/docs/studio/cli).
+Запускать её при открытии проекта; для работы в уже открытой сцене использовать
+Rojo, чтобы не создавать дополнительные окна Studio.
 
 На текущей машине Vinegar, Studio, Kombucha, WebView и DXVK уже установлены.
 Если Studio показывает **Launch Failed** при входе, нажать **Login via Browser**

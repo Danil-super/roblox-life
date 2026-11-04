@@ -19,6 +19,11 @@
   PaintAim ограничивает помощь краям 0,35 studs; локальный след не наполняет
   подтверждённую полоску. Painting.reviewError отделяет площадь от времени;
   ни наведение, ни достижение порога сами не принимают/не оплачивают работу.
+  PaintSurface — косметическое поле 36×24 из серверной маски, без нового count.
+  PaintSurfaceController: 864 пикселя/16 временных следов, один tween на пиксель,
+  dedup маски и cleanup. Предсказание не подтверждает покрытие; контуры 12×8
+  появляются при Review/Coverage. FixedSize/clip, повторный вход из mask;
+  Destroy HUD освобождает renderer/render binding/ввод. docs/PAINTING.md.
   NeighborhoodScenery создаёт улицу при Play и входные накладки при cloneRoom;
   StreetLayout проверяет проходы для 16 слотов. StreetDetails — до 300 деталей,
   start идемпотентен, SurfaceGui переводит WorldSignsController по событиям.
@@ -61,6 +66,10 @@
 - Если официальный start_stop_play завис, использовать `python3 scripts/studio_test.py
   start|stop|status`: официальный MCP + одиночный StudioTestService с непустым args.
   Не добавлять клиентов для обхода зависания. Mode Play не доказывает приёмку игры.
+- execute_luau может восстановить исходный CameraType после завершения команды
+  (Output: ExecuteLuauActions / Resetting ... back to ...), даже если Custom
+  установился игровой очисткой HUD. Отделять это от возврата игрового renderer;
+  поздние события проверять с наблюдением внутри команды и через GUI-ввод.
 - P0: покраска → доллары → покупка → установка → сохранение. Четыре профессии,
   аренда, подарки, транспорт и монетизация остаются вне текущего этапа.
 
