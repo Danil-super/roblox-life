@@ -5,10 +5,12 @@ local UIS = game:GetService("UserInputService")
 local CAS = game:GetService("ContextActionService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
+local Http = game:GetService("HttpService")
 local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
 local View = require(RS.Shared.PaintView)
 local Strings = require(RS.Shared.Strings)
+local PlacementFlow = require(RS.Shared.PlacementFlow)
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -32,6 +34,7 @@ function Controller.start(
 	local lastSend = 0
 	local dirty = true
 	local waiting = false
+	local pending: PlacementFlow.Pending? = nil
 	local reason = "Checking"
 	local pointer = Vector2.zero
 	local touch: InputObject? = nil
@@ -88,17 +91,30 @@ function Controller.start(
 	local function t(key: string): string
 		return Strings.text(language(), key)
 	end
-	local function pose(): { [string]: unknown }
+	local function pose(): PlacementFlow.Pose
 		return { x = x, z = z, rotationY = rotation, mode = mode }
 	end
 	local function render(): ()
 		title.Text = t("buildHint")
-		status.Text = t(if valid and not pinned then "clickFloor" else "homeError" .. reason)
+		local retry = pending ~= nil and PlacementFlow.canRetry(pending, os.clock())
+		status.Text = t(
+			if waiting
+				then (if retry then "placementDelayed" else "homeErrorSaving")
+				elseif valid and not pinned then "clickFloor"
+				else "homeError" .. reason
+		)
 		buttons.Mode.Text = t(if mode == "Grid" then "gridMode" else "freeMode")
 		buttons.Rotate.Text = t("rotateItem")
-		buttons.Confirm.Text = t(if waiting then "saving" else "placeItem")
+		buttons.Confirm.Text =
+			t(if waiting then (if retry then "retryPlacement" else "saving") else "placeItem")
 		buttons.Cancel.Text = t("cancelBuild")
-		buttons.Confirm.Active = pinned and valid and not waiting and os.clock() - confirmedAt < 1
+		buttons.Confirm.Active = if waiting
+			then retry and snapshot ~= nil and snapshot.available
+			else pinned and valid and os.clock() - confirmedAt < 1
+		for _, name in { "Mode", "Rotate", "Cancel" } do
+			buttons[name].Active = not waiting
+			buttons[name].AutoButtonColor = not waiting
+		end
 		buttons.Confirm.AutoButtonColor = buttons.Confirm.Active
 		buttons.Confirm.BackgroundColor3 = if buttons.Confirm.Active
 			then Color3.fromRGB(55, 120, 102)
@@ -126,6 +142,7 @@ function Controller.start(
 		end
 		screen:SetAttribute("Building", false)
 		waiting = false
+		pending = nil
 		valid = false
 		touch = nil
 		bar.Visible = false
@@ -185,26 +202,45 @@ function Controller.start(
 		change()
 	end)
 	buttons.Cancel.Activated:Connect(function()
-		stop()
+		if not waiting then
+			stop()
+		end
 	end)
 	buttons.Confirm.Activated:Connect(function()
 		local current = item
 		local s = snapshot
-		if
-			not active
-			or current == nil
-			or s == nil
-			or not pinned
-			or not valid
-			or waiting
-			or os.clock() - confirmedAt >= 1
-		then
+		if not active or current == nil or s == nil or not s.available then
 			return
+		end
+		local intent = pending
+		if intent then
+			if not PlacementFlow.canRetry(intent, os.clock()) then
+				return
+			end
+			pending = PlacementFlow.retry(intent, os.clock())
+		else
+			if not pinned or not valid or waiting or os.clock() - confirmedAt >= 1 then
+				return
+			end
+			pending = PlacementFlow.start(
+				"place:" .. Http:GenerateGUID(false),
+				s.editorId,
+				current.id,
+				s.revision,
+				pose(),
+				os.clock()
+			)
 		end
 		waiting = true
 		reason = "Saving"
-		local packet: { [string]: unknown } =
-			{ itemId = current.id, revision = s.revision, pose = pose() }
+		local request = pending
+		assert(request, "Placement intent missing")
+		local packet: { [string]: unknown } = {
+			requestId = request.requestId,
+			itemId = request.itemId,
+			revision = request.revision,
+			pose = table.clone(request.pose),
+		}
 		send("place", packet)
 		render()
 	end)
@@ -355,7 +391,7 @@ function Controller.start(
 		if not active then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.Escape then
+		if input.KeyCode == Enum.KeyCode.Escape and not waiting then
 			stop()
 			return
 		end
@@ -368,7 +404,7 @@ function Controller.start(
 				render()
 			end
 		end
-		if input.UserInputType == Enum.UserInputType.Touch and touch == nil then
+		if not waiting and input.UserInputType == Enum.UserInputType.Touch and touch == nil then
 			pinned = false
 			touch = input
 			pointer = Vector2.new(input.Position.X, input.Position.Y)
@@ -510,27 +546,22 @@ function Controller.start(
 				stop(false)
 				return
 			end
-			if waiting and s.available then
-				local owned = item
-				for _, value in s.items do
-					if owned and value.id == owned.id and value.placed then
-						local p = value.placed
-						if
-							math.abs(p.x - x) < 0.001
-							and math.abs(p.z - z) < 0.001
-							and p.rotationY == rotation
-						then
-							stop()
-							return
-						end
-					end
+			local intent = pending
+			if waiting and intent then
+				local nextIntent, outcome = PlacementFlow.observe(intent, s)
+				pending = nextIntent
+				if outcome == "Confirmed" then
+					stop()
+					return
 				end
-				waiting = false
-				valid = false
-				reason = s.error or "Checking"
-				dirty = true
+				if outcome == "Rejected" then
+					waiting = false
+					valid = false
+					reason = s.error or "Checking"
+					dirty = true
+				end
 			end
-			if previous and s.revision ~= previous.revision then
+			if not waiting and previous and s.revision ~= previous.revision then
 				change()
 			end
 		end,

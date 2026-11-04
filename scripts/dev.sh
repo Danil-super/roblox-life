@@ -37,6 +37,8 @@ case "${1:-check}" in
     python3 tests/StudioTest.test.py
     python3 tests/BuildRecovery.test.py
     python3 tests/BuildLifecycle.test.py
+    python3 tests/PlacementUI.test.py
+    python3 tests/PlacementAdapter.test.py
     python3 tests/PaintScopeAdapter.test.py
     python3 tests/PaintLifecycle.test.py
     python3 tests/PaintFeedbackUI.test.py

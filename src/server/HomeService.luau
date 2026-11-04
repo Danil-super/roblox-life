@@ -155,7 +155,13 @@ function Service.start(profiles: ProfileService.API): ()
 			end
 		end
 	end
-	local function send(player: Player, reason: string?, ack: string?, openShop: boolean?): ()
+	local function send(
+		player: Player,
+		reason: string?,
+		ack: string?,
+		openShop: boolean?,
+		placementAck: string?
+	): ()
 		if player.Parent ~= Players then
 			return
 		end
@@ -210,6 +216,7 @@ function Service.start(profiles: ProfileService.API): ()
 			onboarding = if p then p.onboarding.step else "INTRO",
 			error = reason,
 			ack = ack,
+			placementAck = placementAck,
 			openShop = openShop,
 			plan = if p then HomePlan.evaluate(items) else nil,
 		}
@@ -293,6 +300,15 @@ function Service.start(profiles: ProfileService.API): ()
 				and Profile.identifier(d.requestId)
 			then d.requestId
 			else nil
+		local placementRequestId = if action == "place"
+				and type(d.requestId) == "string"
+				and #d.requestId <= 80
+				and Profile.identifier(d.requestId)
+			then d.requestId
+			else nil
+		if action == "place" and placementRequestId == nil then
+			return
+		end
 		if action == "sync" then
 			send(player, nil, nil, nil)
 			return
@@ -302,11 +318,11 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local p = profiles.read(player)
 		if p == nil then
-			send(player, "Unavailable", purchaseRequestId, nil)
+			send(player, "Unavailable", purchaseRequestId, nil, placementRequestId)
 			return
 		end
 		if action ~= "buy" and d.editorId ~= c.editorId then
-			send(player, "StaleRevision", nil, nil)
+			send(player, "StaleRevision", nil, nil, placementRequestId)
 			return
 		end
 		if action == "probe" then
@@ -342,7 +358,13 @@ function Service.start(profiles: ProfileService.API): ()
 				and (if action == "buy" then atShop(player) else atHome(player))
 		end
 		if not guard() then
-			send(player, if action == "buy" then "GoShop" else "GoHome", purchaseRequestId, nil)
+			send(
+				player,
+				if action == "buy" then "GoShop" else "GoHome",
+				purchaseRequestId,
+				nil,
+				placementRequestId
+			)
 			return
 		end
 		local reason: string? = nil
@@ -372,6 +394,24 @@ function Service.start(profiles: ProfileService.API): ()
 				return
 			end
 			local id, revision = d.itemId, d.revision
+			if action == "place" then
+				local pose, why = Furniture.validate(p, id, d.pose, revision)
+				if pose == nil then
+					send(player, why, nil, nil, placementRequestId)
+					return
+				end
+				local old = p.housing.placements[id]
+				if
+					old
+					and old.x == pose.x
+					and old.z == pose.z
+					and old.rotationY == pose.rotationY
+				then
+					-- Confirm a retry/no-op without another profile write or model.
+					send(player, nil, nil, nil, placementRequestId)
+					return
+				end
+			end
 			c.saving = true
 			ok = profiles.change(player, function(candidate: Profile.Profile): boolean
 				local accepted: boolean
@@ -392,7 +432,7 @@ function Service.start(profiles: ProfileService.API): ()
 				reconcile(player, confirmed)
 			end
 		end
-		send(player, if ok then nil else reason or "Unavailable", ack, nil)
+		send(player, if ok then nil else reason or "Unavailable", ack, nil, placementRequestId)
 	end)
 end
 return Service

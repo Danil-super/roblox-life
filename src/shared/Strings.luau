@@ -288,6 +288,11 @@ ru["homeErrorBought"] =
 	"Куплено! Вернись домой и открой «Обустроить»."
 en["homeErrorSaving"] = "Saving the room…"
 ru["homeErrorSaving"] = "Сохраняем комнату…"
+en["retryPlacement"] = "Retry placement"
+ru["retryPlacement"] = "Повторить"
+en["placementDelayed"] = "Confirmation is taking longer. Retry the same position safely."
+ru["placementDelayed"] =
+	"Ответ задерживается. Повтори установку в том же месте."
 en["clickFloor"] = "Click the floor to lock this position, then confirm"
 ru["clickFloor"] =
 	"Кликни на пол, чтобы зафиксировать место, затем подтверди"

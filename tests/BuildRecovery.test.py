@@ -30,6 +30,9 @@ touch_end_finish = source.index("\n\tplayer.CharacterRemoving:Connect", touch_en
 touch_end = source[touch_end_start:touch_end_finish]
 
 header = r'''
+local PlacementFlow = require("../src/shared/PlacementFlow")
+local pending = PlacementFlow.start("place-one", "editor-a", "plant-a", 0,
+    {x=5,z=3,rotationY=0,mode="Grid"},0)
 local snapshot = {
     available = true, editorId = "editor-a", homeName = "Home_1",
     nearHome = true, revision = 0,
@@ -75,8 +78,14 @@ scenarios = {
 update(state(false, "Unavailable", nil, false))
 update(state(true, nil, nil, false))
 assert(stopCalls == 0, "A transient rejection must keep the editor open")
-assert(not waiting, "Confirmed old pose must unlock the rejected placement")
-assert(not valid and dirty, "Recovered editor must request a fresh server preview")
+assert(waiting and pending.requestId=="place-one", "Unrelated sync dropped the pending placement")
+assert(not dirty, "Unrelated state started a new preview during confirmation")
+''',
+    "correlated_refusal_unlocks_preview": r'''
+local s=state(true,"Collision",nil,false);s.placementAck="place-one"
+update(s)
+assert(not waiting and pending==nil and not valid and dirty,
+    "Definite correlated refusal did not request a fresh preview")
 ''',
     "unknown_then_ready_matching_pose": r'''
 update(state(false, "Unavailable", nil, false))
@@ -114,7 +123,7 @@ failed = False
 for name, assertions in scenarios.items():
     script = "--!strict\n" + header + change + "\n" + update + "\n" + touch_end + "\n" + assertions
     script += '\nprint("PASS BuildRecovery", "' + name + '")\n'
-    with tempfile.NamedTemporaryFile("w", suffix=".luau") as temporary:
+    with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as temporary:
         temporary.write(script)
         temporary.flush()
         print(f"Running {name} using {args.source}", flush=True)

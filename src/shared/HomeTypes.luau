@@ -25,6 +25,8 @@ export type Snapshot = {
 	error: string?,
 	-- Correlates a purchase response, including refusal; ownership proves success.
 	ack: string?,
+	-- Placement response identity; a confirmed owned pose still proves success.
+	placementAck: string?,
 	openShop: boolean?,
 	plan: HomePlan.Progress?,
 }
