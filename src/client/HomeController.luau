@@ -8,6 +8,7 @@ local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
 local PurchaseFlow = require(RS.Shared.PurchaseFlow)
 local Build = require("./BuildController")
+local RoomPlanner = require("./HomePlannerController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -31,6 +32,8 @@ function Controller.start(
 	local routeActive = false
 	local syncAt = 0
 	local listKey = ""
+	local focus: { tab: string, id: string }? = nil
+	local planner: RoomPlanner.API
 	local function t(key: string): string
 		return Strings.text(language(), key)
 	end
@@ -140,6 +143,7 @@ function Controller.start(
 	local function hidePanels(): ()
 		shop.Visible = false
 		inventory.Visible = false
+		planner.hide()
 	end
 	local function show(tab: string): ()
 		exclusive()
@@ -147,6 +151,9 @@ function Controller.start(
 		hidePanels()
 		shop.Visible = tab == "Shop"
 		inventory.Visible = tab == "Furniture"
+		if tab == "Room" then
+			planner.show()
+		end
 		listKey = ""
 		send("sync", nil)
 	end
@@ -171,7 +178,13 @@ function Controller.start(
 		if model then
 			model.Parent = viewport
 			local camera = Instance.new("Camera")
-			camera.CFrame = CFrame.lookAt(Vector3.new(5, 5, 7), Vector3.new(0, 2, 0))
+			local bounds, size = model:GetBoundingBox()
+			camera.FieldOfView = 35
+			local distance = size.Magnitude * 0.55 / math.sin(math.rad(camera.FieldOfView / 2))
+			camera.CFrame = CFrame.lookAt(
+				bounds.Position + Vector3.new(1, 0.7, 1).Unit * distance,
+				bounds.Position
+			)
 			camera.Parent = viewport
 			viewport.CurrentCamera = camera
 		end
@@ -218,6 +231,7 @@ function Controller.start(
 	end
 	local function render(): ()
 		local s = state
+		planner.render(s)
 		shopTitle.Text = t("shopTitle") .. (if s then " · $" .. s.dollars else "")
 		inventoryTitle.Text = t("inventoryTitle")
 		shopBack.Text = t(if purchasedItem then "openInventory" else "backHome")
@@ -352,6 +366,15 @@ function Controller.start(
 			empty.Text = t("emptyInventory")
 		end
 		inventoryBody.CanvasSize = UDim2.fromOffset(0, math.max(90, #s.items * 108))
+		local target = focus
+		if target then
+			local body = if target.tab == "Shop" then shopBody else inventoryBody
+			local card = body:FindFirstChild(target.id)
+			if card and card:IsA("Frame") then
+				body.CanvasPosition = Vector2.new(0, card.Position.Y.Offset)
+				focus = nil
+			end
+		end
 		for _, rootPanel in { shop, inventory } do
 			for _, gui in rootPanel:GetDescendants() do
 				if gui:IsA("GuiObject") then
@@ -360,6 +383,22 @@ function Controller.start(
 			end
 		end
 	end
+	planner = RoomPlanner.start(screen, language, function(catalogId: string, itemId: string?)
+		local current = state
+		if current == nil or not current.available then
+			return
+		end
+		local tab, id = "Shop", catalogId
+		for _, owned in current.items do
+			if owned.id == itemId and owned.catalogId == catalogId then
+				tab, id = "Furniture", owned.id
+				break
+			end
+		end
+		focus = { tab = tab, id = id }
+		show(tab)
+		render()
+	end)
 	for _, back in { shopBack, inventoryBack } do
 		back.Activated:Connect(function()
 			if back == shopBack and purchasedItem then
@@ -431,7 +470,7 @@ function Controller.start(
 			end
 		end
 		if
-			(shop.Visible or inventory.Visible or inBuild or routeActive)
+			(shop.Visible or inventory.Visible or planner.isVisible() or inBuild or routeActive)
 			and os.clock() - syncAt > 1
 		then
 			syncAt = os.clock()

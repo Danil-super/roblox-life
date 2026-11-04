@@ -12,6 +12,7 @@ function Controller.start(screen: ScreenGui): ()
 		PaintToolbar = true,
 		BuildToolbar = true,
 		ProfilePanel = true,
+		RoomPlanPanel = true,
 	}
 	local panels: { GuiObject } = {}
 	local previous: boolean? = nil

@@ -25,6 +25,8 @@ case "${1:-check}" in
       luau "$suite"
     done
     python3 tests/Desktop.test.py
+    python3 tests/SeatReturn.test.py
+    python3 tests/HomePlannerUI.test.py
     python3 tests/ProfileLifecycle.test.py
     python3 tests/ProfileRetry.test.py
     python3 tests/ProfileRecoveryUI.test.py

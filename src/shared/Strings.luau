@@ -427,6 +427,31 @@ ru["jobErrorUnknownOffer"] =
 en["jobErrorToolLocked"] = "This roller is not available for this step or mastery level."
 ru["jobErrorToolLocked"] =
 	"Этот валик недоступен на этом этапе или уровне мастерства."
+en["roomPlan"] = "Room plan"
+ru["roomPlan"] = "План комнаты"
+en["roomPlanProgress"] = "Furnished: %d / %d"
+ru["roomPlanProgress"] = "Обустроено: %d / %d"
+en["roomPlanOptional"] = "Optional ideas for your room. Place items to complete them."
+ru["roomPlanOptional"] =
+	"Идеи по желанию. Установи предметы, чтобы выполнить план."
+en["greenHome"] = "A little greenery"
+ru["greenHome"] = "Немного зелени"
+en["readingCorner"] = "A reading corner"
+ru["readingCorner"] = "Уголок для чтения"
+en["homeStorage"] = "A place for your books"
+ru["homeStorage"] = "Место для книг"
+en["roomGoalComplete"] = "Ready"
+ru["roomGoalComplete"] = "Готово"
+en["reading-chair-v1"] = "Reading chair"
+ru["reading-chair-v1"] = "Кресло для чтения"
+en["reading-chair-v1Description"] = "A soft chair you can sit in. Jump to get up."
+ru["reading-chair-v1Description"] =
+	"Мягкое кресло с сиденьем. Прыгни, чтобы встать."
+en["bookcase-v1"] = "Bookcase"
+ru["bookcase-v1"] = "Книжный шкаф"
+en["bookcase-v1Description"] = "Warm wooden shelves with a colourful book collection."
+ru["bookcase-v1Description"] =
+	"Деревянные полки с коллекцией разноцветных книг."
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

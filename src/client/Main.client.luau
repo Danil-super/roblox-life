@@ -103,14 +103,14 @@ local apps = Instance.new("ScrollingFrame")
 apps.Name = "Apps"
 apps.Position = UDim2.fromOffset(0, 104)
 apps.Size = UDim2.new(1, 0, 1, -184)
-apps.CanvasSize = UDim2.fromOffset(0, 244)
+apps.CanvasSize = UDim2.fromOffset(0, 296)
 apps.BackgroundTransparency = 1
 apps.BorderSizePixel = 0
 apps.ScrollBarThickness = 4
 apps.Parent = panel
 local description =
-	text(apps, "Description", UDim2.fromOffset(20, 164), UDim2.new(1, -40, 0, 38), 13)
-local status = text(apps, "Storage", UDim2.fromOffset(20, 206), UDim2.new(1, -40, 0, 36), 13)
+	text(apps, "Description", UDim2.fromOffset(20, 216), UDim2.new(1, -40, 0, 38), 13)
+local status = text(apps, "Storage", UDim2.fromOffset(20, 258), UDim2.new(1, -40, 0, 36), 13)
 status.TextColor3 = muted
 local returnButton = button(panel, "ReturnHome", UDim2.new(0, 20, 1, -72), UDim2.new(1, -40, 0, 52))
 local jobsButton = button(apps, "Jobs", UDim2.fromOffset(20, 0), UDim2.new(0.5, -24, 0, 44))
@@ -118,7 +118,8 @@ local mapButton = button(apps, "Map", UDim2.new(0.5, 4, 0, 0), UDim2.new(0.5, -2
 local shopButton = button(apps, "Shop", UDim2.fromOffset(20, 52), UDim2.new(0.5, -24, 0, 44))
 local furnitureButton =
 	button(apps, "Furniture", UDim2.new(0.5, 4, 0, 52), UDim2.new(0.5, -24, 0, 44))
-local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 104), UDim2.new(1, -40, 0, 44))
+local roomButton = button(apps, "RoomPlan", UDim2.fromOffset(20, 104), UDim2.new(1, -40, 0, 44))
+local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 156), UDim2.new(1, -40, 0, 44))
 local openHousing: (string) -> () = function(_tab: string): () end
 local jobs = JobController.start(screen, panel, function(): string
 	return language
@@ -156,6 +157,9 @@ end)
 furnitureButton.Activated:Connect(function()
 	housing.show("Furniture")
 end)
+roomButton.Activated:Connect(function()
+	housing.show("Room")
+end)
 for _, child in panel:GetDescendants() do
 	if child:IsA("GuiObject") then
 		child.ZIndex = 6
@@ -190,6 +194,7 @@ local function render(): ()
 	jobsButton.Text, mapButton.Text = t("jobs"), t("map")
 	jobs.render()
 	shopButton.Text, furnitureButton.Text = t("shopTitle"), t("furnitureApp")
+	roomButton.Text = t("roomPlan")
 	hintsButton.Text =
 		t(if screen:GetAttribute("ShowHints") == false then "showHints" else "hideHints")
 	housing.render()
