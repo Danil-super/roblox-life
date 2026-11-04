@@ -1,6 +1,7 @@
 --!strict
 local ServerStorage = game:GetService("ServerStorage")
 local Rules = require("./Domain/RoomRules")
+local Scenery = require("./NeighborhoodScenery")
 export type Home = { model: Model, origin: Vector3, spawn: SpawnLocation, ownerId: number }
 local World = {}
 local rooms: { [Model]: Home } = {}
@@ -22,6 +23,13 @@ local function cloneRoom(
 	model:SetAttribute("OwnerUserId", player.UserId)
 	model:SetAttribute("TemplateVersion", 1)
 	model:PivotTo(CFrame.new(origin + Vector3.new(0, -0.5, 0)) * CFrame.Angles(0, rotation, 0))
+	Scenery.decorateRoom(
+		model,
+		origin,
+		rotation,
+		templateName == "ClientApartmentTemplate_v1",
+		player.UserId
+	)
 	model.Parent = workspace:WaitForChild("Homes")
 	local home: Home = { model = model, origin = origin, spawn = spawn, ownerId = player.UserId }
 	rooms[model] = home

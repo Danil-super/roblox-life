@@ -234,46 +234,6 @@
           "$className": "Part",
           "$properties": {"Anchored": true, "Size": [304, 0.3, 8], "CFrame": [96, -0.15, 51, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.69, 0.7, 0.66], "Material": "Concrete", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
         },
-        "Lane0_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [0, -0.14, 38, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane0_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [64, -0.14, 38, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane0_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [128, -0.14, 38, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane0_3": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [192, -0.14, 38, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk0_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [32, 2, 60, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop0_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [32, 7, 60, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk0_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [96, 2, 60, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop0_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [96, 7, 60, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk0_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [160, 2, 60, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop0_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [160, 7, 60, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
         "Road1": {
           "$className": "Part",
           "$properties": {"Anchored": true, "Size": [304, 0.3, 16], "CFrame": [96, -0.3, 166, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.2, 0.23, 0.24], "Material": "Asphalt", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
@@ -285,46 +245,6 @@
         "FarSidewalk1": {
           "$className": "Part",
           "$properties": {"Anchored": true, "Size": [304, 0.3, 8], "CFrame": [96, -0.15, 179, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.69, 0.7, 0.66], "Material": "Concrete", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane1_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [0, -0.14, 166, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane1_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [64, -0.14, 166, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane1_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [128, -0.14, 166, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane1_3": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [192, -0.14, 166, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk1_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [32, 2, 188, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop1_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [32, 7, 188, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk1_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [96, 2, 188, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop1_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [96, 7, 188, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk1_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [160, 2, 188, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop1_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [160, 7, 188, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
         },
         "Road2": {
           "$className": "Part",
@@ -338,46 +258,6 @@
           "$className": "Part",
           "$properties": {"Anchored": true, "Size": [304, 0.3, 8], "CFrame": [96, -0.15, 307, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.69, 0.7, 0.66], "Material": "Concrete", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
         },
-        "Lane2_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [0, -0.14, 294, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane2_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [64, -0.14, 294, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane2_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [128, -0.14, 294, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane2_3": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [192, -0.14, 294, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk2_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [32, 2, 316, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop2_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [32, 7, 316, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk2_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [96, 2, 316, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop2_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [96, 7, 316, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk2_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [160, 2, 316, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop2_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [160, 7, 316, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
         "Road3": {
           "$className": "Part",
           "$properties": {"Anchored": true, "Size": [304, 0.3, 16], "CFrame": [96, -0.3, 422, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.2, 0.23, 0.24], "Material": "Asphalt", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
@@ -389,50 +269,6 @@
         "FarSidewalk3": {
           "$className": "Part",
           "$properties": {"Anchored": true, "Size": [304, 0.3, 8], "CFrame": [96, -0.15, 435, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.69, 0.7, 0.66], "Material": "Concrete", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane3_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [0, -0.14, 422, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane3_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [64, -0.14, 422, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane3_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [128, -0.14, 422, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Lane3_3": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [10, 0.02, 0.25], "CFrame": [192, -0.14, 422, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.92, 0.85, 0.63], "Material": "SmoothPlastic", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk3_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [32, 2, 444, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop3_0": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [32, 7, 444, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk3_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [96, 2, 444, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop3_1": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [96, 7, 444, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTrunk3_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [1.2, 5, 1.2], "CFrame": [160, 2, 444, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.4, 0.29, 0.19], "Material": "Wood", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "TreeTop3_2": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 7, 7], "CFrame": [160, 7, 444, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.27, 0.42, 0.29], "Material": "Grass", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
-        },
-        "Bench": {
-          "$className": "Part",
-          "$properties": {"Anchored": true, "Size": [7, 1.5, 2], "CFrame": [-10, 0.75, 55, 1, 0, 0, 0, 1, 0, 0, 0, 1], "Color": [0.6, 0.43, 0.3], "Material": "WoodPlanks", "TopSurface": "Smooth", "BottomSurface": "Smooth"}
         }
       },
       "Homes": {

@@ -29,6 +29,7 @@ case "${1:-check}" in
     python3 tests/HomePlannerUI.test.py
     python3 tests/HomeLights.test.py
     python3 tests/HomeLightsUI.test.py
+    python3 tests/WorldSignsUI.test.py
     python3 tests/ProfileLifecycle.test.py
     python3 tests/ProfileRetry.test.py
     python3 tests/ProfileRecoveryUI.test.py

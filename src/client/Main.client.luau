@@ -7,6 +7,7 @@ local HomeController = require("./HomeController")
 local ModalControls = require("./ModalControls")
 local ProfileRecovery = require("./ProfileRecoveryController")
 local HomeLights = require("./HomeLightsController")
+local WorldSigns = require("./WorldSignsController")
 local Strings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Strings"))
 local Layout = require(ReplicatedStorage.Shared.HudLayout)
 local Theme = require(ReplicatedStorage.Shared.Theme)
@@ -155,6 +156,9 @@ ModalControls.start(screen)
 local homeLights = HomeLights.start(screen, function(): string
 	return language
 end)
+local worldSigns = WorldSigns.start(screen, function(): string
+	return language
+end)
 jobsButton.Activated:Connect(function()
 	housing.hide()
 	jobs.show("Jobs")
@@ -221,6 +225,7 @@ local function render(): ()
 	housing.render()
 	recovery.render()
 	homeLights.render()
+	worldSigns.render()
 end
 local function togglePhone(): ()
 	if
