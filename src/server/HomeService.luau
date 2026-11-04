@@ -160,7 +160,8 @@ function Service.start(profiles: ProfileService.API): ()
 		reason: string?,
 		ack: string?,
 		openShop: boolean?,
-		placementAck: string?
+		placementAck: string?,
+		storeAck: string?
 	): ()
 		if player.Parent ~= Players then
 			return
@@ -217,6 +218,7 @@ function Service.start(profiles: ProfileService.API): ()
 			error = reason,
 			ack = ack,
 			placementAck = placementAck,
+			storeAck = storeAck,
 			openShop = openShop,
 			plan = if p then HomePlan.evaluate(items) else nil,
 		}
@@ -294,21 +296,18 @@ function Service.start(profiles: ProfileService.API): ()
 		if type(action) ~= "string" or #action > 12 then
 			return
 		end
-		local purchaseRequestId = if action == "buy"
-				and type(d.requestId) == "string"
+		local commandRequestId = if type(d.requestId) == "string"
 				and #d.requestId <= 80
 				and Profile.identifier(d.requestId)
 			then d.requestId
 			else nil
-		local placementRequestId = if action == "place"
-				and type(d.requestId) == "string"
-				and #d.requestId <= 80
-				and Profile.identifier(d.requestId)
-			then d.requestId
-			else nil
-		if action == "place" and placementRequestId == nil then
+		local purchaseRequestId = if action == "buy" then commandRequestId else nil
+		local placementRequestId = if action == "place" then commandRequestId else nil
+		local storeRequestId = if action == "store" then commandRequestId else nil
+		if (action == "place" or action == "store") and commandRequestId == nil then
 			return
 		end
+
 		if action == "sync" then
 			send(player, nil, nil, nil)
 			return
@@ -318,11 +317,11 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local p = profiles.read(player)
 		if p == nil then
-			send(player, "Unavailable", purchaseRequestId, nil, placementRequestId)
+			send(player, "Unavailable", purchaseRequestId, nil, placementRequestId, storeRequestId)
 			return
 		end
 		if action ~= "buy" and d.editorId ~= c.editorId then
-			send(player, "StaleRevision", nil, nil, placementRequestId)
+			send(player, "StaleRevision", nil, nil, placementRequestId, storeRequestId)
 			return
 		end
 		if action == "probe" then
@@ -363,7 +362,8 @@ function Service.start(profiles: ProfileService.API): ()
 				if action == "buy" then "GoShop" else "GoHome",
 				purchaseRequestId,
 				nil,
-				placementRequestId
+				placementRequestId,
+				storeRequestId
 			)
 			return
 		end
@@ -394,6 +394,16 @@ function Service.start(profiles: ProfileService.API): ()
 				return
 			end
 			local id, revision = d.itemId, d.revision
+			if
+				action == "store"
+				and Profile.identifier(id)
+				and p.inventory[id] ~= nil
+				and Profile.integer(revision, 0, 9007199254740991)
+				and p.housing.placements[id] == nil
+			then
+				send(player, nil, nil, nil, nil, storeRequestId)
+				return
+			end
 			if action == "place" then
 				local pose, why = Furniture.validate(p, id, d.pose, revision)
 				if pose == nil then
@@ -432,7 +442,14 @@ function Service.start(profiles: ProfileService.API): ()
 				reconcile(player, confirmed)
 			end
 		end
-		send(player, if ok then nil else reason or "Unavailable", ack, nil, placementRequestId)
+		send(
+			player,
+			if ok then nil else reason or "Unavailable",
+			ack,
+			nil,
+			placementRequestId,
+			storeRequestId
+		)
 	end)
 end
 return Service

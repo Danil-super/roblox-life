@@ -16,7 +16,7 @@ local os = {clock = function() return now end}
 local Http = {GenerateGUID = function() generated += 1;return "request-"..generated end}
 local function t(key) return key end
 local state = {available=true, nearShop=true}
-local purchase = nil
+local purchase, storing = nil, nil
 local lastError, errorUntil, listKey = nil, 0, ""
 local sent = {}
 local function send(action, packet)
@@ -26,6 +26,8 @@ end
 local product = {id="floor-plant-v1",dollars=180}
 '''
 cases = {
+    "pending_store_blocks_purchase": '''storing={requestId="store-one"};buy(product);assert(#sent==0,"Store allowed concurrent purchase")''',
+
     "rapid_clicks": '''
 buy(product);buy(product);buy(product)
 assert(#sent==1,"Busy purchase sent another request")

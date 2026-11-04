@@ -614,6 +614,17 @@ en["resultAcceptedDuo"] =
 	"Both colours and walls passed inspection. One payment confirmed for the whole contract."
 ru["resultAcceptedDuo"] =
 	"Оба цвета и обе стены прошли проверку. Подтверждена одна оплата за весь заказ."
+en["storePending"] = "Returning this item to inventory…"
+ru["storePending"] = "Возвращаем предмет на склад…"
+en["storeUncertain"] = "Confirmation is taking longer. Retry the same item."
+ru["storeUncertain"] =
+	"Ответ задерживается. Повтори возврат того же предмета."
+en["storeBusy"] = "Saving…"
+ru["storeBusy"] = "Подождите"
+en["retryStore"] = "Retry"
+ru["retryStore"] = "Повторить"
+en["homeErrorStored"] = "Item returned to inventory. It is still yours."
+ru["homeErrorStored"] = "Предмет на складе. Он по-прежнему твой."
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

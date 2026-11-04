@@ -27,6 +27,7 @@ export type Snapshot = {
 	ack: string?,
 	-- Placement response identity; a confirmed owned pose still proves success.
 	placementAck: string?,
+	storeAck: string?,
 	openShop: boolean?,
 	plan: HomePlan.Progress?,
 }

@@ -35,8 +35,8 @@ local profiles={read=function() return if available then p else nil end,change=f
 end}
 local function reconcile()reconciles+=1 end
 local replies={}
-local function send(_,reason,ack,_,placementAck)
-    table.insert(replies,{error=reason,ack=ack,placementAck=placementAck})
+local function send(_,reason,ack,_,placementAck,storeAck)
+    table.insert(replies,{error=reason,ack=ack,placementAck=placementAck,storeAck=storeAck})
 end
 local handler
 local command={OnServerEvent={Connect=function(_,fn)handler=fn end}}
@@ -47,6 +47,29 @@ local function packet(id,rev,x)
 end
 '''
 cases={
+    "store_retry_no_write_and_stale_after_replacement": r'''
+handler(player,packet("place-one",0,5))
+local d={action="store",requestId="store-one",editorId="editor",itemId="plant",revision=1}
+handler(player,d)
+assert(writes==2 and p.housing.revision==2 and p.housing.placements.plant==nil,"Store failed")
+assert(replies[#replies].storeAck=="store-one" and replies[#replies].error==nil,"Store ack missing")
+for _=1,4 do handler(player,d)end
+assert(writes==2 and reconciles==2,"Store retry rewrote profile")
+handler(player,packet("place-two",2,8))
+handler(player,d)
+assert(writes==3 and p.housing.placements.plant.x==8,"Old store removed a newer placement")
+assert(replies[#replies].storeAck=="store-one" and replies[#replies].error=="StaleRevision")
+assert(p.wallet.dollars==70 and p.inventory.plant~=nil,"Store changed money or ownership")
+''',
+    "store_requires_valid_identity_and_context": r'''
+handler(player,packet("place-one",0,5));local before=writes
+handler(player,{action="store",editorId="editor",itemId="plant",revision=1})
+assert(writes==before and p.housing.placements.plant~=nil,"Missing ID was accepted")
+home=false;handler(player,{action="store",requestId="store-one",editorId="editor",itemId="plant",revision=1})
+assert(replies[#replies].storeAck=="store-one" and replies[#replies].error=="GoHome")
+assert(writes==before and p.housing.placements.plant~=nil,"Away store changed placement")
+''',
+
     "duplicate_no_write_and_stale_replay": r'''
 local first=packet("place-one",0,5)
 handler(player,first)

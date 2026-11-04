@@ -7,6 +7,7 @@ local Strings = require(RS.Shared.Strings)
 local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
 local PurchaseFlow = require(RS.Shared.PurchaseFlow)
+local StoreFlow = require(RS.Shared.StoreFlow)
 local Build = require("./BuildController")
 local RoomPlanner = require("./HomePlannerController")
 local Controller = {}
@@ -28,6 +29,7 @@ function Controller.start(
 	local lastError: string? = nil
 	local errorUntil = 0
 	local purchase: PurchaseFlow.Pending? = nil
+	local storing: StoreFlow.Pending? = nil
 	local purchasedItem: string? = nil
 	local routeActive = false
 	local syncAt = 0
@@ -240,6 +242,9 @@ function Controller.start(
 		return f
 	end
 	local function buy(product: Types.Product): ()
+		if storing then
+			return
+		end
 		local s = state
 		if s == nil or not s.available or not s.nearShop then
 			lastError = "GoShop"
@@ -261,6 +266,36 @@ function Controller.start(
 			{ catalogId = product.id, requestId = nextPurchase.requestId }
 		send("buy", packet)
 	end
+	local function storeItem(owned: Types.Owned): ()
+		local s = state
+		if s == nil or not s.available or not s.nearHome or purchase ~= nil then
+			return
+		end
+		if storing == nil and owned.placed == nil then
+			return
+		end
+		local nextStore, shouldSend = StoreFlow.request(
+			storing,
+			owned.id,
+			s.editorId,
+			s.revision,
+			if storing then storing.requestId else "store:" .. Http:GenerateGUID(false),
+			os.clock()
+		)
+		if not shouldSend then
+			return
+		end
+		storing = nextStore
+		listKey = ""
+		focus = { tab = "Furniture", id = owned.id }
+		local packet: { [string]: unknown } = {
+			requestId = nextStore.requestId,
+			itemId = nextStore.itemId,
+			revision = nextStore.revision,
+		}
+		send("store", packet)
+	end
+
 	local function render(): ()
 		local s = state
 		planner.render(s)
@@ -274,14 +309,21 @@ function Controller.start(
 		local errorText = if lastError and os.clock() < errorUntil
 			then t("homeError" .. lastError)
 			else nil
-		shopInfo.Text = if purchase
+		local storeText = if storing
 			then t(
+				if StoreFlow.canRetry(storing, os.clock()) then "storeUncertain" else "storePending"
+			)
+			else nil
+		shopInfo.Text = if storeText
+			then storeText
+			elseif purchase then t(
 				if PurchaseFlow.canRetry(purchase, os.clock())
 					then "purchaseUncertain"
 					else "purchasePending"
 			)
 			else errorText or t(if s and s.nearShop then "shopReady" else "shopTravel")
-		inventoryInfo.Text = errorText
+		inventoryInfo.Text = storeText
+			or errorText
 			or t(if s and s.nearHome then "inventoryHint" else "inventoryGoHome")
 		builder.render()
 		if s == nil then
@@ -298,6 +340,9 @@ function Controller.start(
 					then purchase.requestId .. tostring(PurchaseFlow.canRetry(purchase, os.clock()))
 					else ""
 			)
+		if storing then
+			key ..= storing.requestId .. tostring(StoreFlow.canRetry(storing, os.clock()))
+		end
 		for _, owned in s.items do
 			key ..= owned.id .. (if owned.placed then "placed" else "stored")
 		end
@@ -335,7 +380,8 @@ function Controller.start(
 						else "purchaseBusy")
 					else "buyItem"
 			)
-			b.Active = s.available
+			b.Active = storing == nil
+				and s.available
 				and s.nearShop
 				and (
 					if purchase
@@ -367,12 +413,18 @@ function Controller.start(
 			b.Position = UDim2.new(0.3, 0, 0, 48)
 			b.Size = UDim2.new(0.35, -6, 0, 44)
 			b.Text = t(if owned.placed then "moveItem" else "placeItem")
-			b.Active = s.available and s.nearHome
+			b.Active = s.available and s.nearHome and storing == nil and purchase == nil
 			b.AutoButtonColor = b.Active
 			b.BackgroundTransparency = if b.Active then 0 else 0.6
 			b.Activated:Connect(function()
 				local current = state
-				if current and current.available and current.nearHome then
+				if
+					current
+					and current.available
+					and current.nearHome
+					and storing == nil
+					and purchase == nil
+				then
 					hidePanels()
 					builder.enter(owned, current)
 				end
@@ -380,17 +432,24 @@ function Controller.start(
 			local store = button(card, "Store")
 			store.Position = UDim2.new(0.65, 0, 0, 48)
 			store.Size = UDim2.new(0.35, -8, 0, 44)
-			store.Text = t("storeItem")
-			store.Visible = owned.placed ~= nil
-			store.Active = s.available and s.nearHome
+			local storeIntent = storing
+			local pendingItem = storeIntent ~= nil and storeIntent.itemId == owned.id
+			local retryStore = storeIntent ~= nil and StoreFlow.canRetry(storeIntent, os.clock())
+			store.Text = t(
+				if pendingItem
+					then (if retryStore then "retryStore" else "storeBusy")
+					else "storeItem"
+			)
+			store.Visible = owned.placed ~= nil or pendingItem
+			store.Active = s.available
+				and s.nearHome
+				and purchase == nil
+				and (storeIntent == nil or (pendingItem and retryStore))
+			store.AutoButtonColor = store.Active
 			store.BackgroundTransparency = if store.Active then 0 else 0.6
 			store.Activated:Connect(function()
-				local current = state
-				if current and current.nearHome and current.available then
-					local packet: { [string]: unknown } =
-						{ itemId = owned.id, revision = current.revision }
-					send("store", packet)
-				end
+				storeItem(owned)
+				render()
 			end)
 		end
 		if #s.items == 0 then
@@ -460,6 +519,13 @@ function Controller.start(
 	end)
 	event.OnClientEvent:Connect(function(s: Types.Snapshot)
 		state = s
+		local nextStore, storeOutcome = StoreFlow.observe(storing, s)
+		storing = nextStore
+		if storeOutcome == "Confirmed" then
+			lastError, errorUntil = "Stored", os.clock() + 4
+		elseif storeOutcome == "Expired" then
+			lastError, errorUntil = "Restart", os.clock() + 4
+		end
 		if s.error then
 			lastError = s.error
 			errorUntil = os.clock() + 4
