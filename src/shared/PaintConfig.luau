@@ -22,6 +22,7 @@ local config = {
 	rollerRadius = 0.65,
 	wideRollerRadius = 1.25,
 	wideRollerXP = 50,
+	edgeAssist = 0.35,
 	areaPerSecond = 8,
 	areaBurst = 12,
 	colorId = "warm-white",

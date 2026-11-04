@@ -11,6 +11,7 @@ local Strings = require(ReplicatedStorage.Shared.Strings)
 type Point = { u: number, v: number }
 type Segment = { points: { Point }, starts: boolean }
 local View = require(ReplicatedStorage.Shared.PaintView)
+local Aim = require(ReplicatedStorage.Shared.PaintAim)
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -78,6 +79,22 @@ function Controller.start(
 	title.Size = UDim2.new(1, -24, 0, 42)
 	title.ZIndex = 21
 	title.Parent = toolbar
+	local progress = Instance.new("Frame")
+	progress.Name, progress.BorderSizePixel = "Progress", 0
+	progress.Position, progress.Size = UDim2.fromOffset(12, 49), UDim2.new(1, -24, 0, 5)
+	progress.BackgroundColor3, progress.ZIndex, progress.Parent =
+		Color3.fromRGB(79, 97, 91), 21, toolbar
+	local fill = Instance.new("Frame")
+	fill.Name, fill.BorderSizePixel = "Confirmed", 0
+	fill.Size, fill.BackgroundColor3 = UDim2.fromScale(0, 1), Color3.fromRGB(110, 200, 151)
+	fill.ZIndex, fill.Parent = 22, progress
+	local threshold = Instance.new("Frame")
+	threshold.Name, threshold.BorderSizePixel = "Target", 0
+	threshold.AnchorPoint, threshold.Position =
+		Vector2.new(0.5, 0.5), UDim2.fromScale(Config.threshold, 0.5)
+	threshold.Size, threshold.BackgroundColor3 =
+		UDim2.fromOffset(2, 9), Color3.fromRGB(244, 239, 224)
+	threshold.ZIndex, threshold.Parent = 23, progress
 	local function button(name: string, x: number): TextButton
 		local b = Instance.new("TextButton")
 		b.Name = name
@@ -192,11 +209,20 @@ function Controller.start(
 		local t = function(k: string): string
 			return Strings.text(language(), k)
 		end
+		local coverage = View.progress(s.count, Config.columns * Config.rows, Config.threshold)
 		title.Text = string.format(
-			"%s · %d%%",
-			t(if missing then "paintMissing" else "paintDrag"),
-			math.floor(s.count / (Config.columns * Config.rows) * 100)
+			t("paintProgress"),
+			t(
+				if s.error == "Drying"
+					then "paintWait"
+					elseif coverage.covered then "paintCovered"
+					elseif missing then "paintMissing"
+					else "paintDrag"
+			),
+			coverage.percent,
+			coverage.target
 		)
+		fill.Size = UDim2.fromScale(coverage.fill, 1)
 		review.Text = t("inspectResult")
 		leave.Text = t("leaveWork")
 		for i, cell in cells do
@@ -205,7 +231,7 @@ function Controller.start(
 				then 0
 				elseif predictions[i] and os.clock() - predictions[i] < 0.45 then 0.25
 				else 1
-			strokes[i].Enabled = missing and not confirmed
+			strokes[i].Enabled = missing and not coverage.covered and not confirmed
 		end
 	end
 	local function enter(target: BasePart, s: Types.Snapshot): ()
@@ -410,16 +436,22 @@ function Controller.start(
 				pos += inset
 			end
 			local ray = camera:ViewportPointToRay(pos.X, pos.Y)
-			local filter = RaycastParams.new()
-			filter.FilterType = Enum.RaycastFilterType.Include
-			filter.FilterDescendantsInstances = { target }
-			local hit = workspace:Raycast(ray.Origin, ray.Direction * 150, filter)
-			if hit then
-				local localPoint = target.CFrame:PointToObjectSpace(hit.Position)
-				local p = {
-					u = math.clamp(localPoint.X / target.Size.X + 0.5, 0, 1),
-					v = math.clamp(0.5 - localPoint.Y / target.Size.Y, 0, 1),
-				}
+			local origin = target.CFrame:PointToObjectSpace(ray.Origin)
+			local direction = target.CFrame:VectorToObjectSpace(ray.Direction)
+			local p = Aim.project(
+				{ x = origin.X, y = origin.Y, z = origin.Z },
+				{ x = direction.X, y = direction.Y, z = direction.Z },
+				target.Size.X,
+				target.Size.Y,
+				target.Size.Z,
+				Config.edgeAssist
+			)
+			if p then
+				local localPoint = Vector3.new(
+					(p.u - 0.5) * target.Size.X,
+					(0.5 - p.v) * target.Size.Y,
+					target.Size.Z / 2
+				)
 				local segment = current
 				if segment and #segment.points < 24 then
 					local last = segment.points[#segment.points]

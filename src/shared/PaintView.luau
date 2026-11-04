@@ -1,5 +1,24 @@
 --!strict
 local View = {}
+export type Progress = {
+	fill: number,
+	percent: number,
+	target: number,
+	remaining: number,
+	covered: boolean,
+}
+function View.progress(count: number, total: number, threshold: number): Progress
+	local confirmed = if count == count and math.abs(count) < math.huge
+		then math.clamp(math.floor(count), 0, total)
+		else 0
+	return {
+		fill = confirmed / total,
+		percent = math.floor(confirmed / total * 100),
+		target = math.ceil(threshold * 100),
+		remaining = math.max(0, math.ceil(total * threshold) - confirmed),
+		covered = confirmed / total >= threshold,
+	}
+end
 -- FieldOfView is vertical. Fit inside the area above the work toolbar.
 function View.fit(
 	w: number,
