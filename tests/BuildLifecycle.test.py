@@ -19,6 +19,7 @@ start = source.index("\t\tdeathConnection = humanoid.Died:Once")
 death_hook = source[start:source.index("\n\t\tpinned = false", start)]
 header = r'''
 local active, waiting, valid, touch = true, true, true, {}
+local pending = {requestId="place-old"}
 local bar = {Visible=true}
 local attributes = {}
 local screen = {SetAttribute=function(_,key,value) attributes[key]=value end}
@@ -53,12 +54,12 @@ cases = {
 stop()
 assert(inventory.Visible and exits==1,"Cancel should return to inventory")
 assert(not active and not bar.Visible and destroyed==1 and unbound==1)
-assert(camera.CameraType=="Custom" and attributes.Building==false)
+assert(camera.CameraType=="Custom" and attributes.Building==false and pending==nil,"Cancel retained an old intent")
 ''',
     "removal_returns_exploration": '''
 removed()
 assert(not inventory.Visible and not homePanel.Visible,"Death reopened a modal and hid touch controls")
-assert(not active and destroyed==1 and camera.CameraType=="Custom")
+assert(not active and destroyed==1 and camera.CameraType=="Custom" and pending==nil,"Death retained an old intent")
 ''',
     "nonce_change_returns_exploration": '''
 update({editorId="new",homeName="Home_1",nearHome=true,available=false,items={}})
