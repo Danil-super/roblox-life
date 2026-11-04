@@ -1,5 +1,6 @@
 --!strict
 local ClientDialogue = require("./ClientDialogue")
+local FirstSteps = require("./FirstSteps")
 export type Result = {
 	jobId: string,
 	operationId: string,
@@ -39,5 +40,6 @@ export type Snapshot = {
 	clientKey: string?,
 	canTalk: boolean?,
 	conversation: ClientDialogue.Dialogue?,
+	firstSteps: FirstSteps.Progress?,
 }
 return {}

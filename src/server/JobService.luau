@@ -12,6 +12,7 @@ local World = require("./World")
 local ClientScene = require("./ClientScene")
 local Meeting = require("./Domain/ClientMeeting")
 local Dialogue = require(ReplicatedStorage.Shared.ClientDialogue)
+local FirstSteps = require(ReplicatedStorage.Shared.FirstSteps)
 local Config = require(ReplicatedStorage.Shared.PaintConfig)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
 type Context = {
@@ -233,6 +234,14 @@ function Service.start(profiles: ProfileService.API): ()
 			clientKey = if contract then contract.clientKey else nil,
 			canTalk = canTalk(player, ctx, phase, available),
 			conversation = conversation,
+			firstSteps = FirstSteps.evaluate(if p
+				then {
+					completed = p.onboarding.completed,
+					paid = p.jobs.completedCount > 0,
+					ownsFurniture = next(p.inventory) ~= nil,
+					phase = phase,
+				}
+				else nil),
 		}
 		stateEvent:FireClient(player, snapshot)
 	end
