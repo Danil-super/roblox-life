@@ -31,6 +31,12 @@ local phases: { [string]: { line: string, action: string?, label: string?, gestu
 		label = "useRoller",
 		gesture = "point",
 	},
+	SurfaceReady = {
+		line = "residentNextWall",
+		action = "nextSurface",
+		label = "nextSurface",
+		gesture = "point",
+	},
 	Ready = { line = "residentReview", action = "submit", label = "submitJob", gesture = "nod" },
 	Completed = { line = "residentThanks", gesture = "wave" },
 }

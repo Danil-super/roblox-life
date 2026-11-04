@@ -6,6 +6,8 @@ export type Result = {
 	operationId: string,
 	dollars: number,
 	xp: number,
+	primaryColorId: string?,
+	secondaryColorId: string?,
 }
 export type Offer = {
 	clientKey: string?,
@@ -13,6 +15,7 @@ export type Offer = {
 	titleKey: string,
 	briefKey: string,
 	colorId: string,
+	secondaryColorId: string?,
 	requiredXP: number,
 	unlocked: boolean,
 	reward: number,
@@ -31,6 +34,10 @@ export type Snapshot = {
 	near: boolean,
 	error: string?,
 	location: string?,
+	wallName: string?,
+	wallId: string?,
+	surfaceIndex: number?,
+	surfaceTotal: number?,
 	destination: { number }?,
 	offers: { Offer }?,
 	paintingXP: number?,

@@ -14,7 +14,7 @@ local Config=require("../src/shared/PaintConfig")
 local snapshot={count=0,mask=string.rep("0",96),error=nil}
 local function language()return "en"end
 local Strings={text=function(_,key)
-    return if key=="paintProgress" then "%s · %d%% / %d%%" else key
+    return if key=="paintProgress" then "%s · %d%% / %d%%" elseif key=="surfaceProgress" then "Wall %d / %d" else key
 end}
 local UDim2={fromScale=function(x,y)return {x=x,y=y}end}
 local title,review,leave,fill={},{},{},{}
@@ -39,6 +39,8 @@ assert(title.Text=="paintWait · 80% / 80%","Covered wall falsely asks for more 
 assert(snapshot.count==77 and snapshot.error=="Drying","Rendering changed authoritative state")
 snapshot.error=nil;render();assert(title.Text:find("paintCovered",1,true))
 snapshot.count=96;render();assert(fill.Size.x==1,"Full bar failed")
+snapshot.surfaceIndex=2;snapshot.surfaceTotal=2;render()
+assert(title.Text=="Wall 2 / 2 · paintCovered · 100% / 80%","Two-wall toolbar lost current surface")
 '''
 with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
     script.write(header + render + checks)

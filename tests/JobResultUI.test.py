@@ -65,3 +65,36 @@ for name, checks in cases.items():
         script.flush()
         subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
     print("PASS JobResultUI:", name)
+
+start=source.index('\t\tlocal required = if receipt')
+finish=source.index('\n\t\tresultContinue.Text =',start)
+colours=source[start:finish]
+header='''
+local Config=require("../src/shared/PaintConfig")
+local Strings=require("../src/shared/Strings")
+local lang="en"
+local function t(key)return Strings.text(lang,key)end
+local Color3={new=function(r,g,b)return {r=r,g=g,b=b}end}
+local ColorSequence={new=function(first,last)return {first=first,last=last}end}
+local afterGradient,after,resultQuality={},{},{}
+local function paintResult(s)
+ local receipt=s.result
+'''
+checks='''
+for _,locale in {"en","ru"}do
+ lang=locale
+ local receipt={primaryColorId="mint",secondaryColorId="rose"}
+ for _,current in {"rose","mint","warm-white"}do
+  paintResult({result=receipt,requiredColorId=current})
+  assert(afterGradient.Enabled and after.BackgroundColor3.r==1,"Two-wall result lost gradient")
+  assert(afterGradient.Color.first.r==Config.palette.mint[1] and afterGradient.Color.last.r==Config.palette.rose[1],"Result used transient last wall")
+  assert(after.Text==t("resultAfterDuo") and resultQuality.Text==t("resultAcceptedDuo"),"Whole-contract result unclear")
+ end
+ paintResult({result={primaryColorId="warm-white"},requiredColorId="rose"})
+ assert(not afterGradient.Enabled and after.BackgroundColor3.r==Config.color[1],"Single-wall result changed")
+end
+'''
+with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
+    script.write(header+colours+'\nend\n'+checks);script.flush()
+    subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
+print('PASS JobResultUI: stable confirmed two-colour result, EN/RU and single-wall compatibility')

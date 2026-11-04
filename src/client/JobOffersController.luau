@@ -62,6 +62,12 @@ function Controller.start(
 	local function t(key: string): string
 		return Strings.text(language(), key)
 	end
+	local function materials(o: Types.Offer): string
+		local first = t(Config.colorKeys[o.colorId] or "warmWhite")
+		return if o.secondaryColorId
+			then first .. " + " .. t(Config.colorKeys[o.secondaryColorId] or "warmWhite")
+			else first
+	end
 	local function selectedOffer(): Types.Offer?
 		local s = state
 		if s and s.offers then
@@ -109,10 +115,11 @@ function Controller.start(
 		if offer then
 			title.Text, brief.Text = t(offer.titleKey), t(offer.briefKey)
 			reward.Text = string.format(t("contractReward"), offer.reward, offer.xp)
-			requirements.Text = string.format(
-				t("contractMaterial"),
-				t(Config.colorKeys[offer.colorId] or "warmWhite")
-			) .. "\n" .. t(offer.clientKey or "residentNina") .. " · " .. t("contractAddress")
+			requirements.Text = string.format(t("contractMaterial"), materials(offer))
+				.. "\n"
+				.. t(offer.clientKey or "residentNina")
+				.. " · "
+				.. t("contractAddress")
 			locked.Text = if offer.unlocked
 				then t("offerReady")
 				else string.format(
@@ -147,7 +154,7 @@ function Controller.start(
 			local info = label(b, "Info", 46, 50, 13)
 			info.Text = string.format(t("contractReward"), o.reward, o.xp)
 				.. " · "
-				.. t(Config.colorKeys[o.colorId] or "warmWhite")
+				.. materials(o)
 				.. "\n"
 				.. (
 					if o.unlocked

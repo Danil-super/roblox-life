@@ -5,8 +5,14 @@ local Economy = require("../src/server/Domain/Economy")
 local Config = require("../src/server/Domain/EconomyConfig")
 local p, other = Profile.new(1), Profile.new(2)
 local offers = Jobs.offers(p)
-assert(#offers == 3 and offers[1].id == "paint-tutorial-v1", "Board has no accessible first job")
-assert(offers[1].unlocked and not offers[2].unlocked and not offers[3].unlocked, "XP gate ignored")
+assert(#offers == 4 and offers[1].id == "paint-tutorial-v1", "Board has no accessible first job")
+assert(
+	offers[1].unlocked
+		and not offers[2].unlocked
+		and not offers[3].unlocked
+		and not offers[4].unlocked,
+	"XP gate ignored"
+)
 local revision = p.revision
 assert(
 	not Jobs.accept(p, "locked", "paint-mint-v1") and p.revision == revision,
@@ -43,7 +49,7 @@ assert(
 	p.wallet.dollars == 550 and p.progression.paintingXP == 120,
 	"Selected reward not authoritative"
 )
-assert(Jobs.offers(p)[3].unlocked, "Next contract did not unlock")
+assert(Jobs.offers(p)[3].unlocked and not Jobs.offers(p)[4].unlocked, "Next contract gate changed")
 assert(not Jobs.offers(other)[2].unlocked and other.wallet.dollars == 0, "Progress crossed players")
 assert(Config.rewards["paint-room-v1"].dollars == 250, "Legacy reward changed")
 print(

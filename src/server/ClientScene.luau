@@ -9,6 +9,32 @@ export type API = {
 	apply: (string, string) -> (),
 }
 local Scene = {}
+-- The second surface faces into the room, clear of the doorway and resident.
+function Scene.configureWalls(room: Model, secondary: boolean): { BasePart }
+	local first, floor = room:FindFirstChild("PaintableWall"), room:FindFirstChild("Floor")
+	assert(
+		first and first:IsA("BasePart") and floor and floor:IsA("BasePart"),
+		"Work wall/floor missing"
+	)
+	local walls: { BasePart } = { first }
+	local second = room:FindFirstChild("PaintableWallB")
+	if secondary then
+		if second == nil then
+			local wall = Instance.new("Part")
+			wall.Name, wall.Size = "PaintableWallB", Vector3.new(12, 8, 0.3)
+			wall.CFrame = floor.CFrame * CFrame.new(14, 4.5, 0) * CFrame.Angles(0, -math.pi / 2, 0)
+			wall.Anchored, wall.Material = true, Enum.Material.SmoothPlastic
+			wall.TopSurface, wall.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+			wall.Color, wall.Parent = Color3.fromRGB(145, 148, 140), room
+			second = wall
+		end
+		assert(second and second:IsA("BasePart"), "Invalid second wall")
+		table.insert(walls, second)
+	elseif second then
+		second:Destroy()
+	end
+	return walls
+end
 function Scene.create(room: Model, ownerId: number): API
 	local floor = room:FindFirstChild("Floor")
 	assert(floor and floor:IsA("BasePart"), "Client room has no floor")

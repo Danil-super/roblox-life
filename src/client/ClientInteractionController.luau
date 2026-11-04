@@ -99,10 +99,12 @@ function Controller.start(
 		heading.Text = t(if d then d.speakerKey else "clientResident")
 		line.Text = t(if d then d.lineKey else "offerWaiting")
 		details.Text = if s
-			then string.format(
-				t("contractMaterial"),
-				t(Config.colorKeys[s.requiredColorId or Config.colorId] or "warmWhite")
-			) .. "\n" .. string.format(t("residentReward"), s.reward)
+			then (if s.phase == "SurfaceReady"
+				then t("jobSurfaceReady")
+				else string.format(
+					t("contractMaterial"),
+					t(Config.colorKeys[s.requiredColorId or Config.colorId] or "warmWhite")
+				)) .. "\n" .. string.format(t("residentReward"), s.reward)
 			else ""
 		back.Text, action.Text =
 			t("closeClient"), t(if d and d.actionKey then d.actionKey else "roomGoalComplete")

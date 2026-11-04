@@ -13,6 +13,7 @@ export type ConfigData = {
 	areaPerSecond: number,
 	areaBurst: number,
 	colorId: string,
+	secondaryColorId: string?,
 }
 type Point = { u: number, v: number }
 export type State = {
@@ -29,12 +30,14 @@ export type State = {
 	lastPoint: Point?,
 	toolId: string,
 	basicRadius: number,
+	completedMasks: { string },
 }
+export type Colors = { primary: string, secondary: string? }
 local Painting = {}
 local function finite(n: unknown): boolean
 	return type(n) == "number" and n == n and math.abs(n) < math.huge
 end
-local function settings(raw: unknown): ConfigData
+local function settings(raw: unknown, colors: Colors?): ConfigData
 	assert(type(raw) == "table", "Painting configuration required")
 	local values = raw :: { [string]: unknown }
 	local function number(key: string, low: number, high: number): number
@@ -45,7 +48,18 @@ local function settings(raw: unknown): ConfigData
 		)
 		return value :: number
 	end
-	local color = values.colorId
+	local color = if colors then colors.primary else values.colorId
+	local secondary = if colors then colors.secondary else values.secondaryColorId
+	assert(
+		secondary == nil
+			or (
+				type(secondary) == "string"
+				and #secondary > 0
+				and #secondary <= 32
+				and secondary ~= color
+			),
+		"Invalid second paint color"
+	)
 	assert(type(color) == "string" and #color > 0 and #color <= 32, "Invalid paint color")
 	local config: ConfigData = {
 		columns = number("columns", 1, 64),
@@ -61,6 +75,7 @@ local function settings(raw: unknown): ConfigData
 		areaPerSecond = number("areaPerSecond", 1, 128),
 		areaBurst = number("areaBurst", 1, 4096),
 		colorId = color,
+		secondaryColorId = if type(secondary) == "string" then secondary else nil,
 	}
 	assert(
 		config.columns % 1 == 0 and config.rows % 1 == 0 and config.maxPoints % 1 == 0,
@@ -68,9 +83,15 @@ local function settings(raw: unknown): ConfigData
 	)
 	return config
 end
-function Painting.new(jobId: string, workId: string, now: number, rawConfig: unknown): State
+function Painting.new(
+	jobId: string,
+	workId: string,
+	now: number,
+	rawConfig: unknown,
+	colors: Colors?
+): State
 	assert(finite(now), "Valid clock required")
-	local Config = settings(rawConfig)
+	local Config = settings(rawConfig, colors)
 	return {
 		config = table.clone(Config),
 		jobId = jobId,
@@ -85,7 +106,50 @@ function Painting.new(jobId: string, workId: string, now: number, rawConfig: unk
 		lastPoint = nil,
 		toolId = "basic",
 		basicRadius = Config.rollerRadius,
+		completedMasks = {},
 	}
+end
+function Painting.surface(s: State): number
+	return #s.completedMasks + 1
+end
+function Painting.total(s: State): number
+	return if s.config.secondaryColorId then 2 else 1
+end
+function Painting.allReady(s: State): boolean
+	if s.phase ~= "Ready" or Painting.surface(s) ~= Painting.total(s) then
+		return false
+	end
+	for _, mask in s.completedMasks do
+		if #mask ~= s.config.columns * s.config.rows or not string.match(mask, "^[01]+$") then
+			return false
+		end
+		local _, count = string.gsub(mask, "1", "")
+		if count / (s.config.columns * s.config.rows) < s.config.threshold then
+			return false
+		end
+	end
+	return true
+end
+function Painting.nextSurface(s: State, workId: string, now: number): boolean
+	local second = s.config.secondaryColorId
+	if
+		s.phase ~= "Ready"
+		or Painting.surface(s) ~= 1
+		or second == nil
+		or workId == s.workId
+		or #workId == 0
+		or #workId > 80
+		or not finite(now)
+		or now < s.lastAt
+	then
+		return false
+	end
+	table.insert(s.completedMasks, Painting.mask(s))
+	s.workId, s.phase, s.config.colorId = workId, "ChooseMaterial", second
+	s.cells, s.count, s.seq, s.lastPoint = {}, 0, 0, nil
+	s.startedAt, s.lastAt, s.tokens = 0, now, s.config.areaBurst
+	s.toolId, s.config.rollerRadius = "basic", s.basicRadius
+	return true
 end
 function Painting.tool(s: State, id: string, experience: number): boolean
 	if

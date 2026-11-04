@@ -16,12 +16,18 @@ local facts: Meeting.Facts = {
 	phase = "Inspect",
 }
 assert(Meeting.allowed(facts), "Valid meeting rejected")
-for _, phase in { "Inspect", "Prepare", "ChooseMaterial", "Painting", "Ready", "Completed" } do
+for _, phase in
+	{ "Inspect", "Prepare", "ChooseMaterial", "Painting", "SurfaceReady", "Ready", "Completed" }
+do
 	facts.phase = phase
 	assert(Meeting.allowed(facts), "Known phase rejected")
 	local d = Dialogue.describe("residentNina", phase)
 	assert(d and d.speakerKey == "residentNina" and #d.lineKey > 0, "Phase dialogue missing")
 end
+assert(
+	describe("residentMila", "SurfaceReady").action == "nextSurface",
+	"Intermediate wall dialogue pays or repeats inspection"
+)
 assert(describe("residentNina", "Ready").action == "submit", "Acceptance bypassed existing submit")
 assert(describe("residentNina", "Inspect").action == "inspect", "Meeting lost inspection")
 assert(describe("residentNina", "Completed").action == nil, "Completed talk could pay again")

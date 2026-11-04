@@ -13,6 +13,7 @@ local phases: { [string]: boolean } = {
 	Prepare = true,
 	ChooseMaterial = true,
 	Painting = true,
+	SurfaceReady = true,
 	Ready = true,
 	Completed = true,
 }

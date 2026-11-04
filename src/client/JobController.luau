@@ -33,6 +33,7 @@ function Controller.start(
 		Prepare = "protectFloor",
 		ChooseMaterial = "choosePaint",
 		Painting = "useRoller",
+		SurfaceReady = "nextSurface",
 		Ready = "handoverClient",
 		Completed = "openJobs",
 	}
@@ -41,6 +42,7 @@ function Controller.start(
 		Prepare = "jobPrepare",
 		ChooseMaterial = "jobColor",
 		Painting = "jobPaint",
+		SurfaceReady = "jobSurfaceReady",
 		Ready = "jobReady",
 		Completed = "jobDone",
 		Offer = "jobOffer",
@@ -166,6 +168,8 @@ function Controller.start(
 	after.BackgroundTransparency = 0
 	after.BackgroundColor3 = Color3.new(table.unpack(Config.color))
 	after.TextColor3 = Color3.fromRGB(26, 43, 43)
+	local afterGradient = Instance.new("UIGradient")
+	afterGradient.Enabled, afterGradient.Parent = false, after
 	local resultMoney = text(resultBody, "Dollars", 56, 32, 24)
 	local resultXP = text(resultBody, "XP", 92, 28, 16)
 	local resultQuality = text(resultBody, "Quality", 124, 44, 13)
@@ -220,7 +224,7 @@ function Controller.start(
 		end
 		local folder = workspace:FindFirstChild("Homes")
 		local room = if folder then folder:FindFirstChild(s.location) else nil
-		local wall = if room then room:FindFirstChild("PaintableWall") else nil
+		local wall = if room then room:FindFirstChild(s.wallName or "PaintableWall") else nil
 		return if wall and wall:IsA("BasePart") then wall else nil
 	end
 	local function activate(): ()
@@ -257,7 +261,12 @@ function Controller.start(
 				painter.enter(wall, s)
 			end
 		else
-			local a = ({ Inspect = "talk", Prepare = "prepare", Ready = "talk" })[s.phase]
+			local a = ({
+				Inspect = "talk",
+				Prepare = "prepare",
+				SurfaceReady = "nextSurface",
+				Ready = "talk",
+			})[s.phase]
 			if a then
 				send(a, nil)
 			end
@@ -344,6 +353,7 @@ function Controller.start(
 			Prepare = "prepareHint",
 			ChooseMaterial = "colorHint",
 			Painting = "paintHint",
+			SurfaceReady = "nextSurfaceHint",
 			Ready = "handoverClientHint",
 		}
 		return t(hints[phase] or "jobRouteHint")
@@ -366,6 +376,13 @@ function Controller.start(
 				"%d%%",
 				math.floor((if s then s.count else 0) / (Config.columns * Config.rows) * 100)
 			)
+		if s and (s.surfaceTotal or 1) > 1 and phase ~= "Completed" and phase ~= "Offer" then
+			progress.Text = string.format(
+				t("surfaceProgress"),
+				s.surfaceIndex or 1,
+				s.surfaceTotal or 1
+			) .. " · " .. progress.Text
+		end
 		hint.Text = stepHint(phase)
 		hint.Visible = phase ~= "ChooseMaterial"
 		tools.Visible = phase == "ChooseMaterial"
@@ -427,8 +444,21 @@ function Controller.start(
 		then
 			resultHint.Text = t("wideUnlockedResult") .. "\n" .. resultHint.Text
 		end
-		local required = if s then s.requiredColorId or Config.colorId else Config.colorId
-		after.BackgroundColor3 = Color3.new(table.unpack(Config.palette[required] or Config.color))
+		local required = if receipt and receipt.primaryColorId
+			then receipt.primaryColorId
+			elseif s then s.requiredColorId or Config.colorId
+			else Config.colorId
+		local secondary = if receipt then receipt.secondaryColorId else nil
+		local primary = Color3.new(table.unpack(Config.palette[required] or Config.color))
+		afterGradient.Enabled = secondary ~= nil
+		after.BackgroundColor3 = if secondary then Color3.new(1, 1, 1) else primary
+		if secondary then
+			afterGradient.Color = ColorSequence.new(
+				primary,
+				Color3.new(table.unpack(Config.palette[secondary] or Config.color))
+			)
+			after.Text, resultQuality.Text = t("resultAfterDuo"), t("resultAcceptedDuo")
+		end
 		resultContinue.Text = t(
 			if onboarding == "BUY"
 				then "shopTitle"
@@ -498,6 +528,15 @@ function Controller.start(
 		if s.phase == "Inspect" and old and (old.phase == "Offer" or old.phase == "Completed") then
 			hidePanels()
 			homePanel.Visible = false
+		end
+		if s.phase == "ChooseMaterial" and old and old.phase == "SurfaceReady" then
+			hidePanels()
+			homePanel.Visible = false
+			if s.near then
+				jobs.Visible = true
+			else
+				map.show()
+			end
 		end
 		if s.phase == "Painting" and old and old.phase == "ChooseMaterial" then
 			local wall = currentWall()

@@ -189,7 +189,7 @@ function Controller.start(
 				sequence = sequence,
 				points = points,
 				starts = segment.starts,
-				wallId = Config.wallId,
+				wallId = if snapshot then snapshot.wallId or Config.wallId else Config.wallId,
 			}
 			send("stroke", packet)
 			segment.starts = false
@@ -222,6 +222,13 @@ function Controller.start(
 			coverage.percent,
 			coverage.target
 		)
+		if (s.surfaceTotal or 1) > 1 then
+			title.Text = string.format(
+				t("surfaceProgress"),
+				s.surfaceIndex or 1,
+				s.surfaceTotal or 1
+			) .. " · " .. title.Text
+		end
 		fill.Size = UDim2.fromScale(coverage.fill, 1)
 		review.Text = t("inspectResult")
 		leave.Text = t("leaveWork")

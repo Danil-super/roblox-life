@@ -583,6 +583,32 @@ en["guidePlaceDetail"] =
 	"Open inventory and return home. Choose Place, point at the floor, then confirm a valid position. Grid/Free and rotation help you arrange your room."
 ru["guidePlaceDetail"] =
 	"Открой склад и вернись домой. Выбери предмет, укажи место на полу и подтверди допустимую позицию. Используй сетку, свободный режим и поворот."
+en["contractDuo"] = "Two-tone living room"
+ru["contractDuo"] = "Гостиная в двух цветах"
+en["briefDuo"] =
+	"Two walls, one contract: mint first, rose second. Review each wall. The client pays after both pass."
+ru["briefDuo"] =
+	"Две стены, один заказ: сначала мятная, затем розовая. Проверь каждую. Оплата — после сдачи обеих."
+en["nextSurface"] = "Start the second wall"
+ru["nextSurface"] = "Ко второй стене"
+en["jobSurfaceReady"] = "First wall accepted · 1 / 2"
+ru["jobSurfaceReady"] = "Первая стена принята · 1 / 2"
+en["nextSurfaceHint"] =
+	"The first wall passed. Start the second, choose rose and paint it. Payment follows both walls."
+ru["nextSurfaceHint"] =
+	"Первая стена проверена. Перейди ко второй, выбери розовый и покрась. Оплата — за обе."
+en["residentNextWall"] =
+	"The mint wall looks good! Now paint the side wall rose. I will pay for both walls together at handover."
+ru["residentNextWall"] =
+	"Мятная стена готова! Теперь покрась боковую в розовый. За обе стены заплачу вместе при сдаче."
+en["surfaceProgress"] = "Wall %d / %d"
+ru["surfaceProgress"] = "Стена %d / %d"
+en["resultAfterDuo"] = "After · 2 walls"
+ru["resultAfterDuo"] = "После · 2 стены"
+en["resultAcceptedDuo"] =
+	"Both colours and walls passed inspection. One payment confirmed for the whole contract."
+ru["resultAcceptedDuo"] =
+	"Оба цвета и обе стены прошли проверку. Подтверждена одна оплата за весь заказ."
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

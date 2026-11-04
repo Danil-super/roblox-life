@@ -108,29 +108,44 @@ function Service.start(profiles: ProfileService.API): ()
 			end)
 		end
 		local contract = EconomyConfig.contracts[job.templateId]
+		local room = ctx.room
+		assert(room, "Workplace missing after creation")
+		local walls = ClientScene.configureWalls(
+			room.model,
+			contract ~= nil and contract.secondaryColorId ~= nil
+		)
 		if ctx.scene and contract then
 			ctx.scene.apply(contract.roomStyle, contract.clientKey)
 		end
 		if job.status == "Completed" then
+			for index, wall in walls do
+				local id = if contract
+					then (if index == 2
+						then contract.secondaryColorId or contract.colorId
+						else contract.colorId)
+					else Config.colorId
+				wall.Color = Color3.new(table.unpack(Config.palette[id] or Config.color))
+			end
+			ctx.wall = walls[#walls]
 			ctx.character = player.Character
 			return
 		end
 		local old = ctx.work
 		if old == nil or old.jobId ~= job.id or ctx.character ~= player.Character then
-			local settings = table.clone(Config)
-			settings.colorId = if contract then contract.colorId else Config.colorId
-			ctx.work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), settings)
+			ctx.work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), Config, {
+				primary = if contract then contract.colorId else Config.colorId,
+				secondary = if contract then contract.secondaryColorId else nil,
+			})
 			ctx.character = player.Character
-			local wall = ctx.wall
-			if wall ~= nil then
+			for _, wall in walls do
 				wall.Color = Color3.fromRGB(145, 148, 140)
 			end
-			local room = ctx.room
-			local cloth = if room then room.model:FindFirstChild("Protection") else nil
+			local cloth = room.model:FindFirstChild("Protection")
 			if cloth and cloth:IsA("BasePart") then
 				cloth.Transparency = 1
 			end
 		end
+		ctx.wall = walls[if ctx.work then Painting.surface(ctx.work) else 1]
 	end
 	local function phaseOf(p: Profile.Profile?, ctx: Context): string
 		local job = if p then p.jobs.active else nil
@@ -139,6 +154,9 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		if job.status == "Completed" then
 			return "Completed"
+		end
+		if ctx.work and ctx.work.phase == "Ready" and not Painting.allReady(ctx.work) then
+			return "SurfaceReady"
 		end
 		return if ctx.work then ctx.work.phase else "Inspect"
 	end
@@ -201,9 +219,15 @@ function Service.start(profiles: ProfileService.API): ()
 				and job
 				and job.status ~= "Completed"
 				and job.status ~= "Abandoned"
-			then wall.CFrame:PointToWorldSpace(Vector3.new(0, -1.5, 7))
+			then wall.CFrame:PointToWorldSpace(
+				Vector3.new(if work and Painting.surface(work) == 2 then -3 else 0, -1.5, 7)
+			)
 			else nil
-		if target and scene and (phase == "Inspect" or phase == "Ready") then
+		if
+			target
+			and scene
+			and (phase == "Inspect" or phase == "Ready" or phase == "SurfaceReady")
+		then
 			target = scene.root.CFrame:PointToWorldSpace(Vector3.new(0, 0, -3))
 		end
 		local snapshot: Types.Snapshot = {
@@ -222,13 +246,17 @@ function Service.start(profiles: ProfileService.API): ()
 			near = eligible(player, ctx),
 			error = reason,
 			location = if room then room.model.Name else nil,
+			wallName = if wall then wall.Name else nil,
+			wallId = if work and Painting.surface(work) == 2 then "wall-b" else Config.wallId,
+			surfaceIndex = if work then Painting.surface(work) else 1,
+			surfaceTotal = if contract and contract.secondaryColorId then 2 else 1,
 			destination = if target then { target.X, target.Y, target.Z } else nil,
 			offers = Jobs.offers(p),
 			paintingXP = if p then p.progression.paintingXP else 0,
 			contractId = if job then job.templateId else nil,
-			requiredColorId = if contract
-				then contract.colorId
-				elseif work then work.config.colorId
+			requiredColorId = if work
+				then work.config.colorId
+				elseif contract then contract.colorId
 				else Config.colorId,
 			toolId = if work then work.toolId else "basic",
 			clientKey = if contract then contract.clientKey else nil,
@@ -266,13 +294,6 @@ function Service.start(profiles: ProfileService.API): ()
 		ensure(player, ctx)
 		local p = profiles.read(player)
 		if p and p.jobs.active and p.jobs.active.status == "Completed" and ctx.wall then
-			local contract = EconomyConfig.contracts[p.jobs.active.templateId]
-			ctx.wall.Color = Color3.new(
-				table.unpack(
-					Config.palette[if contract then contract.colorId else Config.colorId]
-						or Config.color
-				)
-			)
 			local cloth = if ctx.room then ctx.room.model:FindFirstChild("Protection") else nil
 			if cloth and cloth:IsA("BasePart") then
 				cloth.Transparency = 1
@@ -430,13 +451,18 @@ function Service.start(profiles: ProfileService.API): ()
 		local ok = false
 		if action == "stroke" then
 			if
-				data.wallId ~= Config.wallId
+				data.wallId ~= (if Painting.surface(work) == 2 then "wall-b" else Config.wallId)
 				or type(data.sequence) ~= "number"
 				or type(data.starts) ~= "boolean"
 			then
 				return
 			end
 			ok = Painting.batch(work, data.sequence, data.points, data.starts, now, valid)
+		elseif action == "nextSurface" then
+			ok = valid and Painting.nextSurface(work, HttpService:GenerateGUID(false), now)
+			if ok then
+				ensure(player, ctx)
+			end
 		elseif action == "tool" then
 			if type(data.toolId) ~= "string" or #data.toolId > 16 then
 				return
@@ -463,6 +489,10 @@ function Service.start(profiles: ProfileService.API): ()
 				then data.color
 				else nil
 			ok = Painting.step(work, action, color, now, valid)
+			if ok and action == "review" and ctx.wall then
+				ctx.wall.Color =
+					Color3.new(table.unpack(Config.palette[work.config.colorId] or Config.color))
+			end
 			if ok and action == "prepare" and ctx.room then
 				local room = ctx.room
 				local cloth = if room then room.model:FindFirstChild("Protection") else nil

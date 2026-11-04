@@ -13,6 +13,7 @@ export type Offer = {
 	reward: number,
 	xp: number,
 	clientKey: string,
+	secondaryColorId: string?,
 }
 local Jobs = {}
 function Jobs.offers(p: Profile.Profile?): { Offer }
@@ -30,6 +31,7 @@ function Jobs.offers(p: Profile.Profile?): { Offer }
 				reward = reward.dollars,
 				xp = reward.xp,
 				clientKey = contract.clientKey,
+				secondaryColorId = contract.secondaryColorId,
 			})
 		end
 	end
@@ -92,7 +94,9 @@ function Jobs.submit(
 	if job.status == "Completed" then
 		return Economy.completeJob(p, job.id, now) ~= nil
 	end
-	if work.phase ~= "Ready" then
+	local contract = Config.contracts[job.templateId]
+	local total = if contract and contract.secondaryColorId then 2 else 1
+	if not Painting.allReady(work) or Painting.total(work) ~= total then
 		return false
 	end
 	local old = job.status

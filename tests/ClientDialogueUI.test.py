@@ -44,6 +44,9 @@ s.available=true;s.canTalk=true;s.conversation=Dialogue.describe("residentNina",
 s=table.clone(s);s.conversation=nil;s.canTalk=false;render(s);assert(not panel.Visible,"Departed player retained dialogue")
 s=table.clone(s);s.canTalk=true;s.phase="Completed";s.conversation=Dialogue.describe("residentNina","Completed");render(s)
 clicked();assert(panel.Visible and not action.Visible and #requests==1,"Thank-you dialogue could award again")
+s=table.clone(s);s.phase="SurfaceReady";s.conversation=Dialogue.describe("residentMila","SurfaceReady");render(s)
+assert(details.Text:find("1 / 2",1,true) and not details.Text:find("Requested colour",1,true),"Intermediate dialogue advertised old colour as next task")
+clicked();clicked();assert(#requests==2 and requests[2]=="nextSurface" and not panel.Visible,"Intermediate dialogue duplicated transition or paid reward")
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
     f.write(header+render+'\n'+activation+checks);f.flush()
