@@ -30,6 +30,15 @@ function Map.bounds(homeX: number, homeZ: number, targetX: number?, targetZ: num
 		front = cz + zSpan / 2,
 	}
 end
+-- Include detours without clipping the path against the original room bounds.
+function Map.include(bounds: Bounds, x: number, z: number): Bounds
+	return {
+		left = math.min(bounds.left, x - 12),
+		right = math.max(bounds.right, x + 12),
+		back = math.min(bounds.back, z - 12),
+		front = math.max(bounds.front, z + 12),
+	}
+end
 function Map.pixel(
 	x: number,
 	z: number,

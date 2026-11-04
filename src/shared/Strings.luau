@@ -168,9 +168,10 @@ ru["readyHint"] =
 	"Нажми «Сдать работу» внизу и получи награду."
 en["openJobs"] = "Open jobs"
 ru["openJobs"] = "Открыть заказы"
-en["jobRouteHint"] = "Follow the large arrow to the marked wall inside your client’s room."
+en["jobRouteHint"] =
+	"Follow gold markers through doors. At the target, press the yellow action button."
 ru["jobRouteHint"] =
-	"Иди по большой стрелке к отмеченной стене в комнате клиента."
+	"Иди по золотым меткам через двери. У цели нажми жёлтую кнопку задания."
 en["openMap"] = "Open route map"
 ru["openMap"] = "Открыть карту маршрута"
 en["shopTitle"] = "Furniture shop"
@@ -625,6 +626,12 @@ en["retryStore"] = "Retry"
 ru["retryStore"] = "Повторить"
 en["homeErrorStored"] = "Item returned to inventory. It is still yours."
 ru["homeErrorStored"] = "Предмет на складе. Он по-прежнему твой."
+en["routeFinding"] = "Finding a path…"
+ru["routeFinding"] = "Ищем путь…"
+en["routeUnavailable"] = "Path unavailable"
+ru["routeUnavailable"] = "Нет маршрута"
+en["followPath"] = "Follow the gold marker"
+ru["followPath"] = "Иди к золотой метке"
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

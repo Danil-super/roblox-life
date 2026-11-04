@@ -24,4 +24,7 @@ assert(math.abs(sx - hx) < 0.001 and math.abs(sy - hy) < 0.001, "Room slot chang
 local empty = Map.bounds(0, 0, nil, nil)
 local ex, ey = Map.pixel(0, 0, empty, 400, 150)
 assert(ex == ex and ey == ey, "No-job map has invalid coordinates")
+local expanded = Map.include(bounds, 100, -50)
+assert(expanded.right >= 112 and expanded.back <= -62, "Detour excluded from bounds")
+assert(bounds.right < 100 and bounds.back > -50, "Expansion mutated original bounds")
 print("MapMath: layout, bounds, room-slot translation and no-job cases passed")

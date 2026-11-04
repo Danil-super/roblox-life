@@ -30,6 +30,17 @@ local function cloneRoom(
 		templateName == "ClientApartmentTemplate_v1",
 		player.UserId
 	)
+	-- Guidance costs only; authoritative intrusion checks remain in ProfileService.
+	local volume = Instance.new("Part")
+	volume.Name = "NavigationVolume"
+	volume.Size = Vector3.new(Rules.WIDTH, Rules.HEIGHT, Rules.DEPTH)
+	volume.CFrame = CFrame.new(origin + Vector3.new(0, 4.5, 0))
+	volume.Anchored, volume.Transparency = true, 1
+	volume.CanCollide, volume.CanTouch, volume.CanQuery = false, false, false
+	local modifier = Instance.new("PathfindingModifier")
+	modifier.Label = "RoomOwner_" .. player.UserId
+	modifier.Parent = volume
+	volume.Parent = model
 	model.Parent = workspace:WaitForChild("Homes")
 	local home: Home = { model = model, origin = origin, spawn = spawn, ownerId = player.UserId }
 	rooms[model] = home

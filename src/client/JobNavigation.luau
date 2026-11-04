@@ -2,6 +2,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RouteMath = require(ReplicatedStorage.Shared.RouteMath)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
+local WalkingRoute = require(script.Parent.WalkingRoute)
 local Navigation = {}
 local ink = Color3.fromRGB(26, 43, 43)
 local gold = Color3.fromRGB(245, 197, 98)
@@ -21,6 +22,17 @@ local function label(parent: Instance, name: string, size: UDim2): TextLabel
 	return l
 end
 function Navigation.start(screen: ScreenGui, activate: () -> ())
+	local route = WalkingRoute.start(game:GetService("Players").LocalPlayer.UserId)
+	local waypoint = Instance.new("Part")
+	waypoint.Name, waypoint.Size = "WalkingRouteMarker", Vector3.new(1, 0.12, 1)
+	waypoint.Anchored, waypoint.CanCollide, waypoint.CanTouch, waypoint.CanQuery =
+		true, false, false, false
+	waypoint.Color, waypoint.Material, waypoint.Transparency = gold, Enum.Material.Neon, 1
+	waypoint.Parent = workspace
+	screen.Destroying:Once(function()
+		route.destroy()
+		waypoint:Destroy()
+	end)
 	local chip = Instance.new("Frame")
 	chip.Name = "JobNavigation"
 	chip.Position, chip.Size = UDim2.fromOffset(16, 100), UDim2.fromOffset(242, 64)
@@ -75,6 +87,7 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 	round(action)
 	action.Activated:Connect(activate)
 	return {
+		route = route.points,
 		render = function(actionText: string, available: boolean): ()
 			action.Text, action.Active, action.AutoButtonColor = actionText, available, available
 			action.BackgroundTransparency = if available then 0 else 0.5
@@ -87,25 +100,53 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 			near: boolean,
 			t: (string) -> string
 		): ()
-			chip.Visible = active
-			marker.Enabled = active and target ~= nil
-			if target then
-				marker.Adornee = target
-			end
-			if not active or s == nil or root == nil or s.destination == nil then
+			local humanoid = if root and root.Parent
+				then root.Parent:FindFirstChildOfClass("Humanoid")
+				else nil
+			local visible = active
+				and s ~= nil
+				and s.available
+				and humanoid ~= nil
+				and humanoid.Health > 0
+			chip.Visible, marker.Enabled, waypoint.Transparency = visible, false, 1
+			marker.Adornee = waypoint
+			if not visible or s == nil or root == nil or s.destination == nil then
+				route.clear()
 				return
 			end
 			local d = s.destination
-			local delta = Vector3.new(d[1], d[2], d[3]) - root.Position
+			local goal = Vector3.new(d[1], d[2], d[3])
+			local nextPoint: Vector3? = nil
+			local remaining: number? = nil
+			local status = "Ready"
+			if near then
+				route.clear()
+			else
+				nextPoint, remaining, status =
+					route.update(root.Position, goal, s.jobId .. ":" .. s.workId, os.clock())
+			end
+			arrow.Visible = near or nextPoint ~= nil
 			distance.Text = if near
 				then t("arrived")
-				else string.format(t("routeDistance"), math.ceil(delta.Magnitude))
+				elseif remaining then string.format(t("routeDistance"), math.ceil(remaining))
+				else t(if status == "Finding" then "routeFinding" else "routeUnavailable")
 			local meeting = s.phase == "Inspect" or s.phase == "Ready"
 			local nameKey = if meeting then s.clientKey or "clientResident" else "workWall"
-			destination.Text = if near then t(nameKey) else t("clientApartment")
-			badge.Text = t(nameKey)
-				.. "\n"
-				.. t(if near then "useActionBelow" else "clientApartment")
+			destination.Text = if near
+				then t(nameKey)
+				elseif nextPoint then t("followPath")
+				else t("openMap")
+			if near then
+				if target then
+					marker.Adornee, marker.Enabled = target, true
+				end
+				badge.Text = t(nameKey) .. "\n" .. t("useActionBelow")
+			elseif nextPoint then
+				waypoint.Position, waypoint.Transparency = nextPoint + Vector3.new(0, 0.15, 0), 0.1
+				marker.Adornee, marker.Enabled = waypoint, true
+				badge.Text = t("followPath") .. "\n" .. t("clientApartment")
+			end
+			local delta = (nextPoint or goal) - root.Position
 			local camera = workspace.CurrentCamera
 			if camera then
 				local look = camera.CFrame.LookVector

@@ -606,7 +606,14 @@ function Controller.start(
 		end
 		navigation.update(s, target, rootPart, navigating, nearWall, t)
 		local home = player:GetAttribute("HomePosition")
-		map.update(rootPart, if typeof(home) == "Vector3" then home else nil, s)
+		local routePoints, routeIndex = navigation.route()
+		map.update(
+			rootPart,
+			if typeof(home) == "Vector3" then home else nil,
+			s,
+			routePoints,
+			routeIndex
+		)
 		interaction.step(painter.isActive() or screen:GetAttribute("Building") == true)
 		guide.step(painter.isActive() or screen:GetAttribute("Building") == true)
 		if

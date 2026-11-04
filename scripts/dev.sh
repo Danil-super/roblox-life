@@ -45,6 +45,7 @@ case "${1:-check}" in
     python3 tests/PaintLifecycle.test.py
     python3 tests/PaintFeedbackUI.test.py
     python3 tests/PaintSurfaceUI.test.py
+    python3 tests/WalkingRoute.test.py
     python3 tests/WalletDisplay.test.py
     python3 tests/ModalControls.test.py
     python3 tests/JobResultUI.test.py

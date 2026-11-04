@@ -9,7 +9,7 @@ export type API = {
 	hide: () -> (),
 	isVisible: () -> boolean,
 	render: (Types.Snapshot?) -> (),
-	update: (BasePart?, Vector3?, Types.Snapshot?) -> (),
+	update: (BasePart?, Vector3?, Types.Snapshot?, { Vector3 }, number) -> (),
 }
 local Controller = {}
 function Controller.start(screen: ScreenGui, phone: Frame, language: () -> string): API
@@ -19,6 +19,8 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 	local root: BasePart? = nil
 	local home: Vector3? = nil
 	local width, height = 400, 150
+	local routePoints: { Vector3 } = {}
+	local routeIndex = 1
 	local panel = Instance.new("Frame")
 	panel.Name, panel.AnchorPoint = "MapPanel", Vector2.new(0.5, 0.5)
 	panel.Position, panel.Size = UDim2.fromScale(0.5, 0.5), UDim2.new(1, -24, 1, -24)
@@ -47,6 +49,14 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 	local road = Instance.new("Frame")
 	road.Name, road.BackgroundColor3, road.BorderSizePixel = "Road", Color3.fromRGB(70, 77, 78), 0
 	road.ZIndex, road.Parent = 9, board
+	local lines: { Frame } = {}
+	for i = 1, 128 do
+		local line = Instance.new("Frame")
+		line.Name, line.AnchorPoint = "Route" .. i, Vector2.new(0.5, 0.5)
+		line.BackgroundColor3, line.BorderSizePixel = Color3.fromRGB(245, 197, 98), 0
+		line.ZIndex, line.Visible, line.Parent = 9, false, board
+		table.insert(lines, line)
+	end
 	local function marker(name: string, size: number, color: Color3, round: boolean): Frame
 		local f = Instance.new("Frame")
 		f.Name, f.AnchorPoint, f.Size = name, Vector2.new(0.5, 0.5), UDim2.fromOffset(size, size)
@@ -88,23 +98,55 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 	end
 	local function draw(): ()
 		local s, base = state, home
+		for _, line in lines do
+			line.Visible = false
+		end
+		local remaining: number? = nil
 		local d = if s then s.destination else nil
 		target.Visible = d ~= nil and base ~= nil
 		house.Visible, playerDot.Visible = base ~= nil, base ~= nil and root ~= nil
 		if base then
 			local bounds =
 				Math.bounds(base.X, base.Z, if d then d[1] else nil, if d then d[3] else nil)
+			local current = root
+			if current then
+				bounds = Math.include(bounds, current.Position.X, current.Position.Z)
+			end
+			for i = routeIndex, #routePoints do
+				local point = routePoints[i]
+				bounds = Math.include(bounds, point.X, point.Z)
+			end
 			local hx, hy = Math.pixel(base.X, base.Z, bounds, width, height)
 			house.Position = UDim2.fromOffset(hx, hy)
 			if d then
 				local tx, ty = Math.pixel(d[1], d[3], bounds, width, height)
 				target.Position = UDim2.fromOffset(tx, ty)
 			end
-			local current = root
 			if current then
 				local x, y =
 					Math.pixel(current.Position.X, current.Position.Z, bounds, width, height)
 				playerDot.Position = UDim2.fromOffset(x, y)
+				if d and #routePoints > 0 then
+					local routeLength = 0
+					local from = current.Position
+					for i = routeIndex, #routePoints do
+						local to = routePoints[i]
+						local dx, dz = to.X - from.X, to.Z - from.Z
+						routeLength += math.sqrt(dx * dx + dz * dz)
+						local line = lines[i - routeIndex + 1]
+						if line then
+							local ax, ay = Math.pixel(from.X, from.Z, bounds, width, height)
+							local bx, by = Math.pixel(to.X, to.Z, bounds, width, height)
+							line.Position, line.Size =
+								UDim2.fromOffset((ax + bx) / 2, (ay + by) / 2),
+								UDim2.fromOffset(math.sqrt((bx - ax) ^ 2 + (by - ay) ^ 2), 2)
+							line.Rotation, line.Visible =
+								math.deg(math.atan2(by - ay, bx - ax)), true
+						end
+						from = to
+					end
+					remaining = routeLength
+				end
 			end
 			-- P0 streets repeat every room row, 38 studs north of its home origin.
 			local _, y = Math.pixel(base.X, base.Z + 38, bounds, width, height)
@@ -128,7 +170,7 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 			then t("mapUnavailable")
 			elseif d and current then string.format(
 				t("routeDistance"),
-				math.ceil((Vector3.new(d[1], d[2], d[3]) - current.Position).Magnitude)
+				math.ceil(remaining or (Vector3.new(d[1], d[2], d[3]) - current.Position).Magnitude)
 			)
 			else t("mapNoJob")
 	end
@@ -174,7 +216,14 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 			state = s
 			draw()
 		end,
-		update = function(part: BasePart?, origin: Vector3?, s: Types.Snapshot?): ()
+		update = function(
+			part: BasePart?,
+			origin: Vector3?,
+			s: Types.Snapshot?,
+			points: { Vector3 },
+			index: number
+		): ()
+			routePoints, routeIndex = points, index
 			root, home, state = part, origin, s
 			if panel.Visible then
 				draw()
