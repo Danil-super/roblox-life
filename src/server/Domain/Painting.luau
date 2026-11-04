@@ -104,6 +104,15 @@ function Painting.tool(s: State, id: string, experience: number): boolean
 	s.config.rollerRadius = if id == "wide" then s.config.wideRollerRadius else s.basicRadius
 	return true
 end
+function Painting.reviewError(s: State, now: number): string?
+	if s.phase ~= "Painting" or not finite(now) or now < s.lastAt then
+		return "Retry"
+	end
+	if s.count / (s.config.columns * s.config.rows) < s.config.threshold then
+		return "Coverage"
+	end
+	return if now - s.startedAt < s.config.minSeconds then "Drying" else nil
+end
 function Painting.step(
 	s: State,
 	action: string,
@@ -121,12 +130,7 @@ function Painting.step(
 		s.phase = "ChooseMaterial"
 	elseif action == "choose" and s.phase == "ChooseMaterial" and material == Config.colorId then
 		s.phase, s.startedAt, s.lastAt = "Painting", now, now
-	elseif
-		action == "review"
-		and s.phase == "Painting"
-		and s.count / (Config.columns * Config.rows) >= Config.threshold
-		and now - s.startedAt >= Config.minSeconds
-	then
+	elseif action == "review" and Painting.reviewError(s, now) == nil then
 		s.phase = "Ready"
 	else
 		return false

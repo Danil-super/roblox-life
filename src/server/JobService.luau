@@ -478,7 +478,7 @@ function Service.start(profiles: ProfileService.API): ()
 				then nil
 				elseif not valid then "TooFar"
 				elseif action == "choose" then "Color"
-				elseif action == "review" then "Coverage"
+				elseif action == "review" then Painting.reviewError(work, now) or "Retry"
 				elseif action == "tool" then "ToolLocked"
 				else "Retry"
 		)

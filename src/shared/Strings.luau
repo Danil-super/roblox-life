@@ -80,6 +80,15 @@ ru["doneHint"] =
 	"Награда зачислена. Можно взять следующий заказ."
 en["paintDrag"] = "Drag the roller over the wall"
 ru["paintDrag"] = "Веди валик по стене"
+en["paintProgress"] = "%s · %d%% / %d%% goal"
+ru["paintProgress"] = "%s · %d%% / цель %d%%"
+en["paintCovered"] = "Coverage ready — inspect your work"
+ru["paintCovered"] = "Площадь готова — проверь результат"
+en["paintWait"] = "Coverage ready — wait a moment, then inspect again"
+ru["paintWait"] = "Площадь готова — подожди и проверь снова"
+en["jobErrorDrying"] = "The area is covered. Wait a moment, then inspect again."
+ru["jobErrorDrying"] =
+	"Площадь покрыта. Подожди немного и проверь ещё раз."
 en["paintMissing"] = "Fill the highlighted gaps, then inspect again"
 ru["paintMissing"] =
 	"Закрась выделенные пропуски и проверь снова"
@@ -106,10 +115,9 @@ ru["jobErrorTooFar"] =
 en["jobErrorColor"] = "The client requested warm white. You can choose again."
 ru["jobErrorColor"] =
 	"Клиент просит тёплый белый. Выбери цвет ещё раз."
-en["jobErrorCoverage"] =
-	"Some gaps remain or the paint is still settling. Continue and inspect again."
+en["jobErrorCoverage"] = "Fill the highlighted gaps until the coverage target, then inspect again."
 ru["jobErrorCoverage"] =
-	"Есть пропуски или краска ещё не легла. Продолжи и проверь снова."
+	"Закрась подсвеченные пропуски до цели покрытия и проверь снова."
 en["jobErrorRetry"] = "Continue a little slower; rejected strokes do not add coverage."
 ru["jobErrorRetry"] =
 	"Продолжай чуть медленнее: отклонённые мазки не добавляют покрытия."
