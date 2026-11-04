@@ -10,6 +10,7 @@ local Furniture = require("./Domain/Furniture")
 local RoomRules = require("./Domain/RoomRules")
 local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
+local HomePlan = require(RS.Shared.HomePlan)
 local Service = {}
 type Context = {
 	editorId: string,
@@ -29,11 +30,13 @@ function Service.start(profiles: ProfileService.API): ()
 	local shop = workspace:WaitForChild("NeighborhoodShop")
 	local counter = shop:WaitForChild("Counter")
 	assert(counter:IsA("BasePart"), "Shop counter missing")
-	for index, id in { "floor-plant-v1", "side-table-v1", "floor-lamp-v1" } do
+	for index, id in
+		{ "floor-plant-v1", "side-table-v1", "floor-lamp-v1", "reading-chair-v1", "bookcase-v1" }
+	do
 		local model = Models.create(id)
 		if model then
 			model.Name = "Display" .. index
-			model:PivotTo(CFrame.new(26 + (index - 1) * 6, 0, -8))
+			model:PivotTo(CFrame.new(({ 24, 27, 30, 34, 39 })[index], 0, -8))
 			model.Parent = shop
 		end
 	end
@@ -130,6 +133,11 @@ function Service.start(profiles: ProfileService.API): ()
 						created.Name = id
 						created:SetAttribute("OwnerUserId", player.UserId)
 						created:SetAttribute("CatalogId", item.catalogItemId)
+						for _, descendant in created:GetDescendants() do
+							if descendant:IsA("Seat") then
+								descendant.Disabled = false
+							end
+						end
 						created.Parent = folder
 						model = created
 					end
@@ -201,6 +209,7 @@ function Service.start(profiles: ProfileService.API): ()
 			error = reason,
 			ack = ack,
 			openShop = openShop,
+			plan = if p then HomePlan.evaluate(items) else nil,
 		}
 		state:FireClient(player, snapshot)
 	end

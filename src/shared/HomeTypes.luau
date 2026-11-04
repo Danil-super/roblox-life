@@ -1,4 +1,5 @@
 --!strict
+local HomePlan = require("./HomePlan")
 export type Pose = { x: number, z: number, rotationY: number }
 export type Product = {
 	id: string,
@@ -8,7 +9,7 @@ export type Product = {
 	depth: number,
 	height: number,
 }
-export type Owned = { id: string, catalogId: string, purchaseOperationId: string, placed: Pose? }
+export type Owned = HomePlan.Item
 export type Snapshot = {
 	available: boolean,
 	dollars: number,
@@ -25,6 +26,7 @@ export type Snapshot = {
 	-- Correlates a purchase response, including refusal; ownership proves success.
 	ack: string?,
 	openShop: boolean?,
+	plan: HomePlan.Progress?,
 }
 export type Preview = {
 	editorId: string,

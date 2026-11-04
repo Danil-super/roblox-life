@@ -52,6 +52,14 @@ local catalog: {
 		["floor-plant-v1"] = { dollars = 180, modelVersion = 1, width = 2, depth = 2, height = 4 },
 		["side-table-v1"] = { dollars = 120, modelVersion = 1, width = 3, depth = 2, height = 2.5 },
 		["floor-lamp-v1"] = { dollars = 220, modelVersion = 1, width = 2, depth = 2, height = 6 },
+		["reading-chair-v1"] = {
+			dollars = 320,
+			modelVersion = 1,
+			width = 4,
+			depth = 4,
+			height = 3.8,
+		},
+		["bookcase-v1"] = { dollars = 280, modelVersion = 1, width = 4, depth = 1.5, height = 6 },
 	}
 for _, reward in rewards do
 	table.freeze(reward)

@@ -1,7 +1,13 @@
 --!strict
 local Models = {}
 function Models.create(id: string): Model?
-	if id ~= "floor-plant-v1" and id ~= "side-table-v1" and id ~= "floor-lamp-v1" then
+	if
+		id ~= "floor-plant-v1"
+		and id ~= "side-table-v1"
+		and id ~= "floor-lamp-v1"
+		and id ~= "reading-chair-v1"
+		and id ~= "bookcase-v1"
+	then
 		return nil
 	end
 	local model = Instance.new("Model")
@@ -48,6 +54,43 @@ function Models.create(id: string): Model?
 		for _, x in { -1.2, 1.2 } do
 			for _, z in { -0.7, 0.7 } do
 				part("Leg", Vector3.new(0.25, 2.25, 0.25), Vector3.new(x, 1.125, z), wood)
+			end
+		end
+	elseif id == "reading-chair-v1" then
+		local fabric = Color3.fromRGB(70, 115, 115)
+		for _, x in { -1.4, 1.4 } do
+			for _, z in { -1.4, 1.4 } do
+				part("Foot", Vector3.new(0.35, 0.4, 0.35), Vector3.new(x, 0.2, z), wood)
+			end
+		end
+		part("Base", Vector3.new(3.8, 0.6, 3.8), Vector3.new(0, 0.65, 0), wood)
+		part("Back", Vector3.new(3.8, 2.7, 0.5), Vector3.new(0, 2.45, -1.65), fabric)
+		for _, x in { -1.65, 1.65 } do
+			part("Arm", Vector3.new(0.5, 1.5, 3.8), Vector3.new(x, 1.75, 0), fabric)
+		end
+		local seat = Instance.new("Seat")
+		seat.Name, seat.Size = "Seat", Vector3.new(2.8, 0.5, 2.8)
+		seat.CFrame = CFrame.new(0, 1.3, 0) * CFrame.Angles(0, math.pi, 0)
+		seat.Anchored, seat.Disabled, seat.Color, seat.Material =
+			true, true, fabric, Enum.Material.Fabric
+		seat.TopSurface, seat.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		seat.Parent = model
+	elseif id == "bookcase-v1" then
+		part("Back", Vector3.new(4, 6, 0.15), Vector3.new(0, 3, -0.675), wood)
+		for _, x in { -1.85, 1.85 } do
+			part("Side", Vector3.new(0.3, 6, 1.5), Vector3.new(x, 3, 0), wood)
+		end
+		for shelf = 0, 4 do
+			part("Shelf", Vector3.new(4, 0.2, 1.5), Vector3.new(0, 0.1 + shelf * 1.45, 0), wood)
+			if shelf < 4 then
+				for book = 1, 4 do
+					part(
+						"Book",
+						Vector3.new(0.4, 1, 0.9),
+						Vector3.new(-1.3 + book * 0.55, 0.7 + shelf * 1.45, 0),
+						if book % 2 == 0 then green else cream
+					)
+				end
 			end
 		end
 	else

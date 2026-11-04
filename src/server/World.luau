@@ -58,7 +58,35 @@ function World.returnHome(player: Player, home: Home): boolean
 	if humanoid == nil or humanoid.Health <= 0 then
 		return false
 	end
+	local seat = humanoid.SeatPart
+	local releasedRoot: BasePart? = nil
+	if seat then
+		local weld = seat:FindFirstChild("SeatWeld")
+		if weld and weld:IsA("Weld") and weld.Part1 and weld.Part1:IsDescendantOf(character) then
+			weld:Destroy()
+		end
+		humanoid.Sit = false
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if root == nil or not root:IsA("BasePart") or not root:CanSetNetworkOwnership() then
+			return false
+		end
+		-- Prevent a late position from the former seat owner undoing this teleport.
+		root:SetNetworkOwner(nil)
+		releasedRoot = root
+	end
 	character:PivotTo(home.spawn.CFrame + Vector3.new(0, 3, 0))
+	local root = releasedRoot
+	if root then
+		task.delay(1, function()
+			if
+				root:IsDescendantOf(character)
+				and character:IsDescendantOf(workspace)
+				and root:CanSetNetworkOwnership()
+			then
+				root:SetNetworkOwnershipAuto()
+			end
+		end)
+	end
 	return true
 end
 
