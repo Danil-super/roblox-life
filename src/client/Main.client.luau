@@ -121,16 +121,22 @@ local furnitureButton =
 local roomButton = button(apps, "RoomPlan", UDim2.fromOffset(20, 104), UDim2.new(1, -40, 0, 44))
 local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 156), UDim2.new(1, -40, 0, 44))
 local openHousing: (string) -> () = function(_tab: string): () end
+local hideHousing: () -> () = function(): () end
 local jobs = JobController.start(screen, panel, function(): string
 	return language
 end, function(tab: string): ()
 	openHousing(tab)
+end, function()
+	hideHousing()
 end)
 local housing = HomeController.start(screen, panel, function(): string
 	return language
 end, jobs.hide)
 openHousing = function(tab: string): ()
 	housing.show(tab)
+end
+hideHousing = function(): ()
+	housing.hide()
 end
 local toggleLanguage: () -> () = function(): () end
 local recovery = ProfileRecovery.start(screen, function(): string

@@ -81,16 +81,16 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 		end,
 		update = function(
 			s: Types.Snapshot?,
-			wall: BasePart?,
+			target: BasePart?,
 			root: BasePart?,
 			active: boolean,
 			near: boolean,
 			t: (string) -> string
 		): ()
 			chip.Visible = active
-			marker.Enabled = active and wall ~= nil
-			if wall then
-				marker.Adornee = wall
+			marker.Enabled = active and target ~= nil
+			if target then
+				marker.Adornee = target
 			end
 			if not active or s == nil or root == nil or s.destination == nil then
 				return
@@ -100,8 +100,10 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 			distance.Text = if near
 				then t("arrived")
 				else string.format(t("routeDistance"), math.ceil(delta.Magnitude))
-			destination.Text = if near then t("workWall") else t("clientApartment")
-			badge.Text = t("workWall")
+			local meeting = s.phase == "Inspect" or s.phase == "Ready"
+			local nameKey = if meeting then s.clientKey or "clientResident" else "workWall"
+			destination.Text = if near then t(nameKey) else t("clientApartment")
+			badge.Text = t(nameKey)
 				.. "\n"
 				.. t(if near then "useActionBelow" else "clientApartment")
 			local camera = workspace.CurrentCamera

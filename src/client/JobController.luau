@@ -9,12 +9,14 @@ local PaintController = require("./PaintController")
 local Navigation = require("./JobNavigation")
 local MapController = require("./MapController")
 local JobOffers = require("./JobOffersController")
+local ClientInteraction = require("./ClientInteractionController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
 	homePanel: Frame,
 	language: () -> string,
-	homeAction: (string) -> ()
+	homeAction: (string) -> (),
+	hideHousing: () -> ()
 )
 	local player = Players.LocalPlayer
 	local command = ReplicatedStorage:WaitForChild("JobCommand")
@@ -26,11 +28,11 @@ function Controller.start(
 	local errorUntil = 0
 	local actions = {
 		Offer = "openJobs",
-		Inspect = "inspectWall",
+		Inspect = "meetClient",
 		Prepare = "protectFloor",
 		ChooseMaterial = "choosePaint",
 		Painting = "useRoller",
-		Ready = "submitJob",
+		Ready = "handoverClient",
 		Completed = "openJobs",
 	}
 	local phaseKeys = {
@@ -193,10 +195,12 @@ function Controller.start(
 		send("accept", fields)
 	end)
 	local painter = PaintController.start(screen, send, language)
+	local interaction: ClientInteraction.API
 	local function hidePanels(): ()
 		jobs.Visible = false
 		map.hide()
 		results.Visible = false
+		interaction.hide()
 	end
 	local function returnPhone(): ()
 		if offers.back() then
@@ -250,12 +254,24 @@ function Controller.start(
 				painter.enter(wall, s)
 			end
 		else
-			local a = ({ Inspect = "inspect", Prepare = "prepare", Ready = "submit" })[s.phase]
+			local a = ({ Inspect = "talk", Prepare = "prepare", Ready = "talk" })[s.phase]
 			if a then
 				send(a, nil)
 			end
 		end
 	end
+	interaction = ClientInteraction.start(screen, language, function()
+		hideHousing()
+		painter.stop()
+		jobs.Visible, results.Visible, homePanel.Visible = false, false, false
+		map.hide()
+	end, function(a: string)
+		if a == "palette" or a == "paint" then
+			activate()
+		else
+			send(a, nil)
+		end
+	end)
 	local navigation = Navigation.start(screen, activate)
 	local function revealActions(): ()
 		if jobs.Visible then
@@ -301,16 +317,17 @@ function Controller.start(
 			return string.format(t("contractMaterial"), t(Config.colorKeys[id] or "warmWhite"))
 		end
 		local hints = {
-			Inspect = "inspectHint",
+			Inspect = "meetClientHint",
 			Prepare = "prepareHint",
 			ChooseMaterial = "colorHint",
 			Painting = "paintHint",
-			Ready = "readyHint",
+			Ready = "handoverClientHint",
 		}
 		return t(hints[phase] or "jobRouteHint")
 	end
 	local function render(): ()
 		local s = state
+		interaction.render(s)
 		local phase = if s then s.phase else "Offer"
 		heading.Text = t("jobs")
 		back.Text = t("backHome")
@@ -500,6 +517,7 @@ function Controller.start(
 			and s.phase ~= "Completed"
 			and not painter.isActive()
 			and not screen:GetAttribute("Building")
+			and not interaction.isVisible()
 		local wall = currentWall()
 		local rootPart = if root and root:IsA("BasePart") then root else nil
 		local close = s ~= nil
@@ -507,14 +525,30 @@ function Controller.start(
 			and wall ~= nil
 			and rootPart ~= nil
 			and (wall.Position - rootPart.Position).Magnitude <= Config.maxDistance
+		if close and s and (s.phase == "Inspect" or s.phase == "Ready") then
+			close = s.canTalk == true
+		end
 		if close ~= nearWall then
 			nearWall = close
 			render()
 		end
-		navigation.update(s, wall, rootPart, navigating, nearWall, t)
+		local target = wall
+		if wall and s and (s.phase == "Inspect" or s.phase == "Ready") then
+			local room = wall.Parent
+			local resident = if room then room:FindFirstChild("Resident") else nil
+			local torso = if resident then resident:FindFirstChild("Torso") else nil
+			if torso and torso:IsA("BasePart") then
+				target = torso
+			end
+		end
+		navigation.update(s, target, rootPart, navigating, nearWall, t)
 		local home = player:GetAttribute("HomePosition")
 		map.update(rootPart, if typeof(home) == "Vector3" then home else nil, s)
-		if (navigating or jobs.Visible or map.isVisible()) and os.clock() - syncAt > 0.75 then
+		interaction.step(painter.isActive() or screen:GetAttribute("Building") == true)
+		if
+			(navigating or jobs.Visible or map.isVisible() or interaction.isVisible())
+			and os.clock() - syncAt > 0.75
+		then
 			syncAt = os.clock()
 			send("sync", nil)
 			render()

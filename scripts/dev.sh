@@ -40,6 +40,8 @@ case "${1:-check}" in
     python3 tests/JobResultUI.test.py
     python3 tests/JobOffersUI.test.py
     python3 tests/ContractText.test.py
+    python3 tests/ClientDialogueUI.test.py
+    python3 tests/ClientTalk.test.py
     python3 tests/PurchaseUI.test.py
     python3 tests/HintsUI.test.py
     python3 tests/StorageAdapter.test.py

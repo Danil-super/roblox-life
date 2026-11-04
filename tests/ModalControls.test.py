@@ -27,12 +27,19 @@ local phone, jobs, paint, nav = gui("HomePanel"),gui("JobsPanel"),gui("PaintTool
 local results = gui("ResultsPanel")
 local profile = gui("ProfilePanel")
 local roomPlan = gui("RoomPlanPanel")
+local client = gui("ClientPanel")
 local screen = {Enabled=true, changed=signal(), Destroying=signal()}
-function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan} end
+function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan,client} end
 function screen:GetPropertyChangedSignal() return self.changed end
 local GuiService = {TouchControlsEnabled=true}
 '''
 scenarios = {
+    "client_dialogue_transition": '''
+Controller.start(screen);jobs:set(true);client:set(true);jobs:set(false)
+assert(not GuiService.TouchControlsEnabled,"Conversation lost movement lock")
+client:set(false);assert(GuiService.TouchControlsEnabled,"Closed conversation retained controls")
+''',
+
     "room_plan_transition": '''
 Controller.start(screen);phone:set(true);roomPlan:set(true);phone:set(false)
 assert(not GuiService.TouchControlsEnabled,"Room plan released movement")

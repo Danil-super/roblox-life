@@ -112,7 +112,7 @@ function Controller.start(
 			requirements.Text = string.format(
 				t("contractMaterial"),
 				t(Config.colorKeys[offer.colorId] or "warmWhite")
-			) .. "\n" .. t("contractAddress")
+			) .. "\n" .. t(offer.clientKey or "residentNina") .. " · " .. t("contractAddress")
 			locked.Text = if offer.unlocked
 				then t("offerReady")
 				else string.format(
