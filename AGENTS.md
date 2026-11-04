@@ -14,6 +14,12 @@
   PaintAim ограничивает помощь краям 0,35 studs; локальный след не наполняет
   подтверждённую полоску. Painting.reviewError отделяет площадь от времени;
   ни наведение, ни достижение порога сами не принимают/не оплачивают работу.
+  NeighborhoodScenery создаёт улицу при Play и входные накладки при cloneRoom;
+  StreetLayout проверяет проходы для 16 слотов. StreetDetails — до 300 деталей,
+  start идемпотентен, SurfaceGui переводит WorldSignsController по событиям.
+  Публичные скамейки используют native Seat; доступ в чужие комнаты не меняется.
+  Оформление воспроизводится из кода, Edit-предпросмотры после QA удаляются;
+  docs/STREET.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
