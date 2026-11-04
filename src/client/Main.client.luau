@@ -9,6 +9,7 @@ local ProfileRecovery = require("./ProfileRecoveryController")
 local Strings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Strings"))
 local Layout = require(ReplicatedStorage.Shared.HudLayout)
 local Theme = require(ReplicatedStorage.Shared.Theme)
+local InputConfig = require(ReplicatedStorage.Shared.InputConfig)
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("ReturnHome")
 assert(remote:IsA("RemoteEvent"), "ReturnHome remote missing")
@@ -103,14 +104,14 @@ local apps = Instance.new("ScrollingFrame")
 apps.Name = "Apps"
 apps.Position = UDim2.fromOffset(0, 104)
 apps.Size = UDim2.new(1, 0, 1, -184)
-apps.CanvasSize = UDim2.fromOffset(0, 296)
+apps.CanvasSize = UDim2.fromOffset(0, 348)
 apps.BackgroundTransparency = 1
 apps.BorderSizePixel = 0
 apps.ScrollBarThickness = 4
 apps.Parent = panel
 local description =
-	text(apps, "Description", UDim2.fromOffset(20, 216), UDim2.new(1, -40, 0, 38), 13)
-local status = text(apps, "Storage", UDim2.fromOffset(20, 258), UDim2.new(1, -40, 0, 36), 13)
+	text(apps, "Description", UDim2.fromOffset(20, 268), UDim2.new(1, -40, 0, 38), 13)
+local status = text(apps, "Storage", UDim2.fromOffset(20, 310), UDim2.new(1, -40, 0, 36), 13)
 status.TextColor3 = muted
 local returnButton = button(panel, "ReturnHome", UDim2.new(0, 20, 1, -72), UDim2.new(1, -40, 0, 52))
 local jobsButton = button(apps, "Jobs", UDim2.fromOffset(20, 0), UDim2.new(0.5, -24, 0, 44))
@@ -119,7 +120,8 @@ local shopButton = button(apps, "Shop", UDim2.fromOffset(20, 52), UDim2.new(0.5,
 local furnitureButton =
 	button(apps, "Furniture", UDim2.new(0.5, 4, 0, 52), UDim2.new(0.5, -24, 0, 44))
 local roomButton = button(apps, "RoomPlan", UDim2.fromOffset(20, 104), UDim2.new(1, -40, 0, 44))
-local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 156), UDim2.new(1, -40, 0, 44))
+local guideButton = button(apps, "Guide", UDim2.fromOffset(20, 156), UDim2.new(1, -40, 0, 44))
+local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 208), UDim2.new(1, -40, 0, 44))
 local openHousing: (string) -> () = function(_tab: string): () end
 local hideHousing: () -> () = function(): () end
 local jobs = JobController.start(screen, panel, function(): string
@@ -166,12 +168,20 @@ end)
 roomButton.Activated:Connect(function()
 	housing.show("Room")
 end)
+guideButton.Activated:Connect(function()
+	housing.hide()
+	jobs.show("Guide")
+end)
 for _, child in panel:GetDescendants() do
 	if child:IsA("GuiObject") then
 		child.ZIndex = 6
 	end
 end
 
+local function phoneCaption(): string
+	return Strings.text(language, "home")
+		.. (if UIS.TouchEnabled then "" else " [" .. InputConfig.phoneKey .. "]")
+end
 local function render(): ()
 	local state = player:GetAttribute("ProfileStatus")
 	local ready = state == "Ready"
@@ -183,7 +193,7 @@ local function render(): ()
 		then string.format("$%d", dollars.Value)
 		else "$—"
 	languageButton.Text = if language == "ru" then "EN" else "RU"
-	homeButton.Text, returnButton.Text = t("home"), t("returnHome")
+	homeButton.Text, returnButton.Text = phoneCaption(), t("returnHome")
 	description.Text = if ready
 		then t("roomInfo")
 		elseif state == "Error" then t("error")
@@ -201,15 +211,32 @@ local function render(): ()
 	jobs.render()
 	shopButton.Text, furnitureButton.Text = t("shopTitle"), t("furnitureApp")
 	roomButton.Text = t("roomPlan")
+	guideButton.Text = t("firstSteps")
 	hintsButton.Text =
 		t(if screen:GetAttribute("ShowHints") == false then "showHints" else "hideHints")
 	housing.render()
 	recovery.render()
 end
-homeButton.Activated:Connect(function()
+local function togglePhone(): ()
+	if
+		player:GetAttribute("ProfileStatus") ~= "Ready"
+		or screen:GetAttribute("Building") == true
+		or jobs.isWorking()
+	then
+		return
+	end
 	jobs.hide()
 	housing.hide()
 	panel.Visible = not panel.Visible
+end
+homeButton.Activated:Connect(togglePhone)
+UIS.InputBegan:Connect(function(input: InputObject, processed: boolean)
+	if processed or UIS:GetFocusedTextBox() ~= nil then
+		return
+	end
+	if input.KeyCode.Name == InputConfig.phoneKey then
+		togglePhone()
+	end
 end)
 closeButton.Activated:Connect(function()
 	panel.Visible = false
@@ -239,6 +266,7 @@ local function resize(): ()
 		return
 	end
 	local touch = UIS.TouchEnabled
+	homeButton.Text = phoneCaption()
 	local ready = player:GetAttribute("ProfileStatus") == "Ready"
 	local hints = screen:GetAttribute("ShowHints") ~= false
 		or screen:GetAttribute("JobHintError") == true

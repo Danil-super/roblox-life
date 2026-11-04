@@ -10,6 +10,7 @@ local Navigation = require("./JobNavigation")
 local MapController = require("./MapController")
 local JobOffers = require("./JobOffersController")
 local ClientInteraction = require("./ClientInteractionController")
+local FirstSteps = require("./FirstStepsController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -196,11 +197,13 @@ function Controller.start(
 	end)
 	local painter = PaintController.start(screen, send, language)
 	local interaction: ClientInteraction.API
+	local guide: FirstSteps.API
 	local function hidePanels(): ()
 		jobs.Visible = false
 		map.hide()
 		results.Visible = false
 		interaction.hide()
+		guide.hide()
 	end
 	local function returnPhone(): ()
 		if offers.back() then
@@ -262,6 +265,7 @@ function Controller.start(
 	end
 	interaction = ClientInteraction.start(screen, language, function()
 		hideHousing()
+		guide.hide()
 		painter.stop()
 		jobs.Visible, results.Visible, homePanel.Visible = false, false, false
 		map.hide()
@@ -270,6 +274,25 @@ function Controller.start(
 			activate()
 		else
 			send(a, nil)
+		end
+	end)
+	guide = FirstSteps.start(screen, language, function()
+		hideHousing()
+		painter.stop()
+		interaction.hide()
+		jobs.Visible, results.Visible, homePanel.Visible = false, false, false
+		map.hide()
+	end, function(target: string)
+		if target == "Jobs" then
+			homePanel.Visible, jobs.Visible = false, true
+			offers.show()
+			send("sync", nil)
+		elseif target == "Phone" then
+			homePanel.Visible = true
+		elseif target == "Current" then
+			activate()
+		else
+			homeAction(target)
 		end
 	end)
 	local navigation = Navigation.start(screen, activate)
@@ -328,6 +351,7 @@ function Controller.start(
 	local function render(): ()
 		local s = state
 		interaction.render(s)
+		guide.render(s)
 		local phase = if s then s.phase else "Offer"
 		heading.Text = t("jobs")
 		back.Text = t("backHome")
@@ -545,6 +569,7 @@ function Controller.start(
 		local home = player:GetAttribute("HomePosition")
 		map.update(rootPart, if typeof(home) == "Vector3" then home else nil, s)
 		interaction.step(painter.isActive() or screen:GetAttribute("Building") == true)
+		guide.step(painter.isActive() or screen:GetAttribute("Building") == true)
 		if
 			(navigating or jobs.Visible or map.isVisible() or interaction.isVisible())
 			and os.clock() - syncAt > 0.75
@@ -563,6 +588,7 @@ function Controller.start(
 	send("sync", nil)
 	return {
 		render = render,
+		isWorking = painter.isActive,
 		suspend = function(): ()
 			painter.stop()
 			hidePanels()
@@ -577,6 +603,9 @@ function Controller.start(
 			end
 			if tab == "Map" then
 				map.show()
+			end
+			if tab == "Guide" then
+				guide.show()
 			end
 			send("sync", nil)
 			render()

@@ -42,6 +42,9 @@ case "${1:-check}" in
     python3 tests/ContractText.test.py
     python3 tests/ClientDialogueUI.test.py
     python3 tests/ClientTalk.test.py
+    python3 tests/FirstStepsUI.test.py
+    python3 tests/PhoneInput.test.py
+    python3 tests/FirstPurchase.test.py
     python3 tests/PurchaseUI.test.py
     python3 tests/HintsUI.test.py
     python3 tests/StorageAdapter.test.py

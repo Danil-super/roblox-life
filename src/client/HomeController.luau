@@ -34,6 +34,24 @@ function Controller.start(
 	local listKey = ""
 	local focus: { tab: string, id: string }? = nil
 	local planner: RoomPlanner.API
+	local function firstProduct(s: Types.Snapshot): string?
+		local best: Types.Product? = nil
+		for _, product in s.catalog do
+			if product.dollars <= s.dollars then
+				if product.id == "floor-plant-v1" then
+					return product.id
+				end
+				if
+					best == nil
+					or product.dollars < best.dollars
+					or (product.dollars == best.dollars and product.id < best.id)
+				then
+					best = product
+				end
+			end
+		end
+		return if best then best.id else nil
+	end
 	local function t(key: string): string
 		return Strings.text(language(), key)
 	end
@@ -153,6 +171,20 @@ function Controller.start(
 		inventory.Visible = tab == "Furniture"
 		if tab == "Room" then
 			planner.show()
+		end
+		local current = state
+		if
+			tab == "Shop"
+			and focus == nil
+			and current
+			and current.available
+			and current.onboarding == "BUY"
+			and purchase == nil
+		then
+			local productId = firstProduct(current)
+			if productId then
+				focus = { tab = "Shop", id = productId }
+			end
 		end
 		listKey = ""
 		send("sync", nil)

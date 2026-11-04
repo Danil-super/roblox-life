@@ -499,6 +499,73 @@ en["residentReward"] = "Contract reward: $%d"
 ru["residentReward"] = "Награда по заказу: $%d"
 en["closeClient"] = "Back to the room"
 ru["closeClient"] = "Вернуться в комнату"
+en["firstSteps"] = "First steps"
+ru["firstSteps"] = "Первые шаги"
+en["guideWaiting"] = "Waiting for confirmed progress…"
+ru["guideWaiting"] = "Ждём подтверждённый прогресс…"
+en["guideWaitAction"] = "Please wait"
+ru["guideWaitAction"] = "Подожди"
+en["guideCount"] = "First cycle: %d / %d steps completed"
+ru["guideCount"] = "Первый цикл: пройдено %d из %d шагов"
+en["guideFinished"] = "You have learned the basics!"
+ru["guideFinished"] = "Ты освоил основу!"
+en["guideFreedom"] = "Choose another job or make your room your own."
+ru["guideFreedom"] = "Бери новый заказ или обустраивай комнату."
+en["guideAllSteps"] = "All steps"
+ru["guideAllSteps"] = "Все шаги"
+en["guideDone"] = "Completed"
+ru["guideDone"] = "Пройдено"
+en["guideNow"] = "Your next step"
+ru["guideNow"] = "Следующий шаг"
+en["guideLater"] = "You can read ahead"
+ru["guideLater"] = "Можно прочитать заранее"
+en["guideDoneReview"] = "Already completed. Reading this does not reset progress."
+ru["guideDoneReview"] =
+	"Уже пройдено. Просмотр не сбрасывает прогресс."
+en["guideReturnJob"] = "Return to the job"
+ru["guideReturnJob"] = "Вернуться к заказу"
+en["guideJob"] = "Choose a job"
+ru["guideJob"] = "Выбрать заказ"
+en["guideMeet"] = "Meet and inspect"
+ru["guideMeet"] = "Познакомиться и осмотреть"
+en["guidePrepare"] = "Prepare the room"
+ru["guidePrepare"] = "Подготовить комнату"
+en["guidePaint"] = "Paint and review"
+ru["guidePaint"] = "Покрасить и проверить"
+en["guidePay"] = "Hand over the work"
+ru["guidePay"] = "Сдать работу"
+en["guideBuy"] = "Buy furniture"
+ru["guideBuy"] = "Купить мебель"
+en["guidePlace"] = "Furnish your home"
+ru["guidePlace"] = "Обустроить свой дом"
+en["guideJobDetail"] =
+	"Press %s or HOME, then Jobs. Read a card's colour and reward before accepting. Accepting a job does not pay you yet."
+ru["guideJobDetail"] =
+	"Нажми %s или ДОМ, затем Заказы. Прочитай цвет и награду в карточке и прими заказ. Само принятие ещё не даёт денег."
+en["guideMeetDetail"] =
+	"Follow the arrow to the resident. Talk using the yellow action or E, then choose Inspect wall. You must be close and have a clear view."
+ru["guideMeetDetail"] =
+	"Иди по стрелке к жителю. Поговори жёлтой кнопкой или E, затем выбери осмотр стены. Нужно подойти близко, без стены между вами."
+en["guidePrepareDetail"] =
+	"Lay protective film. Open the paint palette, choose your roller and the requested colour. You can correct a wrong colour without a fine."
+ru["guidePrepareDetail"] =
+	"Постели плёнку. Открой палитру, выбери валик и нужный цвет. Ошибочную краску можно исправить без штрафа."
+en["guidePaintDetail"] =
+	"Hold and move the roller across the wall. Fill gaps, then Review. You can leave the work view and continue; after death, prepare again."
+ru["guidePaintDetail"] =
+	"Зажми и веди валик по стене. Закрась пропуски и проверь результат. Можно выйти из рабочего вида и продолжить; после смерти нужна новая подготовка."
+en["guidePayDetail"] =
+	"Show the checked wall to the resident and confirm the handover. The server pays once; the result shows confirmed dollars and XP."
+ru["guidePayDetail"] =
+	"Покажи проверенную стену жителю и подтверди сдачу. Сервер платит один раз; итог показывает подтверждённые доллары и опыт."
+en["guideBuyDetail"] =
+	"Open the furniture shop and use Show shop to walk to the counter. Choose an affordable item. Wait for ownership confirmation before opening inventory."
+ru["guideBuyDetail"] =
+	"Открой магазин и нажми «Где магазин», чтобы дойти до прилавка. Выбери доступный предмет. После подтверждения покупки открой склад."
+en["guidePlaceDetail"] =
+	"Open inventory and return home. Choose Place, point at the floor, then confirm a valid position. Grid/Free and rotation help you arrange your room."
+ru["guidePlaceDetail"] =
+	"Открой склад и вернись домой. Выбери предмет, укажи место на полу и подтверди допустимую позицию. Используй сетку, свободный режим и поворот."
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

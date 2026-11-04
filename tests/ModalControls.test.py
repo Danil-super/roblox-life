@@ -28,12 +28,19 @@ local results = gui("ResultsPanel")
 local profile = gui("ProfilePanel")
 local roomPlan = gui("RoomPlanPanel")
 local client = gui("ClientPanel")
+local guide = gui("GuidePanel")
 local screen = {Enabled=true, changed=signal(), Destroying=signal()}
-function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan,client} end
+function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan,client,guide} end
 function screen:GetPropertyChangedSignal() return self.changed end
 local GuiService = {TouchControlsEnabled=true}
 '''
 scenarios = {
+    "guide_to_inventory": '''
+Controller.start(screen);guide:set(true);assert(not GuiService.TouchControlsEnabled)
+phone:set(true);guide:set(false);assert(not GuiService.TouchControlsEnabled,"Guide transition released modal lock")
+phone:set(false);assert(GuiService.TouchControlsEnabled,"Guide retained touch controls")
+''',
+
     "client_dialogue_transition": '''
 Controller.start(screen);jobs:set(true);client:set(true);jobs:set(false)
 assert(not GuiService.TouchControlsEnabled,"Conversation lost movement lock")
