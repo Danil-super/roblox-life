@@ -20,6 +20,7 @@ function Controller.start(screen: ScreenGui): ()
 	local previous: boolean? = nil
 	local stopped = false
 	local function restore(): ()
+		screen:SetAttribute("ModalOpen", false)
 		if previous ~= nil then
 			GuiService.TouchControlsEnabled = previous
 			previous = nil
@@ -31,6 +32,7 @@ function Controller.start(screen: ScreenGui): ()
 		end
 		for _, panel in panels do
 			if screen.Enabled and panel.Visible then
+				screen:SetAttribute("ModalOpen", true)
 				if previous == nil then
 					previous = GuiService.TouchControlsEnabled
 				end

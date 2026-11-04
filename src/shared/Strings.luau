@@ -79,6 +79,8 @@ en["doneHint"] = "Reward credited. You can take another order."
 ru["doneHint"] =
 	"Награда зачислена. Можно взять следующий заказ."
 en["paintDrag"] = "Drag the roller over the wall"
+en["lightOn"], ru["lightOn"] = "Turn on", "Зажечь"
+en["lightOff"], ru["lightOff"] = "Turn off", "Погасить"
 ru["paintDrag"] = "Веди валик по стене"
 en["paintProgress"] = "%s · %d%% / %d%% goal"
 ru["paintProgress"] = "%s · %d%% / цель %d%%"

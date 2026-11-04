@@ -108,10 +108,17 @@ function Models.create(id: string): Model?
 		)
 		local shade = part("Shade", Vector3.new(2, 1.2, 2), Vector3.new(0, 5.4, 0), cream)
 		local light = Instance.new("PointLight")
+		light.Name = "LampLight"
 		light.Color = cream
 		light.Range = 12
 		light.Brightness = 0.6
 		light.Parent = shade
+		part(
+			"Switch",
+			Vector3.new(0.3, 0.45, 0.2),
+			Vector3.new(0, 3.2, 0.2),
+			Color3.fromRGB(61, 72, 73)
+		)
 	end
 	return model
 end

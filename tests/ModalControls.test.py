@@ -30,11 +30,22 @@ local roomPlan = gui("RoomPlanPanel")
 local client = gui("ClientPanel")
 local guide = gui("GuidePanel")
 local screen = {Enabled=true, changed=signal(), Destroying=signal()}
+local modalOpen=nil
+function screen:SetAttribute(name,value) assert(name=="ModalOpen");modalOpen=value end
 function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan,client,guide} end
 function screen:GetPropertyChangedSignal() return self.changed end
 local GuiService = {TouchControlsEnabled=true}
 '''
 scenarios = {
+    "interaction_blocking": '''
+Controller.start(screen);assert(modalOpen==false)
+phone:set(true);assert(modalOpen==true)
+guide:set(true);phone:set(false);assert(modalOpen==true)
+guide:set(false);assert(modalOpen==false)
+paint:set(true);screen.Enabled=false;screen.changed:Fire();assert(modalOpen==false)
+screen.Enabled=true;screen.changed:Fire();assert(modalOpen==true)
+screen.Destroying:Fire();assert(modalOpen==false)
+''',
     "guide_to_inventory": '''
 Controller.start(screen);guide:set(true);assert(not GuiService.TouchControlsEnabled)
 phone:set(true);guide:set(false);assert(not GuiService.TouchControlsEnabled,"Guide transition released modal lock")

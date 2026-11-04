@@ -11,6 +11,7 @@ local RoomRules = require("./Domain/RoomRules")
 local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
 local HomePlan = require(RS.Shared.HomePlan)
+local HomeLights = require("./HomeLights")
 local Service = {}
 type Context = {
 	editorId: string,
@@ -147,6 +148,7 @@ function Service.start(profiles: ProfileService.API): ()
 						CFrame.new(home.origin + Vector3.new(placed.x, 0, placed.z))
 							* CFrame.Angles(0, math.rad(placed.rotationY), 0)
 					)
+					HomeLights.attach(model, player, profiles)
 				end
 			elseif model then
 				model:Destroy()
