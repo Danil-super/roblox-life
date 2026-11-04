@@ -35,6 +35,7 @@ case "${1:-check}" in
     python3 tests/ProfileRecoveryUI.test.py
     python3 tests/RecoveryCamera.test.py
     python3 tests/StudioTest.test.py
+    python3 tests/StudioLaunch.test.py
     python3 tests/BuildRecovery.test.py
     python3 tests/BuildLifecycle.test.py
     python3 tests/PlacementUI.test.py
@@ -78,10 +79,7 @@ case "${1:-check}" in
     python3 tests/Scene.test.py
     ;;
   studio)
-    test -f build/roblox-life.rbxlx || { echo "Build the place first: bash scripts/dev.sh build" >&2; exit 1; }
-    command -v flatpak >/dev/null || { echo "Install Vinegar Flatpak as described in README.md." >&2; exit 1; }
-    studio_place_path="Z:${PWD//\//\\}\\build\\roblox-life.rbxlx"
-    exec flatpak run org.vinegarhq.Vinegar --task EditFile --localPlaceFile "$studio_place_path"
+    exec python3 scripts/studio_open.py
     ;;
   serve)
     require_tool rojo
