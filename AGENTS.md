@@ -26,6 +26,11 @@
   Seat выключен у фабричных моделей/витрины/ghost; сервер включает его у
   установленного кресла. После seated ReturnHome сервер кратко удерживает
   владение физикой и восстанавливает auto; docs/HOME_PLAN.md.
+  HomeLights включает E/Touch только у подтверждённо установленного торшера;
+  сервер проверяет владельца/модель/профиль/персонажа/комнату/distance/LOS.
+  Выключатель — косметика runtime-модели: сохраняется при move/reconcile/respawn,
+  сбрасывается после store/recreate/нового сервера. Профиль/деньги/XP не меняет.
+  ModalOpen скрывает native prompt при меню/рабочих режимах; docs/HOME_INTERACTIONS.md.
   Studio использует явно обозначенный MemoryPreview;
   в production только DataStore. Облачную приёмку не объявлять завершённой.
 - PurchaseFlow удерживает requestId/catalogId до доказанной покупки или
