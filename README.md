@@ -33,6 +33,10 @@ Ubuntu + VS Code/Codex + Luau + Rojo. Текущая игра: бесплатн�
 
 Фактические результаты настройки и оставшиеся ограничения: [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
+Подтверждённые выплаты, покупки и изменения мебели выводятся сервером в Output
+как ограниченные JSON-события без персональных данных. Формат и разбор проблем:
+[DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
+
 Начата реализация «Мастер на районе / Neighborhood Fixer» по
 [ТЗ v0.7](Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md). Подробный разбор:
 [docs/GDD_REVIEW.md](docs/GDD_REVIEW.md); порядок и статус:

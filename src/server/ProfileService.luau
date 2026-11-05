@@ -29,6 +29,7 @@ type Context = {
 	failure: string?,
 	lastRetry: number,
 	trace: string,
+	diagnostic: Diagnostics.State?,
 }
 local Service = {}
 local LEASE_SECONDS, HEARTBEAT_SECONDS = 120, 30
@@ -86,6 +87,7 @@ function Service.start(): API
 		if profile == nil then
 			return
 		end
+		context.diagnostic = Diagnostics.observe(context.trace, context.diagnostic, profile)
 		local dollars: IntValue = context.dollars or Instance.new("IntValue")
 		if context.dollars == nil then
 			local stats = Instance.new("Folder")
@@ -244,6 +246,7 @@ function Service.start(): API
 			failure = nil,
 			lastRetry = -math.huge,
 			trace = HttpService:GenerateGUID(false),
+			diagnostic = nil,
 		}
 		contexts[player] = context
 		player.CharacterAdded:Connect(function(character: Model)

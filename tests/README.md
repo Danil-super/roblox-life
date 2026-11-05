@@ -23,6 +23,13 @@
 - `Economy.test.luau`: выплата/покупка, отказ по фазе/цене/средствам/лимиту,
   повтор и отсутствие дублирования после вытеснения квитанции из журнала,
   независимость игроков и переполнение ревизии.
+- `ProfileChanges.test.luau` и `Diagnostics.test.py`: подтверждённые события,
+  повторы, baseline, копии поз, ограниченный пакет/allowlist, ошибка sink;
+  настоящий memory ProfileStore не логирует Uncertain до подтверждения.
+  В Studio отдельно проверить учебную выплату $250/50 XP → покупку растения
+  $180 → установку/DONE: в Output один `job_completed`, один
+  `furniture_purchased`, один `furniture_placed`/`onboarding_completed`;
+  sync/повтор открытия окон не добавляют транзакции. См. docs/DIAGNOSTICS.md.
 - `Desktop.test.py`: 13 проверок геометрии, выбора монитора и точного фильтра
   пустого окна. Они не эмулируют Roblox и не доказывают работу DataStore.
 

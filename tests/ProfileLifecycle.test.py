@@ -54,6 +54,7 @@ local remote={OnServerEvent=signal,IsA=function() return true end}
 local ReplicatedStorage={WaitForChild=function() return remote end}
 local HttpService={GenerateGUID=function() return "token" end}
 local phase, storeBusy, attempts="Loading",false,0
+local observed=0
 local wallet={onboarding={step="INTRO"},wallet={dollars=0},progression={paintingXP=0},housing={roomTemplateId="StarterDormTemplate_v1",roomTemplateVersion=1}}
 local session={
     load=function() phase=if scenario=="late_load" then "Uncertain" else "Ready";return phase=="Ready" end,
@@ -77,7 +78,10 @@ local game={BindToClose=function() end,GetService=function(_,name) assert(servic
 local dependencies={
  ["./Domain/ProfileStore"]=Store,["./Domain/Profile"]=Profile,["./Domain/RoomRules"]=RoomRules,
  ["./Storage"]=Storage,["./World"]=World,
- ["./Diagnostics"]={emit=function()end},
+ ["./Diagnostics"]={emit=function()end,observe=function(_,_,profile)
+  assert(phase=="Ready" and not storeBusy and profile==wallet,"Diagnostics received unconfirmed state")
+  observed+=1;return nil
+ end},
  ["./Domain/ProfileRecovery"]={action=function(status)return if status=="Uncertain" then "retry" else nil end,code=function()return "Unavailable" end},
 }
 local function require(path) assert(dependencies[path],path);return dependencies[path] end
@@ -96,6 +100,7 @@ while #queue>0 do
 end
 assert(phase=="Ready" and not storeBusy,"Scenario did not finish in confirmed Ready state")
 assert(attrs.ProfileStatus=="Ready","Ready state was not published")
+assert(observed>0,"Confirmed publish did not initialize diagnostics")
 assert(homeCount==1,"Recovered profile must create exactly one home; actual="..homeCount)
 local expectedSpawns=if scenario=="late_load" then 1 else 2
 assert(spawnCount==expectedSpawns,"Character must eventually spawn; expected="..expectedSpawns..", actual="..spawnCount)
