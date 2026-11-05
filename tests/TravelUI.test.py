@@ -33,6 +33,7 @@ assert(not routeActive,"Unavailable profile selected route")
 status="Ready";state=nil;clicked();assert(not routeActive,"No snapshot selected route")
 '''
 objective_header = r'''
+local function acceptancePending()return false end
 local travel=nil
 local function travelGoal()return travel end
 local opened,shown,sent=nil,0,{}

@@ -6,6 +6,11 @@
 два анализатора Luau и сборку двух независимых `.rbxlx`. Нужны установленные инструменты и
 `bash scripts/dev.sh prepare`. Никаких npm/Wally-зависимостей нет.
 
+`JobAcceptFlow`, `JobAcceptance`, `JobOffersUI` и `JobAcceptanceAdapter`
+проверяют ожидающее принятие, корреляцию отказа, immutable Retry, серверный
+baseline до/внутри записи и неизвестный memory commit/reload. Это не имитация
+успешной облачной приёмки: [JOB_ACCEPTANCE.md](../docs/JOB_ACCEPTANCE.md).
+
 `PaintSurface`, `PaintSurfaceUI` и `PaintEffectsUI` проверяют плавный/лёгкий
 слой, бюджет 898/106 GUI-объектов, отсутствие tween, подтверждённую маску,
 события настроек и защиту кнопки Home. `PaintLifecycle` проверяет очистку
@@ -318,7 +323,7 @@ memory ProfileStore с потерянным ответом, retry/release/reload
 $550/120 XP после двух работ без покупок; повтор квитанции не добавляет денег.
 PaintTools.test: выбор инструмента по этапу/XP, NaN/неизвестный ID, реальные
 1/5 клеток, границы и повторы. JobOffersUI.test исполняет реальные callbacks
-выбора/принятия/busy/timeout; ContractText — реальные динамические подсказки
+выбора/принятия/busy/unknown/явного Retry; ContractText — реальные динамические подсказки
 EN/RU для всех трёх цветов. Это не доказательство Roblox-рендера или облака.
 
 Сценарий Studio: первый заказ обычным валиком → $250/50 XP → покупка растения

@@ -43,6 +43,13 @@ en["paintEffectsHint"] = "Fewer effects this session.\nCoverage and rewards stay
 ru["paintEffectsHint"] =
 	"Меньше эффектов на этот сеанс.\nПокрытие и награда прежние."
 en["jobs"] = "Jobs"
+en["acceptRetry"], ru["acceptRetry"] = "Retry acceptance", "Повторить принятие"
+en["acceptPendingStatus"], ru["acceptPendingStatus"] =
+	"Checking this order request…", "Проверяем принятие заказа…"
+en["acceptPendingHint"] =
+	"Waiting for confirmation. Retry checks the same offer. Closing the phone keeps this request."
+ru["acceptPendingHint"] =
+	"Ждём подтверждения. Повтор относится к тому же предложению. Закрытие телефона сохраняет запрос."
 ru["jobs"] = "Заказы"
 en["map"] = "Map"
 ru["map"] = "Карта"

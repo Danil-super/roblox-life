@@ -1,18 +1,26 @@
 --!strict
 local RS = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 local Strings = require(RS.Shared.Strings)
 local Types = require(RS.Shared.JobTypes)
 local Config = require(RS.Shared.PaintConfig)
 local Mastery = require(RS.Shared.PaintingMastery)
 local Theme = require(RS.Shared.Theme)
-export type API = { render: (Types.Snapshot?) -> (), show: (string?) -> (), back: () -> boolean }
+local Flow = require(RS.Shared.JobAcceptFlow)
+export type API = {
+	render: (Types.Snapshot?) -> (),
+	show: (string?) -> (),
+	back: () -> boolean,
+	pending: () -> boolean,
+}
 local Controller = {}
 function Controller.start(
 	panel: Frame,
 	workBody: ScrollingFrame,
 	back: TextButton,
 	language: () -> string,
-	accept: (string) -> ()
+	accept: (string, string, string) -> (),
+	ready: () -> boolean
 ): API
 	local function color(values: { number }): Color3
 		return Color3.fromRGB(values[1], values[2], values[3])
@@ -20,7 +28,9 @@ function Controller.start(
 	local paper, accent = color(Theme.colors.paper), color(Theme.colors.accent)
 	local state: Types.Snapshot? = nil
 	local selected: string? = nil
-	local awaiting, epoch = false, 0
+	local target: Flow.Target? = nil
+	local pendingOffer: Types.Offer? = nil
+	local disposed = false
 	local listKey = ""
 	local root = Instance.new("Frame")
 	root.Name, root.Position, root.Size =
@@ -79,6 +89,9 @@ function Controller.start(
 			else first
 	end
 	local function selectedOffer(): Types.Offer?
+		if target and pendingOffer and selected == target.offerId then
+			return pendingOffer
+		end
 		local s = state
 		if s and s.offers then
 			for _, offer in s.offers do
@@ -92,27 +105,30 @@ function Controller.start(
 	local render: () -> ()
 	render = function(): ()
 		local s = state
-		local visible = s ~= nil and (s.phase == "Offer" or s.phase == "Completed")
+		local visible = target ~= nil
+			or (s ~= nil and (s.phase == "Offer" or s.phase == "Completed"))
 		root.Visible, workBody.Visible = visible, not visible
 		if not visible then
-			selected, awaiting = nil, false
+			selected = nil
+		elseif target then
+			selected = target.offerId
 		end
 		local offer = selectedOffer()
 		list.Visible, details.Visible = offer == nil, offer ~= nil
 		confirm.Visible = visible and offer ~= nil
 		back.Size = if confirm.Visible then UDim2.new(0.5, -24, 0, 44) else UDim2.new(1, -32, 0, 44)
-		back.Text = t(if confirm.Visible then "backOffers" else "backHome")
+		back.Text = t(if target or not confirm.Visible then "backHome" else "backOffers")
 		confirm.Text = t(
-			if awaiting
-				then "acceptingJob"
+			if target
+				then (if Flow.canSend(target, s, os.clock(), ready())
+					then "acceptRetry"
+					else "acceptingJob")
 				elseif offer and not offer.unlocked then "offerLocked"
 				else "acceptJob"
 		)
-		confirm.Active = offer ~= nil
-			and offer.unlocked
-			and s ~= nil
-			and s.available
-			and not awaiting
+		confirm.Active = if target
+			then Flow.canSend(target, s, os.clock(), ready())
+			else Flow.available(s, if offer then offer.id else "", ready())
 		confirm.AutoButtonColor, confirm.BackgroundTransparency =
 			confirm.Active, if confirm.Active then 0 else 0.6
 		local experience = if s then s.paintingXP or 0 else 0
@@ -134,14 +150,18 @@ function Controller.start(
 		progressFill.Size = UDim2.fromScale(mastery.fraction, 1)
 		if offer then
 			title.Text, brief.Text = t(offer.titleKey), t(offer.briefKey)
+			if target then
+				brief.Text = t("acceptPendingHint")
+			end
 			reward.Text = string.format(t("contractReward"), offer.reward, offer.xp)
 			requirements.Text = string.format(t("contractMaterial"), materials(offer))
 				.. "\n"
 				.. t(offer.clientKey or "residentNina")
 				.. " · "
 				.. t("contractAddress")
-			locked.Text = if offer.unlocked
-				then t("offerReady")
+			locked.Text = if target
+				then t("acceptPendingStatus")
+				elseif offer.unlocked then t("offerReady")
 				else string.format(
 					t("offerXPNeeded"),
 					math.max(0, offer.requiredXP - experience)
@@ -185,6 +205,15 @@ function Controller.start(
 						)
 				)
 			b.Activated:Connect(function()
+				if
+					disposed
+					or target
+					or not panel.Visible
+					or not root.Visible
+					or not list.Visible
+				then
+					return
+				end
 				selected = o.id
 				details.CanvasPosition = Vector2.zero
 				render()
@@ -194,29 +223,55 @@ function Controller.start(
 	end
 	confirm.Activated:Connect(function()
 		local offer = selectedOffer()
-		if not confirm.Active or offer == nil then
+		if
+			disposed
+			or not panel.Visible
+			or not root.Visible
+			or not confirm.Visible
+			or offer == nil
+		then
 			return
 		end
-		awaiting, epoch = true, epoch + 1
-		local attempt = epoch
+		local candidate = target
+			or Flow.request(state, offer.id, ready(), HttpService:GenerateGUID(false))
+		local attempt = Flow.sent(candidate, state, os.clock(), ready())
+		if attempt == nil then
+			return
+		end
+		target, pendingOffer = attempt, offer
 		render()
-		accept(offer.id)
+		accept(attempt.offerId, attempt.jobId, attempt.requestId)
 		task.delay(8, function()
-			if epoch == attempt and panel.Parent ~= nil then
-				awaiting = false
+			if target == attempt and not disposed and panel.Parent ~= nil then
 				render()
 			end
 		end)
 	end)
+	panel.Destroying:Once(function()
+		disposed = true
+		target, pendingOffer, state = nil, nil, nil
+	end)
 	return {
 		render = function(s: Types.Snapshot?): ()
+			if disposed then
+				return
+			end
 			state = s
-			if s and s.error then
-				awaiting = false
+			target = Flow.observe(target, s)
+			if target == nil then
+				pendingOffer = nil
 			end
 			render()
 		end,
 		show = function(id: string?): ()
+			if disposed then
+				return
+			end
+			if target then
+				selected = target.offerId
+				render()
+				return
+			end
 			selected = nil
 			local s = state
 			if
@@ -238,12 +293,18 @@ function Controller.start(
 			render()
 		end,
 		back = function(): boolean
+			if disposed or target then
+				return false
+			end
 			if selected then
 				selected = nil
 				render()
 				return true
 			end
 			return false
+		end,
+		pending = function(): boolean
+			return target ~= nil
 		end,
 	}
 end

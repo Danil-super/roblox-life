@@ -20,6 +20,8 @@ local function hidePanels() hidden+=1;results.Visible=false end
 local clicked
 local resultContinue={Activated={Connect=function(_,fn) clicked=fn end}}
 local step="BUY"
+local accepting=false
+local function acceptancePending()return accepting end
 local status="Ready"
 local Mastery=require("../src/shared/PaintingMastery")
 local state={available=true,phase="Completed",paintingXP=120,result={operationId="job:current",xp=70},offers={
@@ -39,6 +41,10 @@ local function homeAction(tab) route=tab end
 local function send() error("Results must not send a financial command") end
 '''
 cases = {
+    "continue_acceptance_pending": '''
+accepting=true;results.Visible=true;clicked()
+assert(results.Visible and route==nil and previews==0,"Pending acceptance opened another recommendation")
+''',
     "first_receipt_and_duplicate": '''
 update({result={operationId="job:a"},available=true})
 assert(results.Visible and hidden==1 and not homePanel.Visible)

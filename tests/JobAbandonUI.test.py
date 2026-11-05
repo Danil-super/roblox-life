@@ -80,6 +80,8 @@ a = controller.index('\tlocal function send(actionName:')
 b = controller.index('\n\tlocal offers =', a)
 send_body = controller[a:b]
 checks = '''
+local accepting=false
+local function acceptancePending()return accepting end
 local waiting=true
 local abandon={pending=function()return waiting end}
 local state={jobId="old-job",workId="old-work"}
@@ -89,7 +91,10 @@ local command={FireServer=function(_,p)table.insert(packets,p)end}
 for _,action in {"accept","submit","choose","tool","cancel","talk"}do send(action,nil)end
 assert(#packets==0,"Pending cancellation allowed another job command")
 send("sync",nil);assert(#packets==1 and packets[1].action=="sync","Pending cancellation stopped reconciliation")
-waiting=false;send("choose",{color="mint"})
+waiting=false;accepting=true
+for _,action in {"accept","submit","choose","tool","cancel","talk"}do send(action,nil)end
+assert(#packets==1,"Pending acceptance allowed a new job command")
+accepting=false;send("choose",{color="mint"})
 assert(#packets==2 and packets[2].jobId=="old-job" and packets[2].workId=="old-work","Resolved cancellation broke normal commands")
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:

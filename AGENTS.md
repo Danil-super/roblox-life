@@ -67,6 +67,12 @@
   заблокированы, sync остаётся. Offer подтверждает отказ; новый work/job/
   Completed прекращает старый intent. AbandonPanel входит в ModalControls.
   Серверный cancel/схема прежние. docs/JOB_ABANDON.md.
+  JobAcceptFlow/JobOffers удерживают requestId/offerId/предыдущий jobId после
+  отправки, закрытия и unknown. Через 8 с только явный Retry с теми же ID.
+  Определённый отказ требует коррелированного acceptAck; старый ack не снимает
+  новую попытку. Сервер сверяет baseline до/внутри mutation; новый jobId выдаёт
+  сервер. Другие команды заказа блокируются, sync работает также при закрытом
+  телефоне. Схема профиля прежняя; docs/JOB_ACCEPTANCE.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
@@ -176,6 +182,9 @@
   координатами. Не обходить отказ preflight слепым вводом. Координаты стены/
   пола допускаются при подтверждённом Paint/Build. Повторяемый учебный цикл:
   `scripts/studio_local_qa.py`, только свежий MemoryPreview; docs/LOCAL_QA.md.
+  MCP может запретить прямой FireServer/require из-за capability Network.
+  Такой отказ не доказывает отказ игры. Replay/unknown отдельно проверять
+  адаптерами; статические GUI-проекции не объявлять проверкой callbacks/сети.
 - Не заявлять Play/Studio/MCP успешными без реального запуска и наблюдений.
 - Не коммитить `.tools`, build, `.env`, токены, дампы, runtime-данные и логи.
   Не публиковать игру и не отправлять изменения в remote без поручения.

@@ -199,7 +199,8 @@ function Service.start(profiles: ProfileService.API): ()
 		player: Player,
 		ctx: Context,
 		reason: string?,
-		conversation: Dialogue.Dialogue?
+		conversation: Dialogue.Dialogue?,
+		acceptAck: Types.AcceptAck?
 	): ()
 		if player.Parent ~= Players then
 			return
@@ -231,6 +232,7 @@ function Service.start(profiles: ProfileService.API): ()
 			target = scene.root.CFrame:PointToWorldSpace(Vector3.new(0, 0, -3))
 		end
 		local snapshot: Types.Snapshot = {
+			acceptAck = acceptAck,
 			available = available,
 			phase = phase,
 			jobId = if job then job.id elseif work then work.jobId else "",
@@ -343,6 +345,7 @@ function Service.start(profiles: ProfileService.API): ()
 		local data = raw :: { [string]: unknown }
 		local size = 0
 		local fields = {
+			requestId = true,
 			action = true,
 			jobId = true,
 			workId = true,
@@ -378,6 +381,22 @@ function Service.start(profiles: ProfileService.API): ()
 			return
 		end
 		if action == "accept" then
+			if
+				type(data.jobId) ~= "string"
+				or #data.jobId > 80
+				or type(data.requestId) ~= "string"
+				or #data.requestId == 0
+				or #data.requestId > 80
+			then
+				return
+			end
+			local previousJobId = data.jobId
+			local requestId = data.requestId
+			local current = p.jobs.active
+			if previousJobId ~= (if current then current.id else "") then
+				send(player, ctx, "Stale")
+				return
+			end
 			if data.offerId ~= nil and (type(data.offerId) ~= "string" or #data.offerId > 80) then
 				return
 			end
@@ -386,16 +405,30 @@ function Service.start(profiles: ProfileService.API): ()
 				else "paint-tutorial-v1"
 			local contract = EconomyConfig.contracts[offerId]
 			if contract == nil or not contract.offered then
-				send(player, ctx, "UnknownOffer")
+				send(player, ctx, "UnknownOffer", nil, {
+					requestId = requestId,
+					jobId = previousJobId,
+					offerId = offerId,
+					error = "UnknownOffer",
+				})
 				return
 			end
 			if p.progression.paintingXP < contract.minXP then
-				send(player, ctx, "OfferLocked")
+				send(player, ctx, "OfferLocked", nil, {
+					requestId = requestId,
+					jobId = previousJobId,
+					offerId = offerId,
+					error = "OfferLocked",
+				})
 				return
 			end
 			ctx.saving = true
 			local id = HttpService:GenerateGUID(false)
 			local ok = profiles.change(player, function(candidate: Profile.Profile): boolean
+				local previous = candidate.jobs.active
+				if previousJobId ~= (if previous then previous.id else "") then
+					return false
+				end
 				return Jobs.accept(candidate, id, offerId)
 			end)
 			ctx.saving = false

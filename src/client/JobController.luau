@@ -185,8 +185,11 @@ function Controller.start(
 	end)
 
 	local abandon: Abandon.API? = nil
+	local acceptancePending: () -> boolean = function(): boolean
+		return false
+	end
 	local function send(actionName: string, fields: { [string]: unknown }?): ()
-		if abandon and abandon.pending() and actionName ~= "sync" then
+		if ((abandon and abandon.pending()) or acceptancePending()) and actionName ~= "sync" then
 			return
 		end
 		local data: { [string]: unknown } = fields or {}
@@ -198,11 +201,26 @@ function Controller.start(
 		end
 		command:FireServer(data)
 	end
-	local offers = JobOffers.start(jobs, jobBody, back, language, function(id: string)
-		stopTravel()
-		local fields: { [string]: unknown } = { offerId = id }
-		send("accept", fields)
-	end)
+	local offers = JobOffers.start(
+		jobs,
+		jobBody,
+		back,
+		language,
+		function(id: string, previousJobId: string, requestId: string)
+			stopTravel()
+			-- Retry must retain the original baseline, rather than taking IDs from newer UI state.
+			command:FireServer({
+				action = "accept",
+				offerId = id,
+				jobId = previousJobId,
+				requestId = requestId,
+			})
+		end,
+		function(): boolean
+			return player:GetAttribute("ProfileStatus") == "Ready"
+		end
+	)
+	acceptancePending = offers.pending
 	local painter = PaintController.start(screen, send, language)
 	local interaction: ClientInteraction.API
 	local guide: FirstSteps.API
@@ -235,6 +253,14 @@ function Controller.start(
 		return if wall and wall:IsA("BasePart") then wall else nil
 	end
 	local function activate(): ()
+		if acceptancePending() then
+			hideHousing()
+			hidePanels()
+			homePanel.Visible, jobs.Visible = false, true
+			offers.show()
+			send("sync", nil)
+			return
+		end
 		if abandon and abandon.pending() then
 			hideHousing()
 			hidePanels()
@@ -358,7 +384,7 @@ function Controller.start(
 			return t("jobError" .. lastError)
 		end
 		if phase == "Offer" then
-			return t("offerHint")
+			return t(if acceptancePending() then "acceptPendingStatus" else "offerHint")
 		end
 		if phase == "Completed" then
 			return t(
@@ -392,6 +418,7 @@ function Controller.start(
 		if abandon then
 			abandon.render(s)
 		end
+		offers.render(s)
 		interaction.render(s)
 		guide.render(s)
 		local phase = if s then s.phase else "Offer"
@@ -442,6 +469,7 @@ function Controller.start(
 			and s.available
 			and player:GetAttribute("ProfileStatus") == "Ready"
 			and not (abandon and abandon.pending())
+			and not acceptancePending()
 		cancel.AutoButtonColor = cancel.Active
 		colors.Visible = phase == "ChooseMaterial"
 		action.Visible = not colors.Visible
@@ -453,7 +481,6 @@ function Controller.start(
 			b.Active = s ~= nil and s.available
 		end
 		map.render()
-		offers.render(s)
 		painter.render()
 		local travel = travelGoal()
 		local onboarding = player:GetAttribute("OnboardingStep")
@@ -521,6 +548,7 @@ function Controller.start(
 				else "openJobs"
 		)
 		resultContinue.Active = s ~= nil
+			and not acceptancePending()
 			and s.available
 			and s.phase == "Completed"
 			and receipt ~= nil
@@ -555,6 +583,7 @@ function Controller.start(
 		local s = state
 		if
 			not results.Visible
+			or acceptancePending()
 			or s == nil
 			or not s.available
 			or s.phase ~= "Completed"
@@ -737,6 +766,7 @@ function Controller.start(
 				or map.isVisible()
 				or interaction.isVisible()
 				or (abandon and abandon.pending())
+				or acceptancePending()
 			) and os.clock() - syncAt > 0.75
 		then
 			syncAt = os.clock()

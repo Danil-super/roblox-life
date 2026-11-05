@@ -21,7 +21,9 @@ export type Offer = {
 	reward: number,
 	xp: number,
 }
+export type AcceptAck = { requestId: string, jobId: string, offerId: string, error: string }
 export type Snapshot = {
+	acceptAck: AcceptAck?,
 	available: boolean,
 	phase: string,
 	jobId: string,
