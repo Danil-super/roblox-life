@@ -77,11 +77,11 @@ function Controller.start(
 	local title = label("Title", 4, 28)
 	local status = label("Status", 32, 40)
 	local buttons: { [string]: TextButton } = {}
-	for index, name in { "Mode", "Rotate", "Confirm", "Cancel" } do
+	for index, name in { "Mode", "RotateLeft", "Rotate", "Confirm", "Cancel" } do
 		local b = Instance.new("TextButton")
 		b.Name = name
-		b.Position = UDim2.new((index - 1) / 4, 4, 1, -60)
-		b.Size = UDim2.new(0.25, -8, 0, 48)
+		b.Position = UDim2.new((index - 1) / 5, 4, 1, -60)
+		b.Size = UDim2.new(0.2, -8, 0, 48)
 		b.BackgroundColor3 = Color3.fromRGB(55, 120, 102)
 		b.TextColor3 = Color3.fromRGB(244, 239, 224)
 		b.TextSize = 14
@@ -98,25 +98,53 @@ function Controller.start(
 		return { x = x, z = z, rotationY = rotation, mode = mode }
 	end
 	local function render(): ()
-		title.Text = t("buildHint")
+		local compact = UIS.TouchEnabled
+		title.Text = if item
+			then string.format(t("buildAngle"), t(item.catalogId), rotation)
+			else t("buildHint")
 		local retry = pending ~= nil and PlacementFlow.canRetry(pending, os.clock())
 		status.Text = t(
 			if waiting
 				then (if retry then "placementDelayed" else "homeErrorSaving")
-				elseif valid and not pinned then "clickFloor"
+				elseif valid and not pinned then (if compact
+					then "touchFloor"
+					else "clickFloor")
 				else "homeError" .. reason
 		)
-		buttons.Mode.Text = t(if mode == "Grid" then "gridMode" else "freeMode")
-		buttons.Rotate.Text = t("rotateItem")
-		buttons.Confirm.Text =
-			t(if waiting then (if retry then "retryPlacement" else "saving") else "placeItem")
+		buttons.Mode.Text = t(
+			if compact
+				then (if mode == "Grid" then "buildGridCompact" else "buildFreeCompact")
+				else (if mode == "Grid" then "gridMode" else "freeMode")
+		) .. (if compact then "" else " [G]")
+		local step = if mode == "Grid" then 90 else 15
+		buttons.RotateLeft.Text = (if compact then "" else "Q · ") .. string.format("-%d°", step)
+		buttons.Rotate.Text = (if compact then "" else "R · ") .. string.format("+%d°", step)
+		local confirmKey = if waiting
+			then (if retry then "retryPlacement" else "saving")
+			else "placeItem"
+		if compact then
+			confirmKey = if waiting
+				then (if retry then "buildRetryCompact" else "buildWaitCompact")
+				else "buildConfirmCompact"
+		end
+		buttons.Confirm.Text = t(confirmKey) .. (if compact then "" else " [Enter]")
 		buttons.Cancel.Text = t("cancelBuild")
-		buttons.Confirm.Active = if waiting
-			then retry and snapshot ~= nil and snapshot.available
-			else pinned and valid and os.clock() - confirmedAt < 1
-		for _, name in { "Mode", "Rotate", "Cancel" } do
-			buttons[name].Active = not waiting
-			buttons[name].AutoButtonColor = not waiting
+		buttons.Confirm.Active = active
+			and (
+				if waiting
+					then retry and snapshot ~= nil and snapshot.available
+					else snapshot ~= nil
+						and snapshot.available
+						and pinned
+						and valid
+						and os.clock() - confirmedAt < 1
+			)
+		for _, button in buttons do
+			button.TextSize = if compact then 12 else 13
+		end
+		for _, name in { "Mode", "RotateLeft", "Rotate", "Cancel" } do
+			buttons[name].Active = active and not waiting
+			buttons[name].AutoButtonColor = buttons[name].Active
 		end
 		buttons.Confirm.AutoButtonColor = buttons.Confirm.Active
 		buttons.Confirm.BackgroundColor3 = if buttons.Confirm.Active
@@ -199,8 +227,8 @@ function Controller.start(
 		dirty = true
 		render()
 	end
-	buttons.Mode.Activated:Connect(function()
-		if waiting then
+	local function toggleMode(): ()
+		if not active or waiting then
 			return
 		end
 		mode = if mode == "Grid" then "Free" else "Grid"
@@ -210,20 +238,15 @@ function Controller.start(
 		local angle = if mode == "Grid" then 90 else 15
 		rotation = (math.round(rotation / angle) * angle) % 360
 		change()
-	end)
-	buttons.Rotate.Activated:Connect(function()
-		if waiting then
+	end
+	local function rotate(direction: number): ()
+		if not active or waiting then
 			return
 		end
-		rotation = (rotation + (if mode == "Grid" then 90 else 15)) % 360
+		rotation = (rotation + direction * (if mode == "Grid" then 90 else 15)) % 360
 		change()
-	end)
-	buttons.Cancel.Activated:Connect(function()
-		if not waiting then
-			stop()
-		end
-	end)
-	buttons.Confirm.Activated:Connect(function()
+	end
+	local function confirmPlacement(): ()
 		local current = item
 		local s = snapshot
 		if not active or current == nil or s == nil or not s.available then
@@ -260,7 +283,20 @@ function Controller.start(
 		}
 		send("place", packet)
 		render()
+	end
+	buttons.Mode.Activated:Connect(toggleMode)
+	buttons.RotateLeft.Activated:Connect(function()
+		rotate(-1)
 	end)
+	buttons.Rotate.Activated:Connect(function()
+		rotate(1)
+	end)
+	buttons.Cancel.Activated:Connect(function()
+		if not waiting then
+			stop()
+		end
+	end)
+	buttons.Confirm.Activated:Connect(confirmPlacement)
 	local function enter(owned: Types.Owned, s: Types.Snapshot): ()
 		if disposed then
 			return
@@ -428,7 +464,7 @@ function Controller.start(
 			stop()
 			return
 		end
-		if processed then
+		if processed or UIS:GetFocusedTextBox() ~= nil then
 			return
 		end
 		if not waiting and input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -442,9 +478,14 @@ function Controller.start(
 			touch = input
 			pointer = Vector2.new(input.Position.X, input.Position.Y)
 		end
-		if not waiting and input.KeyCode == Enum.KeyCode.R then
-			rotation = (rotation + (if mode == "Grid" then 90 else 15)) % 360
-			change()
+		if input.KeyCode == Enum.KeyCode.R then
+			rotate(1)
+		elseif input.KeyCode == Enum.KeyCode.Q then
+			rotate(-1)
+		elseif input.KeyCode == Enum.KeyCode.G then
+			toggleMode()
+		elseif input.KeyCode == Enum.KeyCode.Return then
+			confirmPlacement()
 		end
 	end)
 	UIS.InputChanged:Connect(function(input: InputObject)

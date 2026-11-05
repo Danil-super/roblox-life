@@ -20,7 +20,7 @@ assert source.startswith("--!strict"), "Runtime source must remain strict"
 
 # Extract the implementation verbatim; fail visibly if its enclosing structure changes.
 change_start = source.index("\tlocal function change(): ()")
-change_end = source.index("\n\tbuttons.Mode.Activated", change_start)
+change_end = source.index("\n\tlocal function toggleMode", change_start)
 change = source[change_start:change_end]
 update_start = source.index("update = function(s: Types.Snapshot): ()")
 update_end = source.index("\n\t\tend,", update_start) + len("\n\t\tend")

@@ -6,7 +6,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 source = (ROOT / "src/client/BuildController.luau").read_text()
-a = source.index("\tbuttons.Mode.Activated:Connect")
+a = source.index("\tlocal function toggleMode(): ()")
 b = source.index("\n\tlocal function enter(", a)
 body = source[a:b]
 header = r''' 
@@ -25,7 +25,7 @@ local function render() end
 local function stop() stopped+=1 end
 local function change() end
 local buttons = {}
-for _,name in {"Mode","Rotate","Cancel","Confirm"} do
+for _,name in {"Mode","RotateLeft","Rotate","Cancel","Confirm"} do
     buttons[name]={Activated={Connect=function(_,fn) buttons[name].fire=fn end}}
 end
 local sent={}

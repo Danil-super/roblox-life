@@ -88,6 +88,11 @@
   цвет рамки только из HomePreview, pending — ожидание. Stop/Died убирают
   папку/ghost, Destroy HUD снимает FurnitureView и запрещает старый enter.
   Профиль/деньги/права прежние; docs/HOME_GUIDES.md.
+  BuildController: RotateLeft/Rotate и Q/R вызывают общий поворот ±90° Grid /
+  ±15° Free. G/Mode и Enter/Confirm используют те же команды; заголовок —
+  предмет/угол. Пять кнопок с короткими Touch-подписями, цели ≥44 px при 320.
+  Processed/focus блокируют новые клавиши, pending сохраняет прежний intent
+  и Retry. Сервер/схема/правила размещения прежние; docs/HOME_CONTROLS.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
