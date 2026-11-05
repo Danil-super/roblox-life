@@ -37,6 +37,10 @@ Ubuntu + VS Code/Codex + Luau + Rojo. Текущая игра: бесплатн�
 как ограниченные JSON-события без персональных данных. Формат и разбор проблем:
 [DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 
+Повторяемый локальный прогон учебного цикла с реальной покраской, покупкой,
+установкой/складом и сверкой Output: [LOCAL_QA.md](docs/LOCAL_QA.md).
+Сценарий требует свежий одиночный MemoryPreview и сам не открывает Studio.
+
 Начата реализация «Мастер на районе / Neighborhood Fixer» по
 [ТЗ v0.7](Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md). Подробный разбор:
 [docs/GDD_REVIEW.md](docs/GDD_REVIEW.md); порядок и статус:
