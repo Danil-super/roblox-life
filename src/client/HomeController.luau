@@ -8,6 +8,7 @@ local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
 local PurchaseFlow = require(RS.Shared.PurchaseFlow)
 local StoreFlow = require(RS.Shared.StoreFlow)
+local Goals = require(RS.Shared.NavigationGoal)
 local Build = require("./BuildController")
 local RoomPlanner = require("./HomePlannerController")
 local Controller = {}
@@ -133,25 +134,7 @@ function Controller.start(
 	for _, action in { returnButton, routeButton } do
 		action.Position, action.Size = UDim2.new(0.5, 8, 1, -60), UDim2.new(0.5, -24, 0, 48)
 	end
-	local route = button(screen, "ShopRoute")
-	route.Position = UDim2.fromOffset(16, 172)
-	route.Size = UDim2.fromOffset(242, 52)
-	route.BackgroundColor3 = Color3.fromRGB(26, 43, 43)
-	route.Visible = false
-	local marker = Instance.new("BillboardGui")
-	marker.Name = "ShopMarker"
-	marker.Size = UDim2.fromOffset(190, 52)
-	marker.AlwaysOnTop = true
-	marker.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
-	marker.Enabled = false
-	marker.Parent = screen
-	local badge = text(marker, "Label", 0, 52, 16)
-	badge.Position = UDim2.fromOffset(0, 0)
-	badge.Size = UDim2.fromScale(1, 1)
-	badge.BackgroundTransparency = 0
-	badge.BackgroundColor3 = Color3.fromRGB(245, 197, 98)
-	badge.TextColor3 = Color3.fromRGB(26, 43, 43)
-	round(badge)
+
 	local function send(action: string, fields: { [string]: unknown }?): ()
 		local data: { [string]: unknown } = fields or {}
 		data.action = action
@@ -166,6 +149,9 @@ function Controller.start(
 		planner.hide()
 	end
 	local function show(tab: string): ()
+		if tab ~= "Shop" then
+			routeActive = false
+		end
 		exclusive()
 		homePanel.Visible = false
 		hidePanels()
@@ -304,8 +290,11 @@ function Controller.start(
 		shopBack.Text = t(if purchasedItem then "openInventory" else "backHome")
 		inventoryBack.Text = t("backHome")
 		returnButton.Text = t("returnHome")
-		routeButton.Text = t("showShopRoute")
-		badge.Text = t("shopTitle")
+		routeButton.Text = t(if routeActive then "stopShopRoute" else "showShopRoute")
+		local routeReady = routeActive
+			or (s ~= nil and s.available and player:GetAttribute("ProfileStatus") == "Ready")
+		routeButton.Active, routeButton.AutoButtonColor = routeReady, routeReady
+		routeButton.BackgroundTransparency = if routeReady then 0 else 0.5
 		local errorText = if lastError and os.clock() < errorUntil
 			then t("homeError" .. lastError)
 			else nil
@@ -509,13 +498,14 @@ function Controller.start(
 		end)
 	end)
 	routeButton.Activated:Connect(function()
-		routeActive = true
-		hidePanels()
-		homePanel.Visible = false
-	end)
-	route.Activated:Connect(function()
-		show("Shop")
-		render()
+		if routeActive then
+			routeActive = false
+			render()
+		elseif state and state.available and player:GetAttribute("ProfileStatus") == "Ready" then
+			routeActive = true
+			hidePanels()
+			homePanel.Visible = false
+		end
 	end)
 	event.OnClientEvent:Connect(function(s: Types.Snapshot)
 		state = s
@@ -551,22 +541,6 @@ function Controller.start(
 	end)
 	RunService.RenderStepped:Connect(function()
 		local inBuild = builder.isActive()
-		route.Visible = routeActive and not inBuild
-		marker.Enabled = route.Visible
-		local shopModel = workspace:FindFirstChild("NeighborhoodShop")
-		local counter = if shopModel then shopModel:FindFirstChild("Counter") else nil
-		if counter and counter:IsA("BasePart") then
-			marker.Adornee = counter
-			local character = player.Character
-			local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
-			if root and root:IsA("BasePart") then
-				route.Text = t("shopTitle")
-					.. " · "
-					.. math.floor((root.Position - counter.Position).Magnitude)
-					.. " · "
-					.. t("openShop")
-			end
-		end
 		if
 			(shop.Visible or inventory.Visible or planner.isVisible() or inBuild or routeActive)
 			and os.clock() - syncAt > 1
@@ -578,6 +552,21 @@ function Controller.start(
 	end)
 	send("sync", nil)
 	return {
+		travel = function(): Goals.Goal?
+			if not routeActive then
+				return nil
+			end
+			local shopModel = workspace:FindFirstChild("NeighborhoodShop")
+			local counter = if shopModel then shopModel:FindFirstChild("Counter") else nil
+			if counter == nil or not counter:IsA("BasePart") then
+				return nil
+			end
+			local position = counter.Position + Vector3.new(0, 1.5, 6)
+			return Goals.shop(routeActive, state, { position.X, position.Y, position.Z })
+		end,
+		stopRoute = function(): ()
+			routeActive = false
+		end,
 		render = render,
 		show = function(tab: string): ()
 			builder.stop()

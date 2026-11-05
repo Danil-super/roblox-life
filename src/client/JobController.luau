@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local Strings = require(ReplicatedStorage.Shared.Strings)
 local Config = require(ReplicatedStorage.Shared.PaintConfig)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
+local Goals = require(ReplicatedStorage.Shared.NavigationGoal)
 local PaintController = require("./PaintController")
 local Navigation = require("./JobNavigation")
 local MapController = require("./MapController")
@@ -17,7 +18,9 @@ function Controller.start(
 	homePanel: Frame,
 	language: () -> string,
 	homeAction: (string) -> (),
-	hideHousing: () -> ()
+	hideHousing: () -> (),
+	travelGoal: () -> Goals.Goal?,
+	stopTravel: () -> ()
 )
 	local player = Players.LocalPlayer
 	local command = ReplicatedStorage:WaitForChild("JobCommand")
@@ -196,6 +199,7 @@ function Controller.start(
 		command:FireServer(data)
 	end
 	local offers = JobOffers.start(jobs, jobBody, back, language, function(id: string)
+		stopTravel()
 		local fields: { [string]: unknown } = { offerId = id }
 		send("accept", fields)
 	end)
@@ -228,6 +232,18 @@ function Controller.start(
 		return if wall and wall:IsA("BasePart") then wall else nil
 	end
 	local function activate(): ()
+		local travel = travelGoal()
+		if travel then
+			if travel.available and player:GetAttribute("ProfileStatus") == "Ready" then
+				if travel.near then
+					homeAction("Shop")
+				else
+					jobs.Visible = false
+					map.show()
+				end
+			end
+			return
+		end
 		local s = state
 		if s == nil or not s.available then
 			return
@@ -273,6 +289,7 @@ function Controller.start(
 		end
 	end
 	interaction = ClientInteraction.start(screen, language, function()
+		stopTravel()
 		hideHousing()
 		guide.hide()
 		painter.stop()
@@ -293,12 +310,14 @@ function Controller.start(
 		map.hide()
 	end, function(target: string)
 		if target == "Jobs" then
+			stopTravel()
 			homePanel.Visible, jobs.Visible = false, true
 			offers.show()
 			send("sync", nil)
 		elseif target == "Phone" then
 			homePanel.Visible = true
 		elseif target == "Current" then
+			stopTravel()
 			activate()
 		else
 			homeAction(target)
@@ -415,17 +434,23 @@ function Controller.start(
 			b.Text = t(({ "rose", "warmWhite", "mint" })[index])
 			b.Active = s ~= nil and s.available
 		end
-		map.render(s)
+		map.render()
 		offers.render(s)
 		painter.render()
+		local travel = travelGoal()
 		local onboarding = player:GetAttribute("OnboardingStep")
 		local nextKey = if phase == "Completed" and onboarding == "BUY"
 			then "shopTitle"
 			elseif phase == "Completed" and onboarding == "PLACE" then "furnitureApp"
 			else actions[phase] or "openJobs"
 		navigation.render(
-			t(if s and s.destination and not nearWall then "openMap" else nextKey),
-			s ~= nil and s.available
+			t(
+				if travel
+					then (if travel.near then "openShop" else "openMap")
+					elseif s and s.destination and not nearWall then "openMap"
+					else nextKey
+			),
+			if travel then travel.available else s ~= nil and s.available
 		)
 		action.Text = t(nextKey)
 		resultHeading.Text = t("resultTitle")
@@ -476,15 +501,16 @@ function Controller.start(
 			local detail = objective:FindFirstChild("Hint")
 			if label and label:IsA("TextLabel") then
 				label.Text = t(
-					if s
-							and s.destination
-							and not nearWall
-						then "goToClient"
+					if travel
+						then (if travel.near then "arrivedShop" else "goToShop")
+						elseif s and s.destination and not nearWall then "goToClient"
 						else phaseKeys[phase] or "jobOffer"
 				)
 			end
 			if detail and detail:IsA("TextLabel") then
-				detail.Text = stepHint(phase)
+				detail.Text = if travel
+					then t(if travel.near then "shopArrivalHint" else "shopRouteHint")
+					else stepHint(phase)
 			end
 		end
 	end
@@ -573,11 +599,10 @@ function Controller.start(
 		local root = if player.Character
 			then player.Character:FindFirstChild("HumanoidRootPart")
 			else nil
-		local destination = if s then s.destination else nil
-		local navigating = s ~= nil
-			and destination ~= nil
-			and s.phase ~= "Offer"
-			and s.phase ~= "Completed"
+		local travel = travelGoal()
+		local goal = travel or Goals.job(s, nearWall)
+		local navigating = goal ~= nil
+			and player:GetAttribute("ProfileStatus") == "Ready"
 			and not painter.isActive()
 			and not screen:GetAttribute("Building")
 			and not interaction.isVisible()
@@ -604,13 +629,20 @@ function Controller.start(
 				target = torso
 			end
 		end
-		navigation.update(s, target, rootPart, navigating, nearWall, t)
+		if travel then
+			local shop = workspace:FindFirstChild("NeighborhoodShop")
+			local counter = if shop then shop:FindFirstChild("Counter") else nil
+			target = if counter and counter:IsA("BasePart") then counter else nil
+		else
+			goal = Goals.job(s, nearWall)
+		end
+		navigation.update(goal, target, rootPart, navigating, t)
 		local home = player:GetAttribute("HomePosition")
 		local routePoints, routeIndex = navigation.route()
 		map.update(
 			rootPart,
 			if typeof(home) == "Vector3" then home else nil,
-			s,
+			goal,
 			routePoints,
 			routeIndex
 		)
@@ -645,6 +677,7 @@ function Controller.start(
 			hidePanels()
 			jobs.Visible = tab == "Jobs"
 			if tab == "Jobs" then
+				stopTravel()
 				offers.show()
 			end
 			if tab == "Map" then

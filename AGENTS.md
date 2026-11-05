@@ -45,6 +45,12 @@
   Path.Blocked не покрывает все обновления; старый callback проверяет identity
   Path, чтобы не снять замену. Map — пул 128 линий, мировая метка одна;
   отсутствие пути скрывает направление. docs/NAVIGATION.md.
+  NavigationGoal выбирает Job либо Shop для одного JobNavigation/WalkingRoute/
+  Map. HomeController.travel/stopRoute связаны явными callbacks через Main;
+  выбор магазина не отменяет job/work и не покупает предмет. NearShop приходит
+  из HomeState, право покупки заново проверяет HomeService. Покупка/обустройство
+  снимают Shop, Jobs/справка/разговор с жителем возвращают текущую работу; выбор только на сеанс.
+  Отдельные ShopRoute/ShopMarker удалены. docs/SHOP_NAVIGATION.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

@@ -10,7 +10,6 @@ export type Layout = {
 	home: Rect,
 	objective: Rect,
 	navigation: Rect,
-	shopRoute: Rect,
 }
 local Layout = {}
 function Layout.compute(
@@ -30,7 +29,6 @@ function Layout.compute(
 			home = { x = width - 104, y = height - 68, w = 88, h = 52 },
 			objective = { x = 16, y = height - 172, w = math.min(520, width - 136), h = 156 },
 			navigation = { x = 16, y = 100, w = 242, h = 64 },
-			shopRoute = { x = 16, y = 172, w = 242, h = 52 },
 		}
 	end
 	local margin, gap = Theme.margin, Theme.gap
@@ -57,7 +55,6 @@ function Layout.compute(
 			h = objectiveHeight,
 		},
 		navigation = { x = (width - 242) / 2, y = routeY, w = 242, h = 64 },
-		shopRoute = { x = (width - 242) / 2, y = routeY + 64 + gap, w = 242, h = 52 },
 	}
 end
 return table.freeze(Layout)

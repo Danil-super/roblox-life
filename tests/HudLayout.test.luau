@@ -27,7 +27,7 @@ do
 			assert(not overlaps(rect, top[j]), "HUD cards overlap")
 		end
 	end
-	for _, rect in { hud.navigation, hud.shopRoute } do
+	for _, rect in { hud.navigation } do
 		inside(rect, w, h)
 		assert(
 			not overlaps(rect, joystick) and not overlaps(rect, jump),
@@ -35,7 +35,9 @@ do
 		)
 		assert(not overlaps(rect, hud.objective), "Route covers objective")
 	end
-	assert(not overlaps(hud.navigation, hud.shopRoute), "Routes overlap")
+	for _, card in { hud.wallet, hud.language, hud.home } do
+		assert(not overlaps(hud.navigation, card), "Route covers a HUD control")
+	end
 	local action: Rect = {
 		x = hud.objective.x + 14,
 		y = hud.objective.y + (if hud.minimal then 8 elseif hud.compact then 48 else 92),

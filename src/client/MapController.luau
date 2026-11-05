@@ -3,19 +3,19 @@ local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local Strings = require(RS.Shared.Strings)
 local Math = require(RS.Shared.MapMath)
-local Types = require(RS.Shared.JobTypes)
+local Goals = require(RS.Shared.NavigationGoal)
 export type API = {
 	show: () -> (),
 	hide: () -> (),
 	isVisible: () -> boolean,
-	render: (Types.Snapshot?) -> (),
-	update: (BasePart?, Vector3?, Types.Snapshot?, { Vector3 }, number) -> (),
+	render: () -> (),
+	update: (BasePart?, Vector3?, Goals.Goal?, { Vector3 }, number) -> (),
 }
 local Controller = {}
 function Controller.start(screen: ScreenGui, phone: Frame, language: () -> string): API
 	local ink, paper = Color3.fromRGB(26, 43, 43), Color3.fromRGB(244, 239, 224)
 	local accent = Color3.fromRGB(55, 120, 102)
-	local state: Types.Snapshot? = nil
+	local state: Goals.Goal? = nil
 	local root: BasePart? = nil
 	local home: Vector3? = nil
 	local width, height = 400, 150
@@ -162,12 +162,22 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 		follow.BackgroundTransparency = if available then 0 else 0.6
 		heading.Text, back.Text, follow.Text = t("map"), t("backHome"), t("followRoute")
 		youLabel.Text, homeLabel.Text, clientLabel.Text =
-			t("mapYou"), t("home"), t("clientApartment")
+			t("mapYou"),
+			t("home"),
+			t(
+				if s and s.kind == "Shop"
+					then "mapShop"
+					elseif s then s.areaKey
+					else "clientApartment"
+			)
 		clientLabel.Visible = d ~= nil
 		clientIcon.Visible = d ~= nil
 		local current = root
-		hint.Text = if s == nil or not s.available
+		hint.Text = if Players.LocalPlayer:GetAttribute("ProfileStatus") ~= "Ready"
+				or (s ~= nil and not s.available)
 			then t("mapUnavailable")
+			elseif s == nil then t("mapNoJob")
+			elseif s.near then t("arrived")
 			elseif d and current then string.format(
 				t("routeDistance"),
 				math.ceil(remaining or (Vector3.new(d[1], d[2], d[3]) - current.Position).Magnitude)
@@ -212,14 +222,13 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 		isVisible = function(): boolean
 			return panel.Visible
 		end,
-		render = function(s: Types.Snapshot?): ()
-			state = s
+		render = function(): ()
 			draw()
 		end,
 		update = function(
 			part: BasePart?,
 			origin: Vector3?,
-			s: Types.Snapshot?,
+			s: Goals.Goal?,
 			points: { Vector3 },
 			index: number
 		): ()

@@ -317,8 +317,9 @@ en["followRoute"] = "Follow route"
 ru["followRoute"] = "К цели"
 en["mapYou"] = "You"
 ru["mapYou"] = "Ты"
-en["mapNoJob"] = "Accept a job in Jobs to choose a destination."
-ru["mapNoJob"] = "Прими заказ в Jobs, чтобы выбрать цель."
+en["mapNoJob"] = "Choose a job, or show a route from the shop catalogue."
+ru["mapNoJob"] =
+	"Выбери заказ или включи маршрут в каталоге магазина."
 en["mapUnavailable"] = "Profile not confirmed"
 ru["mapUnavailable"] = "Профиль не подтверждён"
 en["floor-plant-v1Description"] = "A little greenery for a cosy room."
@@ -632,6 +633,22 @@ en["routeUnavailable"] = "Path unavailable"
 ru["routeUnavailable"] = "Нет маршрута"
 en["followPath"] = "Follow the gold marker"
 ru["followPath"] = "Иди к золотой метке"
+en["stopShopRoute"] = "Stop route"
+ru["stopShopRoute"] = "Убрать маршрут"
+en["goToShop"] = "Go to the furniture shop"
+ru["goToShop"] = "Иди в мебельный магазин"
+en["shopRouteHint"] =
+	"Follow gold markers through the shop door. At the counter, open the catalogue."
+ru["shopRouteHint"] =
+	"Иди по золотым меткам через дверь магазина. У прилавка открой каталог."
+en["shopArrivalHint"] =
+	"You can shop here. Open the catalogue and choose an item; nothing is bought automatically."
+ru["shopArrivalHint"] =
+	"Ты в магазине. Открой каталог и выбери предмет; покупку нужно подтвердить."
+en["mapShop"] = "Shop"
+ru["mapShop"] = "Магазин"
+en["arrivedShop"] = "At the furniture shop"
+ru["arrivedShop"] = "Ты в магазине"
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

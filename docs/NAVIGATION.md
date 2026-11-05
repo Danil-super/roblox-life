@@ -85,3 +85,13 @@ Path.Blocked впереди инициирует пересчёт; каждые 
 Справка API: [Pathfinding](https://create.roblox.com/docs/characters/pathfinding),
 [PathfindingModifier](https://create.roblox.com/docs/reference/engine/classes/PathfindingModifier).
 Документы получены через Context7 до реализации. Автопилота и новых remotes нет.
+
+
+## Магазин как выбранная цель
+
+После SHOP-WALK-03 Map/JobNavigation получают NavigationGoal, а не целый
+JobState. ДОМ → Магазин → Показать маршрут выбирает Shop и временно заменяет
+рабочую цель в единственном указателе и на карте. Отмена возвращает прежний
+job/work; состояние и выплата работы не меняются. Отдельные ShopRoute/ShopMarker
+удалены. Прибытие к магазину приходит из HomeState.nearShop, покупку по-прежнему
+проверяет HomeService. Сценарии и контракт: [SHOP_NAVIGATION.md](SHOP_NAVIGATION.md).

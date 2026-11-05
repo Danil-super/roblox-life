@@ -1,7 +1,7 @@
 --!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RouteMath = require(ReplicatedStorage.Shared.RouteMath)
-local Types = require(ReplicatedStorage.Shared.JobTypes)
+local Goals = require(ReplicatedStorage.Shared.NavigationGoal)
 local WalkingRoute = require(script.Parent.WalkingRoute)
 local Navigation = {}
 local ink = Color3.fromRGB(26, 43, 43)
@@ -93,11 +93,10 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 			action.BackgroundTransparency = if available then 0 else 0.5
 		end,
 		update = function(
-			s: Types.Snapshot?,
+			s: Goals.Goal?,
 			target: BasePart?,
 			root: BasePart?,
 			active: boolean,
-			near: boolean,
 			t: (string) -> string
 		): ()
 			local humanoid = if root and root.Parent
@@ -110,10 +109,11 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 				and humanoid.Health > 0
 			chip.Visible, marker.Enabled, waypoint.Transparency = visible, false, 1
 			marker.Adornee = waypoint
-			if not visible or s == nil or root == nil or s.destination == nil then
+			if not visible or s == nil or root == nil then
 				route.clear()
 				return
 			end
+			local near = s.near
 			local d = s.destination
 			local goal = Vector3.new(d[1], d[2], d[3])
 			local nextPoint: Vector3? = nil
@@ -122,16 +122,14 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 			if near then
 				route.clear()
 			else
-				nextPoint, remaining, status =
-					route.update(root.Position, goal, s.jobId .. ":" .. s.workId, os.clock())
+				nextPoint, remaining, status = route.update(root.Position, goal, s.key, os.clock())
 			end
 			arrow.Visible = near or nextPoint ~= nil
 			distance.Text = if near
 				then t("arrived")
 				elseif remaining then string.format(t("routeDistance"), math.ceil(remaining))
 				else t(if status == "Finding" then "routeFinding" else "routeUnavailable")
-			local meeting = s.phase == "Inspect" or s.phase == "Ready"
-			local nameKey = if meeting then s.clientKey or "clientResident" else "workWall"
+			local nameKey = s.labelKey
 			destination.Text = if near
 				then t(nameKey)
 				elseif nextPoint then t("followPath")
@@ -144,7 +142,7 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 			elseif nextPoint then
 				waypoint.Position, waypoint.Transparency = nextPoint + Vector3.new(0, 0.15, 0), 0.1
 				marker.Adornee, marker.Enabled = waypoint, true
-				badge.Text = t("followPath") .. "\n" .. t("clientApartment")
+				badge.Text = t("followPath") .. "\n" .. t(s.areaKey)
 			end
 			local delta = (nextPoint or goal) - root.Position
 			local camera = workspace.CurrentCamera

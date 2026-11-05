@@ -12,6 +12,7 @@ local Strings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("S
 local Layout = require(ReplicatedStorage.Shared.HudLayout)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 local InputConfig = require(ReplicatedStorage.Shared.InputConfig)
+local Goals = require(ReplicatedStorage.Shared.NavigationGoal)
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("ReturnHome")
 assert(remote:IsA("RemoteEvent"), "ReturnHome remote missing")
@@ -126,16 +127,25 @@ local guideButton = button(apps, "Guide", UDim2.fromOffset(20, 156), UDim2.new(1
 local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 208), UDim2.new(1, -40, 0, 44))
 local openHousing: (string) -> () = function(_tab: string): () end
 local hideHousing: () -> () = function(): () end
+local travelGoal: () -> Goals.Goal? = function(): Goals.Goal?
+	return nil
+end
+local stopTravel: () -> () = function(): () end
 local jobs = JobController.start(screen, panel, function(): string
 	return language
 end, function(tab: string): ()
 	openHousing(tab)
 end, function()
 	hideHousing()
+end, function(): Goals.Goal?
+	return travelGoal()
+end, function()
+	stopTravel()
 end)
 local housing = HomeController.start(screen, panel, function(): string
 	return language
 end, jobs.hide)
+travelGoal, stopTravel = housing.travel, housing.stopRoute
 openHousing = function(tab: string): ()
 	housing.show(tab)
 end
@@ -302,8 +312,7 @@ local function resize(): ()
 			UDim2.fromOffset(14, if layout.minimal then 8 elseif layout.compact then 48 else 92)
 		action.Size = UDim2.new(1, -28, 0, if layout.compact then Theme.touchTarget else 48)
 	end
-	local routes: { [string]: Layout.Rect } =
-		{ JobNavigation = layout.navigation, ShopRoute = layout.shopRoute }
+	local routes: { [string]: Layout.Rect } = { JobNavigation = layout.navigation }
 	for name, rect in routes do
 		local gui = screen:FindFirstChild(name)
 		if gui and gui:IsA("GuiObject") then

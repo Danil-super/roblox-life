@@ -60,6 +60,8 @@ opening=jobs_source[a:b]
 checks='''
 local inventoryVisible,building,stops=true,true,0
 local guideVisible=true
+local shopRouteSelected=true
+local function stopTravel()shopRouteSelected=false end
 local guide={hide=function()guideVisible=false end}
 local jobs,results,homePanel={Visible=true},{Visible=true},{Visible=true}
 local mapVisible=true
@@ -71,6 +73,7 @@ local function openDialogue()
 end
 openDialogue()
 assert(not inventoryVisible and not building and not guideVisible,"Conversation retained housing mode")
+assert(not shopRouteSelected,"Conversation retained the shop route instead of work")
 assert(not jobs.Visible and not results.Visible and not homePanel.Visible and not mapVisible and stops==1,"Conversation stacked another modal or painter")
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
