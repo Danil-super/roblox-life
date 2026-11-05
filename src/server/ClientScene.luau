@@ -1,6 +1,7 @@
 --!strict
 local RS = game:GetService("ReplicatedStorage")
 local Models = require(RS.Assets.FurnitureModels)
+local Details = require(RS.Assets.ClientDecorModels)
 local Styles = require("./Domain/ClientRoomConfig")
 export type API = {
 	resident: Model,
@@ -115,6 +116,18 @@ function Scene.create(room: Model, ownerId: number): API
 				Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth, decor
 		end
 		local accent = Color3.new(table.unpack(style.accent))
+		local details: { Styles.Detail } = style.details or {}
+		for index, detail in details do
+			local model = Details.create(detail.kind)
+			assert(model, "Missing client decoration")
+			model.Name = "Detail" .. index
+			model:PivotTo(
+				frame
+					* CFrame.new(detail.x, detail.y, detail.z)
+					* CFrame.Angles(0, math.rad(detail.yaw), 0)
+			)
+			model.Parent = decor
+		end
 		part("SidePicture", Vector3.new(0.12, 3, 4), Vector3.new(-15.4, 5, 2), accent)
 		if style.bed then
 			part(

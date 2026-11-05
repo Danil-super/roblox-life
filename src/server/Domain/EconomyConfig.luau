@@ -6,6 +6,8 @@ local rewards: { [string]: { dollars: number, xp: number, reputation: number } }
 	["paint-mint-v1"] = { dollars = 300, xp = 70, reputation = 1 },
 	["paint-rose-v1"] = { dollars = 350, xp = 90, reputation = 1 },
 	["paint-duo-v1"] = { dollars = 550, xp = 120, reputation = 1 },
+	["paint-sunroom-v1"] = { dollars = 600, xp = 140, reputation = 1 },
+	["paint-atelier-v1"] = { dollars = 650, xp = 160, reputation = 1 },
 }
 local contracts: {
 	[string]: {
@@ -20,6 +22,26 @@ local contracts: {
 	},
 } =
 	{
+		["paint-sunroom-v1"] = {
+			titleKey = "contractSunroom",
+			briefKey = "briefSunroom",
+			clientKey = "residentNina",
+			roomStyle = "sunroom",
+			colorId = "warm-white",
+			secondaryColorId = "mint",
+			minXP = 330,
+			offered = true,
+		},
+		["paint-atelier-v1"] = {
+			titleKey = "contractAtelier",
+			briefKey = "briefAtelier",
+			clientKey = "residentLev",
+			roomStyle = "atelier",
+			colorId = "rose",
+			secondaryColorId = "warm-white",
+			minXP = 470,
+			offered = true,
+		},
 		["paint-duo-v1"] = {
 			titleKey = "contractDuo",
 			briefKey = "briefDuo",

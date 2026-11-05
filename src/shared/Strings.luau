@@ -352,6 +352,17 @@ en["clickFloor"] = "Click the floor to lock this position, then confirm"
 ru["clickFloor"] =
 	"Кликни на пол, чтобы зафиксировать место, затем подтверди"
 en["resultTitle"] = "Work accepted"
+en["contractSunroom"], ru["contractSunroom"] =
+	"Sunroom refresh", "Солнечная комната"
+en["briefSunroom"] =
+	"Nina is making a sunny reading room. Protect the floor, paint the first wall warm white and the second mint, then inspect both. One payment for the whole room."
+ru["briefSunroom"] =
+	"Нина обустраивает светлую комнату для чтения. Укрой пол, покрась первую стену тёплым белым, вторую — мятным и проверь обе. Одна оплата за всю комнату."
+en["contractAtelier"], ru["contractAtelier"] = "Artist's studio", "Студия художника"
+en["briefAtelier"] =
+	"Lev needs a calm studio for his paintings. Protect the floor, paint the first wall rose and the second warm white. Check both walls before handing in the whole job."
+ru["briefAtelier"] =
+	"Лев готовит уютную студию для своих картин. Укрой пол, покрась первую стену розовым, вторую — тёплым белым. Проверь обе стены и сдай работу целиком."
 ru["resultTitle"] = "Работа принята"
 en["resultBefore"] = "Before · sketch"
 ru["resultBefore"] = "До · схема"
