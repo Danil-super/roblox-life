@@ -14,6 +14,7 @@ local config = {
 	columns = 12,
 	rows = 8,
 	threshold = 0.8,
+	finishExcellentPercent = 95,
 	minSeconds = 12,
 	maxPoints = 12,
 	packetInterval = 0.08,

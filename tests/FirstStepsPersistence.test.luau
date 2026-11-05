@@ -73,7 +73,7 @@ end, 60)
 assert(b.load(), "Reload failed")
 assert(read(b, "Completed").completed == 7, "Confirmed milestones disappeared on reload")
 local loaded = b.read()
-assert(loaded and loaded.wallet.dollars == 70 and loaded.schemaVersion == 2, "Money/schema changed")
+assert(loaded and loaded.wallet.dollars == 70 and loaded.schemaVersion == 3, "Money/schema changed")
 assert(
 	b.transact(function(p: Profile.Profile): boolean
 		local ok = Furniture.store(p, "plant", 1)

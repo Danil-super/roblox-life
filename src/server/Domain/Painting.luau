@@ -33,6 +33,7 @@ export type State = {
 	completedMasks: { string },
 }
 export type Colors = { primary: string, secondary: string? }
+export type Finish = { columns: number, rows: number, masks: { string } }
 local Painting = {}
 local function finite(n: unknown): boolean
 	return type(n) == "number" and n == n and math.abs(n) < math.huge
@@ -323,5 +324,23 @@ function Painting.mask(s: State): string
 		result[i] = if s.cells[i] then "1" else "0"
 	end
 	return table.concat(result)
+end
+function Painting.finish(s: State): Finish?
+	if not Painting.allReady(s) then
+		return nil
+	end
+	local masks = table.clone(s.completedMasks)
+	table.insert(masks, Painting.mask(s))
+	local total = s.config.columns * s.config.rows
+	for _, mask in masks do
+		if #mask ~= total or not string.match(mask, "^[01]+$") then
+			return nil
+		end
+		local _, count = string.gsub(mask, "1", "")
+		if count / total < s.config.threshold then
+			return nil
+		end
+	end
+	return { columns = s.config.columns, rows = s.config.rows, masks = masks }
 end
 return Painting

@@ -10,8 +10,8 @@ end
 test("fresh profiles have zero dollars and independent collections", function()
 	local first, second = Profile.new(123), Profile.new(456)
 	assert(
-		first.schemaVersion == 2 and first.wallet.dollars == 0,
-		"Expected first.schemaVersion == 2 and first.wallet.dollars == 0"
+		first.schemaVersion == 3 and first.wallet.dollars == 0,
+		"Expected first.schemaVersion == 3 and first.wallet.dollars == 0"
 	)
 	assert(
 		first.housing.roomTemplateId == "StarterDormTemplate_v1",
@@ -91,8 +91,8 @@ test("schema one onboarding migrates without losing dollars or inventory", funct
 	}
 	local migrated = Profile.decode(legacy, 123)
 	assert(
-		migrated ~= nil and migrated.schemaVersion == 2,
-		"Expected migrated ~= nil and migrated.schemaVersion == 2"
+		migrated ~= nil and migrated.schemaVersion == 3,
+		"Expected migrated ~= nil and migrated.schemaVersion == 3"
 	)
 	assert(
 		migrated.wallet.dollars == 250 and migrated.onboarding.step == "BUY",

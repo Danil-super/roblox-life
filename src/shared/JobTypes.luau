@@ -1,6 +1,7 @@
 --!strict
 local ClientDialogue = require("./ClientDialogue")
 local FirstSteps = require("./FirstSteps")
+local PaintFinish = require("./PaintFinish")
 export type Result = {
 	jobId: string,
 	operationId: string,
@@ -8,6 +9,7 @@ export type Result = {
 	xp: number,
 	primaryColorId: string?,
 	secondaryColorId: string?,
+	finish: PaintFinish.Data?,
 }
 export type Offer = {
 	clientKey: string?,

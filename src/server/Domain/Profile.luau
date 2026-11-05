@@ -24,12 +24,14 @@ export type Placement = {
 	rotationY: number,
 	roomTemplateVersion: number,
 }
+export type PaintFinish = { columns: number, rows: number, masks: { string } }
 export type Job = {
 	id: string,
 	sequence: number,
 	templateId: string,
 	status: string,
 	receipt: Receipt?,
+	finish: PaintFinish?,
 }
 export type Profile = {
 	schemaVersion: number,
@@ -149,10 +151,46 @@ local function receipt(raw: unknown): Receipt?
 	}
 end
 
+local function paintFinish(raw: unknown): PaintFinish?
+	local data = asMap(raw, { "columns", "rows", "masks" })
+	if
+		data == nil
+		or not Profile.integer(data.columns, 1, 64)
+		or not Profile.integer(data.rows, 1, 64)
+		or type(data.masks) ~= "table"
+	then
+		return nil
+	end
+	local masks: { string } = {}
+	local count = 0
+	local rawMasks = data.masks :: { [unknown]: unknown }
+	for index, mask in next, rawMasks do
+		if
+			not Profile.integer(index, 1, 2)
+			or type(mask) ~= "string"
+			or #mask ~= (data.columns :: number) * (data.rows :: number)
+			or not string.match(mask, "^[01]+$")
+		then
+			return nil
+		end
+		count += 1
+		masks[index :: number] = mask
+	end
+	if count == 0 or count > 2 then
+		return nil
+	end
+	for i = 1, count do
+		if masks[i] == nil then
+			return nil
+		end
+	end
+	return { columns = data.columns :: number, rows = data.rows :: number, masks = masks }
+end
+
 function Profile.new(userId: number): Profile
 	assert(Profile.integer(userId, 1, 9007199254740991), "A positive Roblox UserId is required")
 	return {
-		schemaVersion = 2,
+		schemaVersion = 3,
 		userId = userId,
 		revision = 0,
 		wallet = { dollars = 0 },
@@ -189,7 +227,7 @@ function Profile.decode(raw: unknown, userId: number): (Profile?, string?)
 	if root == nil then
 		return nil, "Corrupt"
 	end
-	if root.schemaVersion ~= 1 and root.schemaVersion ~= 2 then
+	if root.schemaVersion ~= 1 and root.schemaVersion ~= 2 and root.schemaVersion ~= 3 then
 		return nil, "UnsupportedVersion"
 	end
 	if
@@ -307,7 +345,8 @@ function Profile.decode(raw: unknown, userId: number): (Profile?, string?)
 		return nil, "Corrupt"
 	end
 	if jobs.active ~= nil then
-		local job = asMap(jobs.active, { "id", "sequence", "templateId", "status", "receipt" })
+		local job =
+			asMap(jobs.active, { "id", "sequence", "templateId", "status", "receipt", "finish" })
 		local statuses = {
 			Accepted = true,
 			Travelling = true,
@@ -341,12 +380,25 @@ function Profile.decode(raw: unknown, userId: number): (Profile?, string?)
 		elseif job.receipt ~= nil then
 			return nil, "Corrupt"
 		end
+		local finish = if job.finish ~= nil then paintFinish(job.finish) else nil
+		if job.finish ~= nil then
+			local contract = Config.contracts[job.templateId :: string]
+			if
+				root.schemaVersion ~= 3
+				or job.status ~= "Completed"
+				or finish == nil
+				or (contract and #finish.masks ~= (if contract.secondaryColorId then 2 else 1))
+			then
+				return nil, "Corrupt"
+			end
+		end
 		profile.jobs.active = {
 			id = job.id :: string,
 			sequence = job.sequence :: number,
 			templateId = job.templateId :: string,
 			status = job.status :: string,
 			receipt = jobReceipt,
+			finish = finish,
 		}
 	end
 	local onboarding = asMap(

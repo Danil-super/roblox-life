@@ -99,12 +99,17 @@ function Jobs.submit(
 	if not Painting.allReady(work) or Painting.total(work) ~= total then
 		return false
 	end
+	local finish = Painting.finish(work)
+	if finish == nil then
+		return false
+	end
 	local old = job.status
 	job.status = "ReadyForInspection"
 	if Economy.completeJob(p, job.id, now) == nil then
 		job.status = old
 		return false
 	end
+	job.finish = finish
 	return true
 end
 return Jobs

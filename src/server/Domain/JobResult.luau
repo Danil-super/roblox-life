@@ -8,6 +8,7 @@ type Summary = {
 	xp: number,
 	primaryColorId: string?,
 	secondaryColorId: string?,
+	finish: Profile.PaintFinish?,
 }
 local Result = {}
 -- Read-only projection of an already confirmed profile, independent of runtime work.
@@ -22,6 +23,13 @@ function Result.read(profile: Profile.Profile): Summary?
 	end
 	local contract = Config.contracts[job.templateId]
 	return {
+		finish = if job.finish
+			then {
+				columns = job.finish.columns,
+				rows = job.finish.rows,
+				masks = table.clone(job.finish.masks),
+			}
+			else nil,
 		primaryColorId = if contract then contract.colorId else nil,
 		secondaryColorId = if contract then contract.secondaryColorId else nil,
 		jobId = job.id,
