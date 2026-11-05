@@ -8,6 +8,7 @@ local Models = require(RS.Assets.FurnitureModels)
 local Types = require(RS.Shared.HomeTypes)
 local PurchaseFlow = require(RS.Shared.PurchaseFlow)
 local StoreFlow = require(RS.Shared.StoreFlow)
+local Inventory = require(RS.Shared.FurnitureInventory)
 local Goals = require(RS.Shared.NavigationGoal)
 local Build = require("./BuildController")
 local RoomPlanner = require("./HomePlannerController")
@@ -37,6 +38,7 @@ function Controller.start(
 	local syncAt = 0
 	local listKey = ""
 	local focus: { tab: string, id: string }? = nil
+	local inventoryFilter: Inventory.Filter = "All"
 	local planner: RoomPlanner.API
 	local function firstProduct(s: Types.Snapshot): string?
 		local best: Types.Product? = nil
@@ -127,6 +129,22 @@ function Controller.start(
 	local shop, shopTitle, shopInfo, shopBody, shopBack = panel("ShopPanel")
 	local inventory, inventoryTitle, inventoryInfo, inventoryBody, inventoryBack =
 		panel("InventoryPanel")
+	inventoryTitle.Visible = false
+	inventoryInfo.Position, inventoryInfo.Size = UDim2.fromOffset(16, 52), UDim2.new(1, -32, 0, 54)
+	local filters = Instance.new("Frame")
+	filters.Name, filters.Position, filters.Size =
+		"Filters", UDim2.fromOffset(8, 8), UDim2.new(1, -16, 0, 44)
+	filters.BackgroundTransparency, filters.Parent = 1, inventory
+	local filterButtons: { [string]: TextButton } = {}
+	local sections: { { id: Inventory.Filter } } =
+		{ { id = "All" }, { id = "Stored" }, { id = "Placed" } }
+	for index, entry in sections do
+		local section: Inventory.Filter = entry.id
+		local b = button(filters, section)
+		b.Position, b.Size = UDim2.new((index - 1) / 3, 4, 0, 0), UDim2.new(1 / 3, -8, 1, 0)
+		b.TextSize = 13
+		filterButtons[section] = b
+	end
 	local returnButton = button(inventory, "ReturnHome")
 	local routeButton = button(shop, "Route")
 	for _, back in { shopBack, inventoryBack } do
@@ -292,6 +310,24 @@ function Controller.start(
 	local function render(): ()
 		local s = state
 		planner.render(s, planBlocked())
+		if storing or (focus and focus.tab == "Furniture") then
+			inventoryFilter = "All"
+		end
+		local inventoryView = Inventory.project(if s then s.items else {}, inventoryFilter)
+		local ready = s ~= nil and s.available and player:GetAttribute("ProfileStatus") == "Ready"
+		for _, entry in sections do
+			local section: Inventory.Filter = entry.id
+			local b = filterButtons[section]
+			b.Text = (if section == inventoryFilter then "✓ " else "")
+				.. string.format(
+					t("inventory" .. section),
+					if ready
+						then tostring(Inventory.count(inventoryView.counts, section))
+						else "—"
+				)
+			b.Active, b.AutoButtonColor = ready and not planBlocked(), ready and not planBlocked()
+			b.BackgroundTransparency = if b.Active then 0 else 0.6
+		end
 		shopTitle.Text = t("shopTitle") .. (if s then " · $" .. s.dollars else "")
 		inventoryTitle.Text = t("inventoryTitle")
 		shopBack.Text = t(if purchasedItem then "openInventory" else "backHome")
@@ -320,12 +356,19 @@ function Controller.start(
 			else errorText or t(if s and s.nearShop then "shopReady" else "shopTravel")
 		inventoryInfo.Text = storeText
 			or errorText
-			or t(if s and s.nearHome then "inventoryHint" else "inventoryGoHome")
+			or t(
+				if not ready
+					then "offerWaiting"
+					elseif s and s.nearHome then "inventoryHint"
+					else "inventoryGoHome"
+			)
 		builder.render()
 		if s == nil then
 			return
 		end
 		local key = language()
+			.. inventoryFilter
+			.. tostring(ready)
 			.. tostring(s.available)
 			.. tostring(s.nearHome)
 			.. tostring(s.nearShop)
@@ -397,7 +440,7 @@ function Controller.start(
 			end)
 		end
 		shopBody.CanvasSize = UDim2.fromOffset(0, #s.catalog * 164)
-		for index, owned in s.items do
+		for index, owned in inventoryView.items do
 			local card = row(inventoryBody, owned.id, index, owned.catalogId, 100)
 			local title = text(card, "Name", 4, 40, 15)
 			title.Position = UDim2.fromOffset(84, 4)
@@ -450,11 +493,16 @@ function Controller.start(
 				render()
 			end)
 		end
-		if #s.items == 0 then
+		if #inventoryView.items == 0 then
 			local empty = text(inventoryBody, "Empty", 8, 70, 17)
-			empty.Text = t("emptyInventory")
+			empty.Text = t(
+				if not ready
+					then "offerWaiting"
+					elseif inventoryFilter == "All" then "emptyInventory"
+					else "emptyInventory" .. inventoryFilter
+			)
 		end
-		inventoryBody.CanvasSize = UDim2.fromOffset(0, math.max(90, #s.items * 108))
+		inventoryBody.CanvasSize = UDim2.fromOffset(0, math.max(90, #inventoryView.items * 108))
 		local target = focus
 		if target then
 			local body = if target.tab == "Shop" then shopBody else inventoryBody
@@ -471,6 +519,26 @@ function Controller.start(
 				end
 			end
 		end
+	end
+	for _, entry in sections do
+		local section: Inventory.Filter = entry.id
+		local b = filterButtons[section]
+		b.Activated:Connect(function()
+			local current = state
+			if
+				not inventory.Visible
+				or current == nil
+				or not current.available
+				or planBlocked()
+			then
+				return
+			end
+			if inventoryFilter ~= section then
+				inventoryFilter, focus, listKey = section, nil, ""
+				inventoryBody.CanvasPosition = Vector2.zero
+				render()
+			end
+		end)
 	end
 	planner = RoomPlanner.start(screen, language, function(catalogId: string, itemId: string?)
 		local current = state
@@ -500,6 +568,7 @@ function Controller.start(
 	for _, back in { shopBack, inventoryBack } do
 		back.Activated:Connect(function()
 			if back == shopBack and purchasedItem then
+				focus = { tab = "Furniture", id = purchasedItem }
 				purchasedItem = nil
 				show("Furniture")
 				render()

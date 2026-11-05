@@ -93,6 +93,11 @@
   предмет/угол. Пять кнопок с короткими Touch-подписями, цели ≥44 px при 320.
   Processed/focus блокируют новые клавиши, pending сохраняет прежний intent
   и Retry. Сервер/схема/правила размещения прежние; docs/HOME_CONTROLS.md.
+  Inventory: All/Stored/Placed — проекция подтверждённых экземпляров HomeState,
+  дубликаты товара учитываются отдельно. Pending store/focus предмета раскрывают
+  All; purchase/store/Build/не-Ready блокируют смену вкладки. Обычный sync
+  сохраняет карточки/scroll, явная смена сбрасывает scroll. Протокол и профиль
+  прежние; docs/FURNITURE_INVENTORY.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

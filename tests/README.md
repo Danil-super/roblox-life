@@ -6,6 +6,13 @@
 два анализатора Luau и сборку двух независимых `.rbxlx`. Нужны установленные инструменты и
 `bash scripts/dev.sh prepare`. Никаких npm/Wally-зависимостей нет.
 
+`FurnitureInventory` проверяет фильтрацию подтверждённых экземпляров, дубликаты
+товаров, склад/установку и независимость результатов. `InventoryUI` исполняет
+построение вкладок, render и callbacks: EN/RU/числа/пустые разделы, ≥44 px,
+CanvasSize/scroll, фокус плана/покупки и запрет смены при pending/Build/не-Ready.
+В Studio отдельно пройти покупку одинаковых товаров, установку/склад и
+переключения на трёх размерах: [FURNITURE_INVENTORY.md](../docs/FURNITURE_INVENTORY.md).
+
 `FurnitureLayout`, `BuildGuidesUI` и `BuildLifecycle` проверяют геометрию
 направляющих через настоящий валидатор, полный renderer, бюджет 72 объекта,
 Grid/Free/поворот, исключение из физики/raycast и cleanup при Destroy HUD.
