@@ -6,6 +6,12 @@
 два анализатора Luau и сборку двух независимых `.rbxlx`. Нужны установленные инструменты и
 `bash scripts/dev.sh prepare`. Никаких npm/Wally-зависимостей нет.
 
+`JobWorkPlan` и `JobWorkPlanUI` проверяют пять этапов текущего заказа,
+покрытие без автоматической приёмки, переход между двумя стенами, EN/RU,
+бюджет renderer и его очистку. Проверка фокуса кнопок с расширенным Canvas
+входит в `ModalControls`. Реальную вёрстку и ввод проверять в одном Play:
+[JOB_WORK_PLAN.md](../docs/JOB_WORK_PLAN.md).
+
 `JobAcceptFlow`, `JobAcceptance`, `JobOffersUI` и `JobAcceptanceAdapter`
 проверяют ожидающее принятие, корреляцию отказа, immutable Retry, серверный
 baseline до/внутри записи и неизвестный memory commit/reload. Это не имитация

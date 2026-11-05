@@ -43,6 +43,27 @@ en["paintEffectsHint"] = "Fewer effects this session.\nCoverage and rewards stay
 ru["paintEffectsHint"] =
 	"Меньше эффектов на этот сеанс.\nПокрытие и награда прежние."
 en["jobs"] = "Jobs"
+en["workPlanTitle"], ru["workPlanTitle"] = "Work plan", "План работ"
+en["workPlanStep"], ru["workPlanStep"] = "Step %d/%d", "Шаг %d/%d"
+en["workPlanDone"], ru["workPlanDone"] = "Done", "Готово"
+en["workPlanCurrent"], ru["workPlanCurrent"] = "Now", "Сейчас"
+en["workPlanNext"], ru["workPlanNext"] = "Next", "Далее"
+en["workPlanPaint"], ru["workPlanPaint"] =
+	"Paint and check the wall", "Покрась и проверь стену"
+en["workPlanWallChecked"], ru["workPlanWallChecked"] =
+	"Wall checked", "Стена проверена"
+en["workPlanPaintHint"] =
+	"Paint the wall, then use Inspect result. Coverage alone does not accept the work."
+ru["workPlanPaintHint"] =
+	"Покрась стену, затем нажми «Проверить результат». Одного покрытия недостаточно для приёмки."
+en["workPlanReviewHint"] =
+	"Coverage reached. Inspect result; painting time is also checked. Then hand over to the client."
+ru["workPlanReviewHint"] =
+	"Покрытие набрано. Нажми «Проверить результат»: учитывается и время покраски. Затем сдай работу клиенту."
+en["workPlanNextHint"] =
+	"This wall passed inspection. Continue to the next wall. Payment follows handover of the whole order."
+ru["workPlanNextHint"] =
+	"Эта стена проверена. Перейди к следующей. Оплата — после сдачи всего заказа."
 en["acceptRetry"], ru["acceptRetry"] = "Retry acceptance", "Повторить принятие"
 en["acceptPendingStatus"], ru["acceptPendingStatus"] =
 	"Checking this order request…", "Проверяем принятие заказа…"

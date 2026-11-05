@@ -123,7 +123,7 @@ for height, phase in ((116, "ChooseMaterial"), (170, "ChooseMaterial"), (266, "O
 local Vector2 = {{new=function(x,y) return {{X=x,Y=y}} end}}
 local jobs = {{Visible=true}}
 local state = {{phase="{phase}"}}
-local jobBody = {{AbsoluteSize={{Y={height}}}}}
+local jobBody = {{AbsoluteSize={{Y={height}}},CanvasSize={{Y={{Offset=666}}}}}}
 '''
     assertions = '''
 revealActions()

@@ -14,6 +14,7 @@ local MapController = require("./MapController")
 local JobOffers = require("./JobOffersController")
 local ClientInteraction = require("./ClientInteractionController")
 local FirstSteps = require("./FirstStepsController")
+local WorkPlan = require("./JobWorkPlanController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -119,6 +120,7 @@ function Controller.start(
 	local hint = text(jobBody, "Hint", 116, 44, 14)
 	local action = button(jobBody, "Action", 168)
 	local cancel = button(jobBody, "Cancel", 224)
+	local workPlan = WorkPlan.start(jobBody, language)
 	local colors = Instance.new("Frame")
 	colors.Name = "Colors"
 	colors.BackgroundTransparency = 1
@@ -424,18 +426,26 @@ function Controller.start(
 		local phase = if s then s.phase else "Offer"
 		heading.Text = t("jobs")
 		back.Text = t("backHome")
+		local planCaption = workPlan.render(s, player:GetAttribute("ProfileStatus") == "Ready")
 		description.Text = t(phaseKeys[phase] or "jobOffer")
 		if phase == "ChooseMaterial" then
 			description.Text ..= "\n" .. stepHint(phase)
 		end
-		progress.Text = if phase == "Offer"
-			then "$" .. (if s then s.reward else 0)
+		progress.Text = if planCaption
+			then planCaption
+			elseif phase == "Offer" then "$" .. (if s then s.reward else 0)
 			elseif phase == "Completed" then "+$" .. (if s then s.reward else 0)
 			else string.format(
 				"%d%%",
 				math.floor((if s then s.count else 0) / (Config.columns * Config.rows) * 100)
 			)
-		if s and (s.surfaceTotal or 1) > 1 and phase ~= "Completed" and phase ~= "Offer" then
+		if
+			not planCaption
+			and s
+			and (s.surfaceTotal or 1) > 1
+			and phase ~= "Completed"
+			and phase ~= "Offer"
+		then
 			progress.Text = string.format(
 				t("surfaceProgress"),
 				s.surfaceIndex or 1,
@@ -692,7 +702,7 @@ function Controller.start(
 			results.Visible = false
 		end
 		render()
-		if old == nil or old.phase ~= s.phase then
+		if old == nil or old.phase ~= s.phase or old.workId ~= s.workId then
 			revealActions()
 		end
 	end)
