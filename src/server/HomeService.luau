@@ -204,6 +204,7 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local o = if home then home.origin else Vector3.zero
 		local snapshot: Types.Snapshot = {
+			layout = Furniture.layout,
 			available = p ~= nil and not c.saving,
 			dollars = if p then p.wallet.dollars else 0,
 			revision = if p then p.housing.revision else 0,

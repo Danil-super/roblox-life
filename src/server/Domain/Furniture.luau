@@ -4,6 +4,18 @@ local Config = require("./EconomyConfig")
 local Furniture = {}
 export type Pose = { x: number, z: number, rotationY: number }
 type Box = { x: number, z: number, w: number, d: number, angle: number }
+local fixed: { Box & { id: string, labelKey: string? } } = {
+	{ id = "Bed", x = -10, z = -6, w = 5, d = 7, angle = 0 },
+	{ id = "Desk", x = 10, z = -8, w = 6, d = 3, angle = 0 },
+	{ id = "Chair", x = 10, z = -4.5, w = 2.5, d = 2.5, angle = 0 },
+	{ id = "Passage", labelKey = "buildPassage", x = 0, z = 5.5, w = 5, d = 13, angle = 0 },
+	{ id = "Spawn", labelKey = "buildSpawn", x = 0, z = 0, w = 6, d = 6, angle = 0 },
+}
+for _, region in fixed do
+	table.freeze(region)
+end
+local Layout = table.freeze({ halfWidth = 15.3, halfDepth = 11.3, fixed = table.freeze(fixed) })
+Furniture.layout = Layout
 local MAX = 9007199254740991
 local function finite(n: unknown): boolean
 	return type(n) == "number" and n == n and math.abs(n) <= 10000
@@ -51,13 +63,6 @@ local function overlaps(a: Box, b: Box): boolean
 	end
 	return true
 end
-local fixed: { Box } = {
-	{ x = -10, z = -6, w = 5, d = 7, angle = 0 },
-	{ x = 10, z = -8, w = 6, d = 3, angle = 0 },
-	{ x = 10, z = -4.5, w = 2.5, d = 2.5, angle = 0 },
-	{ x = 0, z = 5.5, w = 5, d = 13, angle = 0 }, -- Continuous route from spawn to doorway.
-	{ x = 0, z = 0, w = 6, d = 6, angle = 0 },
-}
 function Furniture.validate(
 	p: Profile.Profile,
 	id: string,
@@ -105,10 +110,13 @@ function Furniture.validate(
 	end
 	local box: Box =
 		{ x = pose.x, z = pose.z, w = spec.width, d = spec.depth, angle = pose.rotationY }
-	if math.abs(box.x) + radius(box, 1, 0) > 15.3 or math.abs(box.z) + radius(box, 0, 1) > 11.3 then
+	if
+		math.abs(box.x) + radius(box, 1, 0) > Layout.halfWidth
+		or math.abs(box.z) + radius(box, 0, 1) > Layout.halfDepth
+	then
 		return nil, "Bounds"
 	end
-	for _, obstacle in fixed do
+	for _, obstacle in Layout.fixed do
 		if overlaps(box, obstacle) then
 			return nil, "Blocked"
 		end

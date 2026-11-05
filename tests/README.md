@@ -6,6 +6,12 @@
 два анализатора Luau и сборку двух независимых `.rbxlx`. Нужны установленные инструменты и
 `bash scripts/dev.sh prepare`. Никаких npm/Wally-зависимостей нет.
 
+`FurnitureLayout`, `BuildGuidesUI` и `BuildLifecycle` проверяют геометрию
+направляющих через настоящий валидатор, полный renderer, бюджет 72 объекта,
+Grid/Free/поворот, исключение из физики/raycast и cleanup при Destroy HUD.
+В Studio отдельно проверить отказ в обозначенном проходе, установку, Touch,
+отмену и смерть: [HOME_GUIDES.md](../docs/HOME_GUIDES.md).
+
 `JobWorkPlan` и `JobWorkPlanUI` проверяют пять этапов текущего заказа,
 покрытие без автоматической приёмки, переход между двумя стенами, EN/RU,
 бюджет renderer и его очистку. Проверка фокуса кнопок с расширенным Canvas

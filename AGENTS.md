@@ -80,6 +80,14 @@
   remotes/кадровых циклов; Canvas 666, revealActions фокусирует прежнее
   действие при открытии/resize/phase/workId, обычный sync не сбрасывает
   прокрутку. Профиль/награды прежние; docs/JOB_WORK_PLAN.md.
+  BuildGuidesController отображает Grid/границы/пять занятых зон и вращаемые
+  габариты мебели. Каноническая геометрия остаётся Furniture.layout на сервере,
+  копия — optional HomeState.layout/FurnitureLayout; серверный validate прежний.
+  67 локальных Parts + две BillboardGui/подписи = 72 объекта с папкой,
+  без collide/query/touch/shadow и новых render bindings. В Free сетка скрыта;
+  цвет рамки только из HomePreview, pending — ожидание. Stop/Died убирают
+  папку/ghost, Destroy HUD снимает FurnitureView и запрещает старый enter.
+  Профиль/деньги/права прежние; docs/HOME_GUIDES.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

@@ -38,6 +38,8 @@ local oldType, oldSubject, oldFrame, oldFov = "Custom",{Parent=true},"saved",70
 local altered, visibility = {}, {}
 local destroyed=0
 local ghost={Destroy=function() destroyed+=1 end}
+local guideDestroyed=0
+local guides={destroy=function()guideDestroyed+=1 end}
 local item, floor = {}, {}
 local deathConnection={Disconnect=function() disconnected+=1 end}
 local died
@@ -72,6 +74,7 @@ assert(not active and not inventory.Visible,"Invalid location reopened inventory
     "repeated_cleanup_is_safe": '''
 removed();removed();stop()
 assert(destroyed==1 and unbound==1 and exits==1,"Cleanup repeated side effects")
+assert(guideDestroyed==1 and guides==nil,"Repeated cleanup retained or destroyed guides twice")
 ''',
     "death_signal_returns_exploration": '''
 died()
@@ -89,3 +92,26 @@ for name, checks in cases.items():
         script.flush()
         subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
     print("PASS BuildLifecycle:", name)
+
+start = source.index("\tscreen.Destroying:Once(function()")
+hook = source[start:source.index("\n\treturn {", start)]
+destroy_setup = '''
+local disposed=false
+local destroyHud
+screen.Destroying={Once=function(_,fn)destroyHud=fn end}
+local cameraUnbound=0
+local RunService={UnbindFromRenderStep=function(_,name)
+ assert(name=="FurnitureView","Wrong binding released");cameraUnbound+=1
+end}
+'''
+destroy_checks = '''
+destroyHud()
+assert(disposed and not active and not inventory.Visible and not bar.Visible,"Destroyed HUD retained editor")
+assert(guideDestroyed==1 and guides==nil and destroyed==1 and cameraUnbound==1,"Destroyed HUD retained guides or camera binding")
+assert(camera.CameraType=="Custom" and pending==nil,"Destroyed HUD retained camera or placement")
+'''
+with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
+    script.write(header + exit_callback + stop + destroy_setup + hook + destroy_checks)
+    script.flush()
+    subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
+print("PASS BuildLifecycle: HUD destruction removes guides, clears placement and releases camera binding")

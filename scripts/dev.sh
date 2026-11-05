@@ -41,6 +41,7 @@ case "${1:-check}" in
     python3 tests/StudioLaunch.test.py
     python3 tests/BuildRecovery.test.py
     python3 tests/BuildLifecycle.test.py
+    python3 tests/BuildGuidesUI.test.py
     python3 tests/PlacementUI.test.py
     python3 tests/StoreUI.test.py
     python3 tests/PlacementAdapter.test.py

@@ -11,6 +11,7 @@ local Types = require(RS.Shared.HomeTypes)
 local View = require(RS.Shared.PaintView)
 local Strings = require(RS.Shared.Strings)
 local PlacementFlow = require(RS.Shared.PlacementFlow)
+local Guides = require("./BuildGuidesController")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -20,6 +21,8 @@ function Controller.start(
 )
 	local player = Players.LocalPlayer
 	local active = false
+	local disposed = false
+	local guides: Guides.API? = nil
 	local pinned = false
 	local item: Types.Owned? = nil
 	local snapshot: Types.Snapshot? = nil
@@ -119,6 +122,16 @@ function Controller.start(
 		buttons.Confirm.BackgroundColor3 = if buttons.Confirm.Active
 			then Color3.fromRGB(55, 120, 102)
 			else Color3.fromRGB(86, 88, 82)
+		if guides then
+			guides.update(
+				x,
+				z,
+				rotation,
+				mode,
+				valid and not waiting,
+				if waiting then "Checking" else reason
+			)
+		end
 		local model = ghost
 		if model then
 			for _, part in model:GetDescendants() do
@@ -171,6 +184,10 @@ function Controller.start(
 		if ghost then
 			ghost:Destroy()
 			ghost = nil
+		end
+		if guides then
+			guides.destroy()
+			guides = nil
 		end
 		item = nil
 		floor = nil
@@ -245,6 +262,9 @@ function Controller.start(
 		render()
 	end)
 	local function enter(owned: Types.Owned, s: Types.Snapshot): ()
+		if disposed then
+			return
+		end
 		if active then
 			stop()
 		end
@@ -263,6 +283,16 @@ function Controller.start(
 			or humanoid == nil
 			or humanoid.Health <= 0
 		then
+			return
+		end
+		local spec: Types.Product? = nil
+		for _, product in s.catalog do
+			if product.id == owned.catalogId then
+				spec = product
+				break
+			end
+		end
+		if spec == nil then
 			return
 		end
 		local created = Models.create(owned.catalogId)
@@ -301,6 +331,9 @@ function Controller.start(
 		end
 		created.Name = "FurnitureGhost"
 		created.Parent = workspace
+		if s.layout then
+			guides = Guides.start(base, spec, s.layout, language)
+		end
 		for _, name in
 			{
 				"Home",
@@ -521,6 +554,11 @@ function Controller.start(
 			send("probe", packet)
 		end
 		render()
+	end)
+	screen.Destroying:Once(function()
+		disposed = true
+		stop(false)
+		RunService:UnbindFromRenderStep("FurnitureView")
 	end)
 	return {
 		enter = enter,

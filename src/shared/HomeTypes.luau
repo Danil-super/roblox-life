@@ -1,5 +1,6 @@
 --!strict
 local HomePlan = require("./HomePlan")
+local FurnitureLayout = require("./FurnitureLayout")
 export type Pose = { x: number, z: number, rotationY: number }
 export type Product = {
 	id: string,
@@ -30,6 +31,7 @@ export type Snapshot = {
 	storeAck: string?,
 	openShop: boolean?,
 	plan: HomePlan.Progress?,
+	layout: FurnitureLayout.Plan?,
 }
 export type Preview = {
 	editorId: string,
