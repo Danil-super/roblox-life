@@ -50,6 +50,7 @@ case "${1:-check}" in
     python3 tests/WalletDisplay.test.py
     python3 tests/ModalControls.test.py
     python3 tests/JobResultUI.test.py
+    python3 tests/JobAbandonUI.test.py
     python3 tests/JobOffersUI.test.py
     python3 tests/ContractText.test.py
     python3 tests/ClientDialogueUI.test.py

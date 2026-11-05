@@ -7,6 +7,7 @@ local Config = require(ReplicatedStorage.Shared.PaintConfig)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
 local Goals = require(ReplicatedStorage.Shared.NavigationGoal)
 local Mastery = require(ReplicatedStorage.Shared.PaintingMastery)
+local Abandon = require("./JobAbandonController")
 local PaintController = require("./PaintController")
 local Navigation = require("./JobNavigation")
 local MapController = require("./MapController")
@@ -183,7 +184,11 @@ function Controller.start(
 		results.Visible = false
 	end)
 
+	local abandon: Abandon.API? = nil
 	local function send(actionName: string, fields: { [string]: unknown }?): ()
+		if abandon and abandon.pending() and actionName ~= "sync" then
+			return
+		end
 		local data: { [string]: unknown } = fields or {}
 		data.action = actionName
 		local s = state
@@ -202,6 +207,9 @@ function Controller.start(
 	local interaction: ClientInteraction.API
 	local guide: FirstSteps.API
 	local function hidePanels(): ()
+		if abandon then
+			abandon.hide()
+		end
 		jobs.Visible = false
 		map.hide()
 		results.Visible = false
@@ -227,6 +235,13 @@ function Controller.start(
 		return if wall and wall:IsA("BasePart") then wall else nil
 	end
 	local function activate(): ()
+		if abandon and abandon.pending() then
+			hideHousing()
+			hidePanels()
+			homePanel.Visible = false
+			abandon.resume()
+			return
+		end
 		local travel = travelGoal()
 		if travel then
 			if travel.available and player:GetAttribute("ProfileStatus") == "Ready" then
@@ -374,6 +389,9 @@ function Controller.start(
 	end
 	local function render(): ()
 		local s = state
+		if abandon then
+			abandon.render(s)
+		end
 		interaction.render(s)
 		guide.render(s)
 		local phase = if s then s.phase else "Offer"
@@ -420,10 +438,15 @@ function Controller.start(
 		end
 		cancel.Text = t("cancelJob")
 		cancel.Visible = phase ~= "Offer" and phase ~= "Completed"
+		cancel.Active = s ~= nil
+			and s.available
+			and player:GetAttribute("ProfileStatus") == "Ready"
+			and not (abandon and abandon.pending())
+		cancel.AutoButtonColor = cancel.Active
 		colors.Visible = phase == "ChooseMaterial"
 		action.Visible = not colors.Visible
 		action.Text = t(actions[phase] or "acceptJob")
-		action.Active = s ~= nil and s.available
+		action.Active = s ~= nil and s.available and not (abandon and abandon.pending())
 		action.AutoButtonColor = action.Active
 		for index, b in swatches do
 			b.Text = t(({ "rose", "warmWhite", "mint" })[index])
@@ -554,9 +577,28 @@ function Controller.start(
 			render()
 		end
 	end)
+	abandon = Abandon.start(screen, language, function(jobId: string, workId: string)
+		command:FireServer({ action = "cancel", jobId = jobId, workId = workId })
+	end, function(waiting: boolean)
+		jobs.Visible, homePanel.Visible = not waiting, waiting
+	end)
 	cancel.Activated:Connect(function()
-		send("cancel", nil)
+		if
+			not jobs.Visible
+			or not cancel.Active
+			or state == nil
+			or state.phase == "Offer"
+			or state.phase == "Completed"
+		then
+			return
+		end
+		hideHousing()
+		hidePanels()
+		homePanel.Visible = false
 		painter.stop()
+		if abandon then
+			abandon.ask(state)
+		end
 	end)
 	for index, b in swatches do
 		b.Activated:Connect(function()
@@ -645,6 +687,7 @@ function Controller.start(
 			and not painter.isActive()
 			and not screen:GetAttribute("Building")
 			and not interaction.isVisible()
+			and not (abandon and (abandon.isVisible() or abandon.pending()))
 		local wall = currentWall()
 		local rootPart = if root and root:IsA("BasePart") then root else nil
 		local close = s ~= nil
@@ -688,8 +731,13 @@ function Controller.start(
 		interaction.step(painter.isActive() or screen:GetAttribute("Building") == true)
 		guide.step(painter.isActive() or screen:GetAttribute("Building") == true)
 		if
-			(navigating or jobs.Visible or map.isVisible() or interaction.isVisible())
-			and os.clock() - syncAt > 0.75
+			(
+				navigating
+				or jobs.Visible
+				or map.isVisible()
+				or interaction.isVisible()
+				or (abandon and abandon.pending())
+			) and os.clock() - syncAt > 0.75
 		then
 			syncAt = os.clock()
 			send("sync", nil)
@@ -714,6 +762,12 @@ function Controller.start(
 		show = function(tab: string): ()
 			homePanel.Visible = false
 			hidePanels()
+			if tab == "Jobs" and abandon and abandon.pending() then
+				abandon.resume()
+				send("sync", nil)
+				render()
+				return
+			end
 			jobs.Visible = tab == "Jobs"
 			if tab == "Jobs" then
 				stopTravel()

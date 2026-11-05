@@ -15,6 +15,7 @@ function Controller.start(screen: ScreenGui): ()
 		RoomPlanPanel = true,
 		ClientPanel = true,
 		GuidePanel = true,
+		AbandonPanel = true,
 	}
 	local panels: { GuiObject } = {}
 	local previous: boolean? = nil

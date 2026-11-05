@@ -56,6 +56,12 @@
   не дают рекомендацию. Result Continue сохраняет BUY/PLACE, после DONE
   открывает подробности доступного заказа без accept/выплаты; visible/
   Completed/available/Ready обязательны. docs/PAINTING_MASTERY.md.
+  JobAbandonFlow/Controller: cancel сначала спрашивает; Keep сохраняет маску.
+  После отправки job/work удерживаются при unknown/busy и закрытии окна;
+  Retry через 8 с повторяет только этот контекст. Новые команды заказа
+  заблокированы, sync остаётся. Offer подтверждает отказ; новый work/job/
+  Completed прекращает старый intent. AbandonPanel входит в ModalControls.
+  Серверный cancel/схема прежние. docs/JOB_ABANDON.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

@@ -29,14 +29,21 @@ local profile = gui("ProfilePanel")
 local roomPlan = gui("RoomPlanPanel")
 local client = gui("ClientPanel")
 local guide = gui("GuidePanel")
+local abandon = gui("AbandonPanel")
 local screen = {Enabled=true, changed=signal(), Destroying=signal()}
 local modalOpen=nil
 function screen:SetAttribute(name,value) assert(name=="ModalOpen");modalOpen=value end
-function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan,client,guide} end
+function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan,client,guide,abandon} end
 function screen:GetPropertyChangedSignal() return self.changed end
 local GuiService = {TouchControlsEnabled=true}
 '''
 scenarios = {
+    "abandon_confirmation": '''
+Controller.start(screen);jobs:set(true);abandon:set(true);jobs:set(false)
+assert(modalOpen and not GuiService.TouchControlsEnabled,"Confirmation released movement")
+phone:set(true);abandon:set(false);assert(modalOpen and not GuiService.TouchControlsEnabled)
+phone:set(false);assert(not modalOpen and GuiService.TouchControlsEnabled,"Closed confirmation retained movement")
+''',
     "interaction_blocking": '''
 Controller.start(screen);assert(modalOpen==false)
 phone:set(true);assert(modalOpen==true)

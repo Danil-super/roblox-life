@@ -664,6 +664,26 @@ en["masteryRepeatHint"] =
 ru["masteryRepeatHint"] =
 	"Все текущие заказы открыты. Выбери ремонт или продолжай обустраивать комнату."
 local Strings = {}
+en["abandonTitle"] = "Abandon this order?"
+ru["abandonTitle"] = "Отказаться от заказа?"
+en["abandonWarning"] =
+	"Work on this order will be reset.\nYour money and furniture stay with you.\nUnfinished work does not pay a reward."
+ru["abandonWarning"] =
+	"Выполнение этого заказа будет сброшено.\nДеньги и мебель сохранятся.\nЗа незавершённую работу награды нет."
+en["abandonKeep"] = "Return to order"
+ru["abandonKeep"] = "Вернуться к заказу"
+en["abandonConfirm"] = "Abandon order"
+ru["abandonConfirm"] = "Отказаться"
+en["abandonPendingTitle"] = "Confirming cancellation"
+ru["abandonPendingTitle"] = "Проверяем отказ"
+en["abandonPendingHint"] =
+	"Waiting for confirmation. You can close this window.\nIf it takes longer, retry checks this same order. New orders wait until this is resolved."
+ru["abandonPendingHint"] =
+	"Ждём подтверждения. Это окно можно закрыть.\nПри задержке повтор проверит тот же заказ. Новые заказы пока недоступны."
+en["abandonClose"] = "Close"
+ru["abandonClose"] = "Закрыть"
+en["abandonRetry"] = "Retry cancellation"
+ru["abandonRetry"] = "Повторить отказ"
 en["roomBudgetCost"] = "Placed %d/%d · To buy $%d"
 ru["roomBudgetCost"] = "Поставлено %d/%d · Докупить $%d"
 en["roomBudgetNeed"] = "Still needed: $%d"
