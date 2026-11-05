@@ -664,6 +664,16 @@ en["masteryRepeatHint"] =
 ru["masteryRepeatHint"] =
 	"Все текущие заказы открыты. Выбери ремонт или продолжай обустраивать комнату."
 local Strings = {}
+en["roomBudgetCost"] = "Placed %d/%d · To buy $%d"
+ru["roomBudgetCost"] = "Поставлено %d/%d · Докупить $%d"
+en["roomBudgetNeed"] = "Still needed: $%d"
+ru["roomBudgetNeed"] = "Не хватает: $%d"
+en["roomBudgetStored"] = "All bought — arrange your furniture"
+ru["roomBudgetStored"] = "Всё куплено — расставь мебель"
+en["roomBudgetReady"] = "Enough for the remaining furniture"
+ru["roomBudgetReady"] = "Хватит на недостающую мебель"
+en["roomBudgetEarn"] = "Find work for this goal"
+ru["roomBudgetEarn"] = "Найти работу для этой цели"
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key
 end

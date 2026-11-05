@@ -3,8 +3,9 @@ local RS = game:GetService("ReplicatedStorage")
 local Strings = require(RS.Shared.Strings)
 local Types = require(RS.Shared.HomeTypes)
 local Theme = require(RS.Shared.Theme)
+local Budget = require(RS.Shared.HomeBudget)
 export type API = {
-	render: (Types.Snapshot?) -> (),
+	render: (Types.Snapshot?, boolean) -> (),
 	show: () -> (),
 	hide: () -> (),
 	isVisible: () -> boolean,
@@ -13,9 +14,11 @@ local Planner = {}
 function Planner.start(
 	screen: ScreenGui,
 	language: () -> string,
-	navigate: (string, string?) -> ()
+	navigate: (string, string?) -> (),
+	earn: () -> ()
 ): API
 	local state: Types.Snapshot? = nil
+	local stateBlocked = true
 	local key = ""
 	local function color(rgb: { number }): Color3
 		return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
@@ -68,8 +71,8 @@ function Planner.start(
 	local function t(name: string): string
 		return Strings.text(language(), name)
 	end
-	local function render(s: Types.Snapshot?): ()
-		state = s
+	local function render(s: Types.Snapshot?, blocked: boolean): ()
+		state, stateBlocked = s, blocked
 		title.Text, back.Text = t("roomPlan"), t("backHome")
 		local plan = if s and s.available then s.plan else nil
 		summary.Text = if plan
@@ -77,7 +80,13 @@ function Planner.start(
 				"roomPlanOptional"
 			)
 			else t("offerWaiting")
-		local nextKey = language() .. tostring(s ~= nil and s.available)
+		local nextKey = language() .. tostring(s ~= nil and s.available) .. tostring(blocked)
+		if s then
+			nextKey ..= s.dollars
+			for _, product in s.catalog do
+				nextKey ..= product.id .. product.dollars
+			end
+		end
 		if plan then
 			for _, goal in plan.goals do
 				for _, r in goal.requirements do
@@ -91,20 +100,58 @@ function Planner.start(
 		key = nextKey
 		body:ClearAllChildren()
 		local y = 0
-		if plan then
+		if plan and s then
 			for _, goal in plan.goals do
+				local budget = Budget.evaluate(goal, s.catalog, s.dollars, not blocked)
+				local needsWork = budget.ready and budget.action == "Earn"
+				local startY = if needsWork then 160 else 104
 				local card = Instance.new("Frame")
 				card.Name, card.Position, card.Size =
 					goal.id,
 					UDim2.fromOffset(4, y),
-					UDim2.new(1, -8, 0, 56 + #goal.requirements * 56)
+					UDim2.new(1, -8, 0, startY + 4 + #goal.requirements * 56)
 				card.BackgroundColor3, card.BorderSizePixel, card.ZIndex, card.Parent =
 					color(Theme.colors.surface), 0, 11, body
 				local heading = label(card, "Heading", 4, 44, 16)
 				heading.Text = t(goal.id)
 					.. (if goal.complete then " · " .. t("roomGoalComplete") else "")
+				local cost = label(card, "Budget", 48, 48, 13)
+				cost.Text = Budget.text(budget, language())
+				if needsWork then
+					local findWork = button(card, "Earn", 104)
+					findWork.Text = t("roomBudgetEarn")
+					findWork.Activated:Connect(function()
+						local current = state
+						if
+							not panel.Visible
+							or stateBlocked
+							or current == nil
+							or not current.available
+							or current.plan == nil
+						then
+							return
+						end
+						for _, currentGoal in current.plan.goals do
+							if
+								currentGoal.id == goal.id
+								and Budget.evaluate(
+										currentGoal,
+										current.catalog,
+										current.dollars,
+										true
+									).action
+									== "Earn"
+							then
+								earn()
+								return
+							end
+						end
+					end)
+				end
 				for index, requirement in goal.requirements do
-					local b = button(card, requirement.catalogId, 52 + (index - 1) * 56)
+					local b = button(card, requirement.catalogId, startY + (index - 1) * 56)
+					b.Active, b.AutoButtonColor = not blocked, not blocked
+					b.BackgroundTransparency = if blocked then 0.6 else 0
 					b.Text = t(requirement.catalogId)
 						.. " · "
 						.. t(
@@ -115,7 +162,7 @@ function Planner.start(
 						)
 					b.Activated:Connect(function()
 						local current = state
-						if current and current.available then
+						if panel.Visible and not stateBlocked and current and current.available then
 							navigate(requirement.catalogId, requirement.itemId)
 						end
 					end)

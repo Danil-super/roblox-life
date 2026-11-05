@@ -142,9 +142,17 @@ end, function(): Goals.Goal?
 end, function()
 	stopTravel()
 end)
-local housing = HomeController.start(screen, panel, function(): string
-	return language
-end, jobs.hide)
+local housing = HomeController.start(
+	screen,
+	panel,
+	function(): string
+		return language
+	end,
+	jobs.hide,
+	function()
+		jobs.show("Jobs")
+	end
+)
 travelGoal, stopTravel = housing.travel, housing.stopRoute
 openHousing = function(tab: string): ()
 	housing.show(tab)

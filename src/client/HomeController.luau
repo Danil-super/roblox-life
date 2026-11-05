@@ -16,7 +16,8 @@ function Controller.start(
 	screen: ScreenGui,
 	homePanel: Frame,
 	language: () -> string,
-	exclusive: () -> ()
+	exclusive: () -> (),
+	openJobs: () -> ()
 )
 	local player = Players.LocalPlayer
 	local command = RS:WaitForChild("HomeCommand")
@@ -185,6 +186,12 @@ function Controller.start(
 			homePanel.Visible = false
 		end
 	end)
+	local function planBlocked(): boolean
+		return purchase ~= nil
+			or storing ~= nil
+			or builder.isActive()
+			or player:GetAttribute("ProfileStatus") ~= "Ready"
+	end
 	local function thumbnail(parent: Instance, catalogId: string): ()
 		local viewport = Instance.new("ViewportFrame")
 		viewport.Name = "Preview"
@@ -284,7 +291,7 @@ function Controller.start(
 
 	local function render(): ()
 		local s = state
-		planner.render(s)
+		planner.render(s, planBlocked())
 		shopTitle.Text = t("shopTitle") .. (if s then " · $" .. s.dollars else "")
 		inventoryTitle.Text = t("inventoryTitle")
 		shopBack.Text = t(if purchasedItem then "openInventory" else "backHome")
@@ -465,7 +472,7 @@ function Controller.start(
 	end
 	planner = RoomPlanner.start(screen, language, function(catalogId: string, itemId: string?)
 		local current = state
-		if current == nil or not current.available then
+		if current == nil or not current.available or planBlocked() then
 			return
 		end
 		local tab, id = "Shop", catalogId
@@ -478,6 +485,15 @@ function Controller.start(
 		focus = { tab = tab, id = id }
 		show(tab)
 		render()
+	end, function()
+		local current = state
+		if current == nil or not current.available or planBlocked() then
+			return
+		end
+		routeActive = false
+		hidePanels()
+		homePanel.Visible = false
+		openJobs()
 	end)
 	for _, back in { shopBack, inventoryBack } do
 		back.Activated:Connect(function()
