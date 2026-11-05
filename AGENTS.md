@@ -98,6 +98,16 @@
   All; purchase/store/Build/не-Ready блокируют смену вкладки. Обычный sync
   сохраняет карточки/scroll, явная смена сбрасывает scroll. Протокол и профиль
   прежние; docs/FURNITURE_INVENTORY.md.
+  Paint finish: schemaVersion=3, decode мигрирует 1/2 без выдуманных масок.
+  Jobs.submit сохраняет Painting.finish вместе с оплатой; Completed replay
+  не меняет маску. JobResult выдаёт копию только с подтверждённой квитанцией.
+  PaintFinish оценивает худшую стену: accepted / excellent (Config 95%) /
+  perfect (100%); оплата/XP прежние. Live-цель не принимает и не платит.
+  PaintResultScene: статичные ViewportFrame/WorldModel, маска ≤12×8 без
+  скрытия дыр, 8/14 Parts при полном single/duo, максимум 110 Parts/118
+  объектов renderer. Hide удаляет модели, Destroy запрещает старый render;
+  две камеры переиспользуются, глобальная камера не меняется. docs/PAINT_FINISH.md,
+  docs/PAINT_RESULTS.md. Старый schema-2 writer не читает schema 3; cloud gate открыт.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

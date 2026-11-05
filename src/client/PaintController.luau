@@ -226,6 +226,19 @@ function Controller.start(
 			coverage.percent,
 			coverage.target
 		)
+		if coverage.covered and s.error ~= "Drying" then
+			local finishKey = if coverage.percent == 100
+				then "paintPerfect"
+				elseif coverage.percent >= Config.finishExcellentPercent then "paintExcellent"
+				else "paintOptional"
+			title.Text = string.format(
+				t(finishKey),
+				coverage.percent,
+				if coverage.percent >= Config.finishExcellentPercent
+					then 100
+					else Config.finishExcellentPercent
+			)
+		end
 		if (s.surfaceTotal or 1) > 1 then
 			title.Text = string.format(
 				t("surfaceProgress"),

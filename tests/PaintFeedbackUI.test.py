@@ -14,7 +14,7 @@ local Config=require("../src/shared/PaintConfig")
 local snapshot={count=0,mask=string.rep("0",96),error=nil}
 local function language()return "en"end
 local Strings={text=function(_,key)
-    return if key=="paintProgress" then "%s · %d%% / %d%%" elseif key=="surfaceProgress" then "Wall %d / %d" else key
+    return if key=="paintProgress" then "%s · %d%% / %d%%" elseif key=="paintOptional"then "optional %d%%"elseif key=="paintExcellent"then "excellent %d%%"elseif key=="paintPerfect"then "perfect %d%%"elseif key=="surfaceProgress" then "Wall %d / %d" else key
 end}
 local UDim2={fromScale=function(x,y)return {x=x,y=y}end}
 local title,review,leave,fill={},{},{},{}
@@ -35,15 +35,17 @@ assert(title.Text=="paintMissing · 79% / 80%","Missing area instruction unclear
 for i=1,96 do assert(strokes[i].Enabled==(i>76),"Wrong gap highlighted")end
 snapshot.count=77;snapshot.mask=string.rep("1",77)..string.rep("0",19)
 render()
-assert(title.Text=="paintCovered · 80% / 80%" and fill.Size.x==77/96,"Threshold readiness missing")
+assert(title.Text=="optional 80%" and fill.Size.x==77/96,"Threshold readiness missing")
 for _,s in strokes do assert(not s.Enabled,"Unnecessary exact-coverage demand")end
 snapshot.error="Drying";render()
 assert(title.Text=="paintWait · 80% / 80%","Covered wall falsely asks for more paint")
 assert(snapshot.count==77 and snapshot.error=="Drying" and receivedMask==snapshot.mask,"Rendering changed authoritative state")
-snapshot.error=nil;render();assert(title.Text:find("paintCovered",1,true))
+snapshot.error=nil;render();assert(title.Text:find("optional",1,true))
+snapshot.count=91;render();assert(title.Text=="optional 94%","Excellent goal reached early")
+snapshot.count=92;render();assert(title.Text=="excellent 95%","Excellent goal missing")
 snapshot.count=96;render();assert(fill.Size.x==1,"Full bar failed")
 snapshot.surfaceIndex=2;snapshot.surfaceTotal=2;render()
-assert(title.Text=="Wall 2 / 2 · paintCovered · 100% / 80%","Two-wall toolbar lost current surface")
+assert(title.Text=="Wall 2 / 2 · perfect 100%","Two-wall toolbar lost current surface")
 '''
 with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
     script.write(header + render + checks)

@@ -15,6 +15,8 @@ local JobOffers = require("./JobOffersController")
 local ClientInteraction = require("./ClientInteractionController")
 local FirstSteps = require("./FirstStepsController")
 local WorkPlan = require("./JobWorkPlanController")
+local Finish = require(ReplicatedStorage.Shared.PaintFinish)
+local ResultScene = require("./PaintResultScene")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -159,28 +161,39 @@ function Controller.start(
 	local results, resultHeading, resultContinue, resultBody = panel("ResultsPanel")
 	resultContinue.Name = "Continue"
 	resultHeading.Size = UDim2.new(1, -90, 0, 36)
-	resultBody.CanvasSize = UDim2.fromOffset(0, 280)
+	resultBody.CanvasSize = UDim2.fromOffset(0, 388)
+	local resultLimit = results:FindFirstChildOfClass("UISizeConstraint")
+	assert(resultLimit, "Result size constraint missing")
+	resultLimit.MaxSize = Vector2.new(520, 488)
+	local comparison = ResultScene.start(resultBody)
+	results:GetPropertyChangedSignal("Visible"):Connect(function()
+		if not results.Visible then
+			comparison.render(nil, "")
+		end
+	end)
 	local resultClose = button(results, "Close", 12)
 	resultClose.Position = UDim2.new(1, -60, 0, 12)
 	resultClose.Size = UDim2.fromOffset(44, 44)
 	resultClose.Text = "×"
-	local before = text(resultBody, "Before", 0, 48, 13)
-	before.Size = UDim2.new(0.5, -20, 0, 48)
+	local before = text(resultBody, "Before", 92, 24, 13)
+	before.Size = UDim2.new(0.5, -20, 0, 24)
 	before.BackgroundTransparency = 0
 	before.BackgroundColor3 = Color3.fromRGB(145, 148, 140)
 	before.TextColor3 = Color3.fromRGB(26, 43, 43)
-	local after = text(resultBody, "After", 0, 48, 13)
-	after.Position = UDim2.new(0.5, 4, 0, 0)
-	after.Size = UDim2.new(0.5, -20, 0, 48)
+	local after = text(resultBody, "After", 92, 24, 13)
+	after.Position = UDim2.new(0.5, 4, 0, 92)
+	after.Size = UDim2.new(0.5, -20, 0, 24)
 	after.BackgroundTransparency = 0
 	after.BackgroundColor3 = Color3.new(table.unpack(Config.color))
 	after.TextColor3 = Color3.fromRGB(26, 43, 43)
 	local afterGradient = Instance.new("UIGradient")
 	afterGradient.Enabled, afterGradient.Parent = false, after
-	local resultMoney = text(resultBody, "Dollars", 56, 32, 24)
-	local resultXP = text(resultBody, "XP", 92, 28, 16)
-	local resultQuality = text(resultBody, "Quality", 124, 44, 13)
-	local resultHint = text(resultBody, "Hint", 176, 96, 13)
+	local resultMoney = text(resultBody, "Dollars", 0, 36, 24)
+	resultMoney.Size = UDim2.new(0.5, -20, 0, 36)
+	local resultXP = text(resultBody, "XP", 0, 36, 14)
+	resultXP.Position, resultXP.Size = UDim2.new(0.5, 4, 0, 0), UDim2.new(0.5, -20, 0, 36)
+	local resultQuality = text(resultBody, "Quality", 40, 44, 13)
+	local resultHint = text(resultBody, "Hint", 264, 112, 13)
 	local shownOperation: string? = nil
 	resultClose.Activated:Connect(function()
 		results.Visible = false
@@ -550,6 +563,24 @@ function Controller.start(
 			)
 			after.Text, resultQuality.Text = t("resultAfterDuo"), t("resultAcceptedDuo")
 		end
+		local quality = Finish.evaluate(if receipt then receipt.finish else nil)
+		if quality then
+			resultQuality.Text = string.format(t("finish" .. quality.grade), quality.percent)
+				.. "\n"
+				.. (
+					if #quality.surfaces == 2
+						then string.format(
+							t("finishWalls"),
+							quality.surfaces[1],
+							quality.surfaces[2]
+						)
+						else t("finishPaid")
+				)
+		end
+		comparison.render(
+			if results.Visible and s and s.available then receipt else nil,
+			t("finishLegacy")
+		)
 		resultContinue.Text = t(
 			if onboarding == "BUY"
 				then "shopTitle"
@@ -696,6 +727,7 @@ function Controller.start(
 		if result and s.available and result.operationId ~= shownOperation then
 			hidePanels()
 			homePanel.Visible = false
+			resultBody.CanvasPosition = Vector2.zero
 			results.Visible = true
 			shownOperation = result.operationId
 		elseif result == nil then

@@ -15,6 +15,8 @@ callback = source[start:finish]
 header = r'''
 local results, homePanel = {Visible=false}, {Visible=true}
 local shownOperation = nil
+local Vector2={zero={}}
+local resultBody={CanvasPosition={}}
 local hidden = 0
 local function hidePanels() hidden+=1;results.Visible=false end
 local clicked
@@ -48,6 +50,7 @@ assert(results.Visible and route==nil and previews==0,"Pending acceptance opened
     "first_receipt_and_duplicate": '''
 update({result={operationId="job:a"},available=true})
 assert(results.Visible and hidden==1 and not homePanel.Visible)
+assert(resultBody.CanvasPosition==Vector2.zero,"New receipt did not reveal payment/grade")
 results.Visible=false
 update({result={operationId="job:a"},available=true})
 assert(not results.Visible and hidden==1,"Dismissed receipt reopened")
@@ -90,7 +93,7 @@ for name, checks in cases.items():
     print("PASS JobResultUI:", name)
 
 start=source.index('\t\tlocal required = if receipt')
-finish=source.index('\n\t\tresultContinue.Text =',start)
+finish=source.index('\n\t\tlocal quality = Finish.evaluate',start)
 colours=source[start:finish]
 header='''
 local Config=require("../src/shared/PaintConfig")
@@ -121,3 +124,41 @@ with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
     script.write(header+colours+'\nend\n'+checks);script.flush()
     subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
 print('PASS JobResultUI: stable confirmed two-colour result, EN/RU and single-wall compatibility')
+
+start=source.index('\t\tlocal quality = Finish.evaluate')
+finish=source.index('\n\t\tresultContinue.Text =',start)
+quality=source[start:finish]
+header='''
+local Finish=require("../src/shared/PaintFinish")
+local Strings=require("../src/shared/Strings")
+local lang="en"
+local function t(key)return Strings.text(lang,key)end
+local resultQuality={}
+local results={Visible=true}
+local shown
+local comparison={render=function(receipt)shown=receipt end}
+local function renderQuality(receipt,available)
+ local s={available=available};resultQuality.Text=t("resultAccepted")
+'''
+checks='''
+for _,locale in {"en","ru"}do
+ lang=locale
+ for _,count in {77,92,96}do
+  local receipt={finish={columns=12,rows=8,masks={string.rep("1",count)..string.rep("0",96-count)}}}
+  renderQuality(receipt,true)
+  local key=if count==96 then "finishperfect"elseif count>=92 then "finishexcellent"else "finishaccepted"
+  assert(resultQuality.Text==string.format(t(key),math.floor(count*100/96)).."\\n"..t("finishPaid"),"Wrong confirmed grade text")
+  assert(shown==receipt,"Visible receipt did not render its scene")
+  results.Visible=false;renderQuality(receipt,true);assert(shown==nil,"Closed result retained geometry");results.Visible=true
+  renderQuality(receipt,false);assert(shown==nil,"Unavailable result created geometry")
+ end
+ local duo={finish={columns=12,rows=8,masks={string.rep("1",96),string.rep("1",77)..string.rep("0",19)}}}
+ renderQuality(duo,true)
+ assert(resultQuality.Text==string.format(t("finishaccepted"),80).."\\n"..string.format(t("finishWalls"),100,80),"Weak wall hidden by average")
+ renderQuality({},true);assert(resultQuality.Text==t("resultAccepted"),"Legacy receipt invented grade")
+end
+'''
+with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
+    script.write(header+quality+'\nend\n'+checks);script.flush()
+    subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
+print('PASS JobResultUI: confirmed grades, worst wall, legacy and closed/unavailable geometry guards')

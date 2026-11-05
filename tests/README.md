@@ -6,6 +6,15 @@
 два анализатора Luau и сборку двух независимых `.rbxlx`. Нужны установленные инструменты и
 `bash scripts/dev.sh prepare`. Никаких npm/Wally-зависимостей нет.
 
+`PaintFinish` и `PaintFinishPersistence` проверяют худшую стену, 94/95/100%,
+ограниченную схему, атомарные маски/оплату, replay/unknown/reload, deep copy,
+schema 1/2 → 3 и сохранение мебели/денег. `PaintResultScene` исполняет полный
+renderer: подтверждённые цвета/пропуски, 118 объектов максимум, cache/legacy/
+закрытие/Destroy. `JobResultUI` и `PaintFeedbackUI` проверяют оценки, добровольную
+цель и прежние callbacks/ошибки. В Studio отдельно проверить реальную покраску,
+сдачу, EN/RU/размеры, две стены/одну выплату и очистку моделей:
+[PAINT_RESULTS.md](../docs/PAINT_RESULTS.md).
+
 `FurnitureInventory` проверяет фильтрацию подтверждённых экземпляров, дубликаты
 товаров, склад/установку и независимость результатов. `InventoryUI` исполняет
 построение вкладок, render и callbacks: EN/RU/числа/пустые разделы, ≥44 px,

@@ -353,8 +353,29 @@ ru["clickFloor"] =
 	"Кликни на пол, чтобы зафиксировать место, затем подтверди"
 en["resultTitle"] = "Work accepted"
 ru["resultTitle"] = "Работа принята"
-en["resultBefore"] = "Before · unpainted"
-ru["resultBefore"] = "До · без покраски"
+en["resultBefore"] = "Before · sketch"
+ru["resultBefore"] = "До · схема"
+en["finishaccepted"], ru["finishaccepted"] =
+	"Solid finish · %d%%", "Хороший финиш · %d%%"
+en["finishexcellent"], ru["finishexcellent"] =
+	"Excellent finish · %d%%", "Отличный финиш · %d%%"
+en["finishperfect"], ru["finishperfect"] =
+	"Perfect finish · %d%%", "Идеальный финиш · %d%%"
+en["finishWalls"], ru["finishWalls"] =
+	"Walls: %d%% / %d%% · weakest decides", "Стены: %d%% / %d%% · по худшей"
+en["finishPaid"], ru["finishPaid"] =
+	"Inspection passed. Payment confirmed.",
+	"Проверка пройдена. Оплата подтверждена."
+en["finishLegacy"] = "This older receipt has no saved wall preview. Its payment is confirmed."
+ru["finishLegacy"] =
+	"У старой квитанции нет схемы стен. Её оплата подтверждена."
+en["paintOptional"], ru["paintOptional"] =
+	"Ready · %d%% · Great: %d%%", "Можно сдать · %d%% · Отлично: %d%%"
+en["paintExcellent"], ru["paintExcellent"] =
+	"Excellent · %d%% · Perfect: %d%%", "Отлично · %d%% · Идеально: %d%%"
+en["paintPerfect"], ru["paintPerfect"] =
+	"Perfect · %d%% · Review to finish",
+	"Идеально · %d%% · Проверь результат"
 en["resultAfter"] = "After · accepted"
 ru["resultAfter"] = "После · принято"
 en["resultXP"] = "+%d painting XP"
