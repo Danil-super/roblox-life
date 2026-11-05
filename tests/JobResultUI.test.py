@@ -20,7 +20,20 @@ local function hidePanels() hidden+=1;results.Visible=false end
 local clicked
 local resultContinue={Activated={Connect=function(_,fn) clicked=fn end}}
 local step="BUY"
-local player={GetAttribute=function() return step end}
+local status="Ready"
+local Mastery=require("../src/shared/PaintingMastery")
+local state={available=true,phase="Completed",paintingXP=120,result={operationId="job:current",xp=70},offers={
+ {id="basic",titleKey="basic",requiredXP=0,unlocked=true},
+ {id="mint",titleKey="mint",requiredXP=50,unlocked=true},
+ {id="rose",titleKey="rose",requiredXP=120,unlocked=true},
+ {id="duo",titleKey="duo",requiredXP=210,unlocked=false}}}
+local player={GetAttribute=function(_,key) return if key=="ProfileStatus"then status else step end}
+local preview,previews=nil,0
+local offers={show=function(id)preview=id;previews+=1 end}
+local jobs={Visible=false}
+local function stopTravel()end
+local function hideHousing()end
+local function render()end
 local route=nil
 local function homeAction(tab) route=tab end
 local function send() error("Results must not send a financial command") end
@@ -54,9 +67,13 @@ assert(not results.Visible and route=="Shop")
 step="PLACE";results.Visible=true;clicked()
 assert(not results.Visible and route=="Furniture")
 ''',
+    "continue_unavailable": 'status="Error";results.Visible=true;clicked();assert(results.Visible and previews==0 and route==nil,"Lost profile continued result")',
+    "continue_busy": 'state.available=false;results.Visible=true;clicked();assert(results.Visible and previews==0 and route==nil,"Busy profile continued result")',
+    "continue_stale": 'state.phase="Inspect";results.Visible=true;clicked();assert(results.Visible and previews==0 and route==nil,"Old result navigated during new work")',
     "continue_after_onboarding": '''
 step="DONE";results.Visible=true;clicked()
-assert(not results.Visible and route==nil,"Continue issued a new job")
+assert(not results.Visible and route==nil and jobs.Visible and preview=="rose","Continue did not preview recommended work")
+clicked();assert(previews==1,"Hidden Continue repeated navigation")
 ''',
 }
 for name, checks in cases.items():

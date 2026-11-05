@@ -6,6 +6,7 @@ local Strings = require(ReplicatedStorage.Shared.Strings)
 local Config = require(ReplicatedStorage.Shared.PaintConfig)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
 local Goals = require(ReplicatedStorage.Shared.NavigationGoal)
+local Mastery = require(ReplicatedStorage.Shared.PaintingMastery)
 local PaintController = require("./PaintController")
 local Navigation = require("./JobNavigation")
 local MapController = require("./MapController")
@@ -155,7 +156,7 @@ function Controller.start(
 	local results, resultHeading, resultContinue, resultBody = panel("ResultsPanel")
 	resultContinue.Name = "Continue"
 	resultHeading.Size = UDim2.new(1, -90, 0, 36)
-	resultBody.CanvasSize = UDim2.fromOffset(0, 240)
+	resultBody.CanvasSize = UDim2.fromOffset(0, 280)
 	local resultClose = button(results, "Close", 12)
 	resultClose.Position = UDim2.new(1, -60, 0, 12)
 	resultClose.Size = UDim2.fromOffset(44, 44)
@@ -176,18 +177,12 @@ function Controller.start(
 	local resultMoney = text(resultBody, "Dollars", 56, 32, 24)
 	local resultXP = text(resultBody, "XP", 92, 28, 16)
 	local resultQuality = text(resultBody, "Quality", 124, 44, 13)
-	local resultHint = text(resultBody, "Hint", 176, 56, 13)
+	local resultHint = text(resultBody, "Hint", 176, 96, 13)
 	local shownOperation: string? = nil
 	resultClose.Activated:Connect(function()
 		results.Visible = false
 	end)
-	resultContinue.Activated:Connect(function()
-		results.Visible = false
-		local step = player:GetAttribute("OnboardingStep")
-		if step == "BUY" or step == "PLACE" then
-			homeAction(if step == "BUY" then "Shop" else "Furniture")
-		end
-	end)
+
 	local function send(actionName: string, fields: { [string]: unknown }?): ()
 		local data: { [string]: unknown } = fields or {}
 		data.action = actionName
@@ -459,14 +454,25 @@ function Controller.start(
 		resultMoney.Text = if receipt then string.format("+$%d", receipt.dollars) else ""
 		resultXP.Text = if receipt then string.format(t("resultXP"), receipt.xp) else ""
 		resultQuality.Text = t("resultAccepted")
-		resultHint.Text = t("resultNext")
-		if
-			receipt
-			and s
-			and s.paintingXP
-			and s.paintingXP >= Config.wideRollerXP
-			and s.paintingXP - receipt.xp < Config.wideRollerXP
-		then
+		local mastery = Mastery.evaluate(
+			if s then s.paintingXP else nil,
+			if s then s.offers else nil,
+			s ~= nil and s.available,
+			if receipt then receipt.xp else nil
+		)
+		local firstHome = onboarding == "BUY" or onboarding == "PLACE"
+		resultHint.Text = if firstHome
+			then t("resultNext")
+			elseif mastery.ready then (if mastery.nextId
+				then Mastery.goalText(mastery, language())
+				else t("masteryRepeatHint"))
+			else t("offerWaiting")
+		for _, opened in mastery.opened do
+			resultHint.Text = string.format(t("masteryOpened"), t(opened.titleKey))
+				.. "\n"
+				.. resultHint.Text
+		end
+		if mastery.wideJustUnlocked then
 			resultHint.Text = t("wideUnlockedResult") .. "\n" .. resultHint.Text
 		end
 		local required = if receipt and receipt.primaryColorId
@@ -488,8 +494,15 @@ function Controller.start(
 			if onboarding == "BUY"
 				then "shopTitle"
 				elseif onboarding == "PLACE" then "furnitureApp"
-				else "resultContinue"
+				elseif mastery.ready and mastery.recommendedId then "masteryView"
+				else "openJobs"
 		)
+		resultContinue.Active = s ~= nil
+			and s.available
+			and s.phase == "Completed"
+			and receipt ~= nil
+			and player:GetAttribute("ProfileStatus") == "Ready"
+		resultContinue.AutoButtonColor = resultContinue.Active
 		screen:SetAttribute("JobHintError", lastError ~= nil and os.clock() < errorUntil)
 		local objective = screen:FindFirstChild("Objective")
 		if
@@ -515,6 +528,32 @@ function Controller.start(
 		end
 	end
 	action.Activated:Connect(activate)
+	resultContinue.Activated:Connect(function()
+		local s = state
+		if
+			not results.Visible
+			or s == nil
+			or not s.available
+			or s.phase ~= "Completed"
+			or s.result == nil
+			or player:GetAttribute("ProfileStatus") ~= "Ready"
+		then
+			return
+		end
+		results.Visible = false
+		local step = player:GetAttribute("OnboardingStep")
+		if step == "BUY" or step == "PLACE" then
+			homeAction(if step == "BUY" then "Shop" else "Furniture")
+		else
+			local mastery = Mastery.evaluate(s.paintingXP, s.offers, s.available, s.result.xp)
+			stopTravel()
+			hideHousing()
+			hidePanels()
+			homePanel.Visible, jobs.Visible = false, true
+			offers.show(mastery.recommendedId)
+			render()
+		end
+	end)
 	cancel.Activated:Connect(function()
 		send("cancel", nil)
 		painter.stop()

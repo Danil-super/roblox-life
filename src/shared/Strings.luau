@@ -649,6 +649,20 @@ en["mapShop"] = "Shop"
 ru["mapShop"] = "Магазин"
 en["arrivedShop"] = "At the furniture shop"
 ru["arrivedShop"] = "Ты в магазине"
+en["masteryNext"] = "Next: %s · %d XP"
+ru["masteryNext"] = "Далее: %s · ещё %d XP"
+en["masteryAll"] = "All %d orders unlocked"
+ru["masteryAll"] = "Открыты все заказы: %d"
+en["contractDuoShort"] = "Two walls"
+ru["contractDuoShort"] = "Две стены"
+en["masteryOpened"] = "New order: %s"
+ru["masteryOpened"] = "Новый заказ: %s"
+en["masteryView"] = "View an order"
+ru["masteryView"] = "Посмотреть заказ"
+en["masteryRepeatHint"] =
+	"All current orders are open. Choose a repair or keep decorating your room."
+ru["masteryRepeatHint"] =
+	"Все текущие заказы открыты. Выбери ремонт или продолжай обустраивать комнату."
 local Strings = {}
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key

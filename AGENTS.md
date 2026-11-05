@@ -51,6 +51,11 @@
   из HomeState, право покупки заново проверяет HomeService. Покупка/обустройство
   снимают Shop, Jobs/справка/разговор с жителем возвращают текущую работу; выбор только на сеанс.
   Отдельные ShopRoute/ShopMarker удалены. docs/SHOP_NAVIGATION.md.
+  PaintingMastery проецирует подтверждённые XP/offers: ближайший порог,
+  постоянная шкала Jobs, открытия по XP квитанции. Несогласованные данные
+  не дают рекомендацию. Result Continue сохраняет BUY/PLACE, после DONE
+  открывает подробности доступного заказа без accept/выплаты; visible/
+  Completed/available/Ready обязательны. docs/PAINTING_MASTERY.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

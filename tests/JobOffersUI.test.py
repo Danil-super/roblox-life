@@ -42,3 +42,25 @@ with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as sc
     script.flush()
     subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
 print("PASS JobOffersUI: lock, selection, busy, timeout, unavailable and cleanup")
+
+start=source.index('\t\tshow = function(id: string?): ()')+len('\t\tshow = function(id: string?): ()')
+finish=source.index('\n\t\tend,\n\t\tback =',start)
+show='\nlocal function show(id)\n'+source[start:finish]+'\nend\n'
+setup='''
+local Vector2={zero=0}
+local list,details={},{}
+'''
+checks='''
+state.phase="Completed"
+show("basic");assert(selected=="basic" and confirm.Active,"Recommended offer not previewed")
+assert(#requests==0,"Preview automatically accepted a job")
+show("mint");assert(selected==nil and not confirm.Active,"Locked recommendation opened as ready")
+show("missing");assert(selected==nil,"Missing recommendation selected")
+state.available=false;show("basic");assert(selected==nil,"Busy snapshot previewed recommendation")
+state.available=true;state.phase="Inspect";show("basic");assert(selected==nil,"Recommendation interrupted current work")
+state.phase="Offer";show();assert(selected==nil and list.CanvasPosition==0,"Default list changed")
+'''
+with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
+    script.write(header+setup+selection+render+show+checks);script.flush()
+    subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
+print('PASS JobOffersUI: recommendation is preview-only, explicit accept and snapshot guards')

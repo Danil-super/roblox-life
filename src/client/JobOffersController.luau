@@ -3,8 +3,9 @@ local RS = game:GetService("ReplicatedStorage")
 local Strings = require(RS.Shared.Strings)
 local Types = require(RS.Shared.JobTypes)
 local Config = require(RS.Shared.PaintConfig)
+local Mastery = require(RS.Shared.PaintingMastery)
 local Theme = require(RS.Shared.Theme)
-export type API = { render: (Types.Snapshot?) -> (), show: () -> (), back: () -> boolean }
+export type API = { render: (Types.Snapshot?) -> (), show: (string?) -> (), back: () -> boolean }
 local Controller = {}
 function Controller.start(
 	panel: Frame,
@@ -47,7 +48,16 @@ function Controller.start(
 		l.Font, l.TextColor3, l.ZIndex, l.Parent = Enum.Font.GothamMedium, paper, 10, parent
 		return l
 	end
-	local xpLabel = label(list, "Experience", 0, 54, 14)
+	local xpLabel = label(list, "Experience", 0, 54, 13)
+	local progressTrack = Instance.new("Frame")
+	progressTrack.Name, progressTrack.Position, progressTrack.Size =
+		"MasteryProgress", UDim2.fromOffset(16, 56), UDim2.new(1, -32, 0, 6)
+	progressTrack.BackgroundColor3, progressTrack.BorderSizePixel, progressTrack.ZIndex, progressTrack.Parent =
+		color(Theme.colors.surface), 0, 10, list
+	local progressFill = Instance.new("Frame")
+	progressFill.Name, progressFill.Size = "Fill", UDim2.fromScale(0, 1)
+	progressFill.BackgroundColor3, progressFill.BorderSizePixel, progressFill.ZIndex, progressFill.Parent =
+		accent, 0, 11, progressTrack
 	local title = label(details, "Title", 0, 40, 18)
 	local reward = label(details, "Reward", 44, 28, 16)
 	local requirements = label(details, "Requirements", 78, 62, 14)
@@ -106,12 +116,22 @@ function Controller.start(
 		confirm.AutoButtonColor, confirm.BackgroundTransparency =
 			confirm.Active, if confirm.Active then 0 else 0.6
 		local experience = if s then s.paintingXP or 0 else 0
-		xpLabel.Text = if s and s.available
-			then string.format(t("paintingExperience"), experience) .. "\n" .. (if experience
-					>= Config.wideRollerXP
+		local mastery = Mastery.evaluate(
+			if s then s.paintingXP else nil,
+			if s then s.offers else nil,
+			s ~= nil and s.available,
+			nil
+		)
+		xpLabel.Text = if mastery.ready
+			then string.format(t("paintingExperience"), mastery.xp) .. "\n" .. Mastery.goalText(
+				mastery,
+				language()
+			) .. "\n" .. (if mastery.wide
 				then t("wideRollerUnlocked")
-				else string.format(t("wideRollerGoal"), Config.wideRollerXP - experience))
+				else string.format(t("wideRollerGoal"), Config.wideRollerXP - mastery.xp))
 			else t("offerWaiting")
+		progressTrack.Visible = mastery.ready
+		progressFill.Size = UDim2.fromScale(mastery.fraction, 1)
 		if offer then
 			title.Text, brief.Text = t(offer.titleKey), t(offer.briefKey)
 			reward.Text = string.format(t("contractReward"), offer.reward, offer.xp)
@@ -138,7 +158,7 @@ function Controller.start(
 		end
 		listKey = key
 		for _, child in list:GetChildren() do
-			if child ~= xpLabel then
+			if child ~= xpLabel and child ~= progressTrack then
 				child:Destroy()
 			end
 		end
@@ -146,7 +166,7 @@ function Controller.start(
 		for index, o in offers do
 			local b = Instance.new("TextButton")
 			b.Name, b.Position, b.Size =
-				o.id, UDim2.fromOffset(16, 64 + (index - 1) * 112), UDim2.new(1, -32, 0, 104)
+				o.id, UDim2.fromOffset(16, 72 + (index - 1) * 112), UDim2.new(1, -32, 0, 104)
 			b.Text, b.BackgroundColor3, b.ZIndex, b.Parent =
 				"", color(Theme.colors.surface), 9, list
 			local name = label(b, "Title", 8, 36, 16)
@@ -170,7 +190,7 @@ function Controller.start(
 				render()
 			end)
 		end
-		list.CanvasSize = UDim2.fromOffset(0, 64 + #offers * 112)
+		list.CanvasSize = UDim2.fromOffset(0, 72 + #offers * 112)
 	end
 	confirm.Activated:Connect(function()
 		local offer = selectedOffer()
@@ -196,8 +216,24 @@ function Controller.start(
 			end
 			render()
 		end,
-		show = function(): ()
+		show = function(id: string?): ()
 			selected = nil
+			local s = state
+			if
+				id
+				and s
+				and s.available
+				and s.offers
+				and (s.phase == "Offer" or s.phase == "Completed")
+			then
+				for _, o in s.offers do
+					if o.id == id and o.unlocked then
+						selected = id
+						break
+					end
+				end
+			end
+			details.CanvasPosition = Vector2.zero
 			list.CanvasPosition = Vector2.zero
 			render()
 		end,
