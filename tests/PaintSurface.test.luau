@@ -44,6 +44,22 @@ end
 assert(mask == before, "Visual calculation mutated authoritative input")
 dot[1] = 0
 assert(Surface.build(empty)[1] == 1 and Surface.build(mask)[1] == 1, "Visual state crossed calls")
+local width, height = Surface.dimensions(true)
+assert(width == 12 and height == 8, "Light field exceeded server grid budget")
+for _, input in { empty, full, mask, "bad" } do
+	local values = Surface.build(input, true)
+	assert(#values == 96, "Light field allocated the full field")
+	for i, alpha in values do
+		assert(
+			alpha == (if #input == 96 and string.sub(input, i, i) == "1" then 0 else 1),
+			"Light field invented or hid confirmed coverage"
+		)
+	end
+end
+assert(
+	#Surface.build(mask) == 864 and #Surface.build(mask, false) == 864,
+	"Light call changed later full quality"
+)
 print(
 	"PaintSurface: bounded field, blank/full/invalid, soft edges, seams, monotonicity and isolation passed"
 )

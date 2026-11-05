@@ -10,7 +10,8 @@ export type API = {
 	destroy: () -> (),
 }
 local Surface = {}
-function Surface.new(gui: SurfaceGui, colour: Color3): API
+function Surface.new(gui: SurfaceGui, colour: Color3, light: boolean?, reducedMotion: boolean?): API
+	local columns, rows = Field.dimensions(light)
 	local ink, predictions = Instance.new("Frame"), Instance.new("Frame")
 	for _, layer in { ink, predictions } do
 		layer.Size, layer.BackgroundTransparency, layer.Parent = UDim2.fromScale(1, 1), 1, gui
@@ -23,17 +24,16 @@ function Surface.new(gui: SurfaceGui, colour: Color3): API
 		return frame
 	end
 	local frames: { Frame } = {}
-	for row = 0, Field.rows - 1 do
-		for col = 0, Field.columns - 1 do
+	for row = 0, rows - 1 do
+		for col = 0, columns - 1 do
 			local frame = pixel(ink, "Pixel" .. (#frames + 1))
 			frame.Position, frame.Size =
-				UDim2.fromScale(col / Field.columns, row / Field.rows),
-				UDim2.fromScale(1 / Field.columns, 1 / Field.rows)
+				UDim2.fromScale(col / columns, row / rows), UDim2.fromScale(1 / columns, 1 / rows)
 			table.insert(frames, frame)
 		end
 	end
 	local marks: { { frame: Frame, expires: number } } = {}
-	for i = 1, Field.predictionLimit do
+	for i = 1, if light then Field.lightPredictionLimit else Field.predictionLimit do
 		local frame = pixel(predictions, "Mark" .. i)
 		frame.AnchorPoint, frame.Visible = Vector2.new(0.5, 0.5), false
 		local corner = Instance.new("UICorner")
@@ -60,11 +60,11 @@ function Surface.new(gui: SurfaceGui, colour: Color3): API
 				return
 			end
 			lastMask = mask
-			for i, alpha in Field.build(mask) do
+			for i, alpha in Field.build(mask, light) do
 				if alphas[i] ~= alpha then
 					cancel(i)
 					alphas[i] = alpha
-					if instant then
+					if instant or light or reducedMotion then
 						frames[i].BackgroundTransparency = alpha
 					else
 						local tween =

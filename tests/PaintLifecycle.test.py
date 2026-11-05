@@ -37,6 +37,9 @@ local RunService={UnbindFromRenderStep=function()viewUnbound+=1 end}
 local beganConnection={Disconnect=function()inputDisconnected+=1 end}
 local changedConnection=beganConnection
 local endedConnection=beganConnection
+local effectsDisconnected=0
+local effectsConnection={Disconnect=function()effectsDisconnected+=1 end}
+local motionConnection=effectsConnection
 local died,removed,deathConnection
 local humanoid={Died={Once=function(_,fn)
     died=fn;return {Disconnect=function() disconnected+=1 end}
@@ -79,6 +82,7 @@ local entered=0
 '''+entry_guard+'''
 enter({},{});assert(entered==0 and disposed,"Late callback recreated destroyed painting view")
 assert(not active and inkDestroyed==1 and destroyed==2 and viewUnbound==1 and inputDisconnected==4,"Destroyed HUD retained paint graphics or service input")
+assert(effectsDisconnected==2,"Destroyed HUD retained preference subscriptions")
 '''
 for name, checks in cases.items():
     with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:

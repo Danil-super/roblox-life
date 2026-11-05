@@ -63,6 +63,26 @@ assert(created==budget and played==latest and destroyed==latest,"Closed renderer
 local other=Surface.new({},{});other.update(blank,true)
 assert(created==budget*2,"New wall did not receive an independent renderer")
 other.destroy()
+instances={}
+local before,animations=created,played
+local light=Surface.new({}, {}, true)
+assert(created-before==106,"Light renderer exceeded its 96 pixels / 4 marks budget")
+light.update(blank,true)
+for i=1,200 do light.predict(.5,.5,1,1);light.step(1)end
+assert(created-before==106 and played==animations,"Light input allocated GUI or animated accepted paint")
+assert(child("Pixel40").BackgroundTransparency==1,"Light prediction became confirmed coverage")
+light.update(string.rep("0",39).."1"..string.rep("0",56))
+assert(child("Pixel40").BackgroundTransparency==0 and child("Pixel41").BackgroundTransparency==1,"Light snapshot lost cell identity")
+light.update(string.rep("1",96))
+assert(played==animations,"Light renderer created tweens")
+light.step(2);assert(not child("Mark4").Visible,"Light prediction did not expire")
+light.destroy();light.destroy();light.update(blank)
+assert(child("Ink").Destroyed and created-before==106,"Light renderer survived cleanup")
+instances={};before=created
+local reduced=Surface.new({}, {}, false, true)
+reduced.update(blank,true);reduced.update(string.rep("1",96))
+assert(created-before==898 and played==animations,"Reduced motion animated or silently reduced field resolution")
+reduced.destroy()
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
  f.write(header+body+'\n'+checks);f.flush()

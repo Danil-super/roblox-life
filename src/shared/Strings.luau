@@ -35,6 +35,13 @@ local ru: { [string]: string } = {
 	balance = "Доллары",
 	xp = "Опыт покраски",
 }
+en["paintEffectsFull"], ru["paintEffectsFull"] =
+	"Painting: smooth effects", "Покраска: плавные эффекты"
+en["paintEffectsLight"], ru["paintEffectsLight"] =
+	"Painting: light effects", "Покраска: лёгкие эффекты"
+en["paintEffectsHint"] = "Fewer effects this session.\nCoverage and rewards stay the same."
+ru["paintEffectsHint"] =
+	"Меньше эффектов на этот сеанс.\nПокрытие и награда прежние."
 en["jobs"] = "Jobs"
 ru["jobs"] = "Заказы"
 en["map"] = "Map"

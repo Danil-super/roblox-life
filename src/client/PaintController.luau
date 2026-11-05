@@ -244,6 +244,23 @@ function Controller.start(
 			stroke.Enabled = missing and not coverage.covered and string.sub(s.mask, i, i) ~= "1"
 		end
 	end
+	local function refreshInk(): ()
+		if ink then
+			ink.destroy()
+			ink = nil
+		end
+		local gui, state = surface, snapshot
+		if gui and state and not disposed then
+			local visual = PaintSurface.new(
+				gui,
+				paintColor(),
+				screen:GetAttribute("LightPaintEffects") == true,
+				GuiService.ReducedMotionEnabled
+			)
+			visual.update(state.mask, true)
+			ink = visual
+		end
+	end
 	local function enter(target: BasePart, s: Types.Snapshot): ()
 		if active or disposed then
 			return
@@ -305,9 +322,7 @@ function Controller.start(
 		gui.LightInfluence = 0
 		gui.Parent = player.PlayerGui
 		surface = gui
-		local visual = PaintSurface.new(gui, paintColor())
-		ink = visual
-		visual.update(s.mask, true)
+		refreshInk()
 		for row = 0, Config.rows - 1 do
 			for col = 0, Config.columns - 1 do
 				local cell = Instance.new("Frame")
@@ -495,6 +510,10 @@ function Controller.start(
 		end
 		render()
 	end)
+	local effectsConnection =
+		screen:GetAttributeChangedSignal("LightPaintEffects"):Connect(refreshInk)
+	local motionConnection = GuiService:GetPropertyChangedSignal("ReducedMotionEnabled")
+		:Connect(refreshInk)
 	screen.Destroying:Once(function()
 		disposed = true
 		stop()
@@ -503,6 +522,8 @@ function Controller.start(
 		beganConnection:Disconnect()
 		changedConnection:Disconnect()
 		endedConnection:Disconnect()
+		effectsConnection:Disconnect()
+		motionConnection:Disconnect()
 	end)
 	return {
 		enter = enter,

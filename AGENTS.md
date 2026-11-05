@@ -32,6 +32,11 @@
   dedup маски и cleanup. Предсказание не подтверждает покрытие; контуры 12×8
   появляются при Review/Coverage. FixedSize/clip, повторный вход из mask;
   Destroy HUD освобождает renderer/render binding/ввод. docs/PAINTING.md.
+  Home переключает LightPaintEffects на текущий сеанс: 96 пикселей/четыре
+  следа, без tween; полный режим прежний. GuiService.ReducedMotionEnabled
+  только читается и отключает tween также в полном режиме. Замена renderer
+  восстанавливает mask без сброса ввода/очереди/заказа, подписки снимаются
+  при Destroy HUD. docs/PAINT_EFFECTS.md.
   NeighborhoodScenery создаёт улицу при Play и входные накладки при cloneRoom;
   StreetLayout проверяет проходы для 16 слотов. StreetDetails — до 300 деталей,
   start идемпотентен, SurfaceGui переводит WorldSignsController по событиям.

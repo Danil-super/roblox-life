@@ -3,9 +3,20 @@ local Config = require("./PaintConfig")
 local detail = 3
 local columns, rows = Config.columns * detail, Config.rows * detail
 assert(columns * rows <= 1024, "Paint visual field exceeds its GUI budget")
-local Surface = { columns = columns, rows = rows, fadeSeconds = 0.14, predictionLimit = 16 }
+local Surface = {
+	columns = columns,
+	rows = rows,
+	fadeSeconds = 0.14,
+	predictionLimit = 16,
+	lightPredictionLimit = 4,
+}
+function Surface.dimensions(light: boolean?): (number, number)
+	return if light then Config.columns else columns, if light then Config.rows else rows
+end
 -- Cosmetic interpolation only. Count, threshold and acceptance stay on the server grid.
-function Surface.build(mask: string): { number }
+function Surface.build(mask: string, light: boolean?): { number }
+	local width, height = Surface.dimensions(light)
+	local scale = if light then 1 else detail
 	local valid = #mask == Config.columns * Config.rows and string.find(mask, "[^01]") == nil
 	local coarse: { number } = {}
 	for i = 1, Config.columns * Config.rows do
@@ -19,12 +30,12 @@ function Surface.build(mask: string): { number }
 		) + 1]
 	end
 	local result: { number } = {}
-	for row = 0, rows - 1 do
-		local y = (row + 0.5) / detail - 0.5
+	for row = 0, height - 1 do
+		local y = (row + 0.5) / scale - 0.5
 		local y0 = math.floor(y)
 		local fy = y - y0
-		for col = 0, columns - 1 do
-			local x = (col + 0.5) / detail - 0.5
+		for col = 0, width - 1 do
+			local x = (col + 0.5) / scale - 0.5
 			local x0 = math.floor(x)
 			local fx = x - x0
 			local top = value(x0, y0) * (1 - fx) + value(x0 + 1, y0) * fx

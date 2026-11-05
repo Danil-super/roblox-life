@@ -2,6 +2,7 @@
 
 Источник: GDD v0.7, срез P0. Это первая профессия; магазин, склад и Grid/Free-редактор подключены.
 Четыре контракта и мастерство: [CONTRACTS.md](CONTRACTS.md).
+Плавный/лёгкий слой и Reduce Motion: [PAINT_EFFECTS.md](PAINT_EFFECTS.md).
 
 ## Как пройти
 
