@@ -664,6 +664,9 @@ en["masteryRepeatHint"] =
 ru["masteryRepeatHint"] =
 	"Все текущие заказы открыты. Выбери ремонт или продолжай обустраивать комнату."
 local Strings = {}
+en["roomPlanFinished"] = "All room goals complete. Choose another repair."
+ru["roomPlanFinished"] =
+	"Все цели готовы. Можно выбрать новый ремонт."
 en["abandonTitle"] = "Abandon this order?"
 ru["abandonTitle"] = "Отказаться от заказа?"
 en["abandonWarning"] =

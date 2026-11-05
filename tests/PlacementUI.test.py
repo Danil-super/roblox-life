@@ -61,3 +61,30 @@ for name, checks in cases.items():
         f.write(header+body+checks);f.flush()
         subprocess.run([str(ROOT/".tools/bin/luau"),f.name],cwd=ROOT,check=True)
     print("PASS PlacementUI:",name)
+home_source=(ROOT/'src/client/HomeController.luau').read_text()
+k=home_source.index('builder.enter(owned, current)')
+a=home_source.rfind('\t\t\tb.Activated:Connect(function()',0,k)
+b=home_source.index('\n\t\t\tend)',k)+len('\n\t\t\tend)')
+placement_entry=home_source[a:b]
+header='''
+local clicked
+local b={Activated={Connect=function(_,fn)clicked=fn end}}
+local state={available=true,nearHome=true}
+local purchase,storing=nil,nil
+local inventory={Visible=false}
+local building=false
+local entered=0
+local owned={id="bookcase"}
+local builder={isActive=function()return building end,enter=function()entered+=1;building=true end}
+local function hidePanels()inventory.Visible=false end
+'''
+checks='''
+clicked();assert(entered==0,"Hidden inventory click reopened the editor")
+inventory.Visible=true;building=true;clicked();assert(entered==0,"Stale click replaced an active/pending editor")
+building=false;clicked();assert(entered==1 and building,"Visible inventory stopped opening the editor")
+clicked();assert(entered==1,"Repeated click restarted the editor")
+'''
+with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
+    script.write(header+placement_entry+checks);script.flush()
+    subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
+print('PASS PlacementUI: hidden/repeated inventory clicks preserve the active or pending editor')

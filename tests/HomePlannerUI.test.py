@@ -85,3 +85,33 @@ with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
     script.write(header+callback+checks);script.flush()
     subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
 print('PASS HomePlannerUI: actual Earn callback rechecks visibility, latest budget, ownership and busy state')
+
+a=planner_source.index('\twork.Activated:Connect(function()')
+b=planner_source.index('\n\tend)',a)+len('\n\tend)')
+callback=planner_source[a:b]
+header='''
+local Plan=require("../src/shared/HomePlan")
+local items={}
+for i,id in {"floor-plant-v1","reading-chair-v1","side-table-v1","floor-lamp-v1","bookcase-v1"}do
+ table.insert(items,{id=tostring(i),catalogId=id,purchaseOperationId="buy"..i,placed={x=i,z=6,rotationY=0}})
+end
+local state={available=true,plan=Plan.evaluate(items)}
+local stateBlocked=false
+local panel={Visible=true}
+local clicked
+local work={Activated={Connect=function(_,fn)clicked=fn end}}
+local opened=0
+local function earn()opened+=1;panel.Visible=false end
+'''
+checks='''
+clicked();assert(opened==1 and not panel.Visible,"Complete room did not open jobs")
+clicked();assert(opened==1,"Hidden completion button repeated navigation")
+panel.Visible=true;stateBlocked=true;clicked();assert(opened==1,"Pending operation interrupted by completion")
+stateBlocked=false;items[1].placed=nil;state.plan=Plan.evaluate(items);clicked();assert(opened==1,"Stored item left old completion button active")
+state.plan=Plan.evaluate({});clicked();assert(opened==1,"Empty room opened completion")
+state.available=false;clicked();assert(opened==1,"Unavailable snapshot opened completion")
+'''
+with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
+    script.write(header+callback+checks);script.flush()
+    subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
+print('PASS HomePlannerUI: complete room opens jobs without accepting; hidden/busy/stored/unavailable guards')

@@ -46,4 +46,34 @@ function Plan.evaluate(items: { Item }): Progress
 	end
 	return result
 end
+function Plan.isComplete(progress: Progress?): boolean
+	if progress == nil or progress.placed ~= progress.total or #progress.goals ~= #definitions then
+		return false
+	end
+	local expected, actual = 0, 0
+	for _, definition in definitions do
+		expected += #definition.products
+	end
+	local items: { [string]: boolean } = {}
+	local products: { [string]: boolean } = {}
+	for _, goal in progress.goals do
+		if not goal.complete or #goal.requirements == 0 then
+			return false
+		end
+		for _, r in goal.requirements do
+			if
+				not r.placed
+				or r.itemId == nil
+				or r.itemId == ""
+				or items[r.itemId]
+				or products[r.catalogId]
+			then
+				return false
+			end
+			items[r.itemId], products[r.catalogId] = true, true
+			actual += 1
+		end
+	end
+	return actual == expected and actual == progress.total
+end
 return table.freeze(Plan)

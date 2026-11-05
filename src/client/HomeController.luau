@@ -415,7 +415,9 @@ function Controller.start(
 			b.Activated:Connect(function()
 				local current = state
 				if
-					current
+					inventory.Visible
+					and not builder.isActive()
+					and current
 					and current.available
 					and current.nearHome
 					and storing == nil

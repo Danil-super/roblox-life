@@ -4,6 +4,7 @@ local Strings = require(RS.Shared.Strings)
 local Types = require(RS.Shared.HomeTypes)
 local Theme = require(RS.Shared.Theme)
 local Budget = require(RS.Shared.HomeBudget)
+local Plan = require(RS.Shared.HomePlan)
 export type API = {
 	render: (Types.Snapshot?, boolean) -> (),
 	show: () -> (),
@@ -68,6 +69,22 @@ function Planner.start(
 			home.Visible = true
 		end
 	end)
+	local work = button(panel, "Jobs", 0)
+	work.Position, work.Size = UDim2.new(0.5, 8, 1, -60), UDim2.new(0.5, -24, 0, 48)
+	work.Visible = false
+	work.Activated:Connect(function()
+		local current = state
+		if
+			not panel.Visible
+			or stateBlocked
+			or current == nil
+			or not current.available
+			or not Plan.isComplete(current.plan)
+		then
+			return
+		end
+		earn()
+	end)
 	local function t(name: string): string
 		return Strings.text(language(), name)
 	end
@@ -75,9 +92,14 @@ function Planner.start(
 		state, stateBlocked = s, blocked
 		title.Text, back.Text = t("roomPlan"), t("backHome")
 		local plan = if s and s.available then s.plan else nil
+		local complete = Plan.isComplete(plan)
+		work.Text, work.Visible, work.Active = t("openJobs"), complete, complete and not blocked
+		work.AutoButtonColor, work.BackgroundTransparency =
+			work.Active, if work.Active then 0 else 0.6
+		back.Size = if complete then UDim2.new(0.5, -24, 0, 48) else UDim2.new(1, -32, 0, 48)
 		summary.Text = if plan
 			then string.format(t("roomPlanProgress"), plan.placed, plan.total) .. "\n" .. t(
-				"roomPlanOptional"
+				if complete then "roomPlanFinished" else "roomPlanOptional"
 			)
 			else t("offerWaiting")
 		local nextKey = language() .. tostring(s ~= nil and s.available) .. tostring(blocked)

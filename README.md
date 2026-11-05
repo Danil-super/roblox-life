@@ -27,6 +27,9 @@ Ubuntu + VS Code/Codex + Luau + Rojo. Текущая игра: бесплатн�
 [HOME_BUDGET.md](docs/HOME_BUDGET.md).
 В кресле можно сидеть, прыжок поднимает персонажа. Подробности:
 [HOME_PLAN.md](docs/HOME_PLAN.md).
+Для полного набора достаточно последовательно пройти четыре разных контракта:
+после пяти покупок останется $330 и 330 XP. Готовый план показывает 5/5 и
+кнопку возврата к заказам: [NATURAL_PROGRESSION.md](docs/NATURAL_PROGRESSION.md).
 
 Фактические результаты настройки и оставшиеся ограничения: [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
