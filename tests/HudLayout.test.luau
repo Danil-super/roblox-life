@@ -77,3 +77,50 @@ for _, touch in { false, true } do
 end
 assert(not Layout.compute(568, 262, true, true, true).hintVisible, "Compact hint overlaps controls")
 print("HudLayout: hint preference preserves action/route and profile-error layout")
+for _, size in
+	{
+		{ 1280, 720 },
+		{ 926, 403 },
+		{ 666, 316 },
+		{ 568, 262 },
+		{ 374, 608 },
+		{ 320, 480 },
+		{
+			1024,
+			710,
+		},
+	}
+do
+	for _, touch in { false, true } do
+		local w, h = size[1], size[2]
+		local quiet = Layout.compute(w, h, touch, true, true, true)
+		inside(quiet.objective, w, h)
+		assert(
+			quiet.compact and not quiet.hintVisible and quiet.objective.h <= 100,
+			"Home card did not shrink"
+		)
+		for _, other in { quiet.wallet, quiet.home, quiet.language } do
+			assert(not overlaps(quiet.objective, other), "Quiet goal covers HUD controls")
+		end
+		if touch then
+			assert(
+				not overlaps(quiet.objective, { x = 0, y = h - 140, w = 140, h = 140 })
+					and not overlaps(
+						quiet.objective,
+						{ x = w - 120, y = h - 140, w = 120, h = 140 }
+					),
+				"Quiet goal covers touch buttons"
+			)
+		end
+		local hidden = Layout.compute(w, h, touch, true, false, true)
+		assert(
+			hidden.objective.h == quiet.objective.h and hidden.objective.y == quiet.objective.y,
+			"Hint toggle moved home action"
+		)
+		assert(
+			Layout.compute(w, h, touch, false, false, true).objective.h == 156,
+			"Profile error stayed quiet"
+		)
+	end
+end
+print("HudLayout: quiet home cards, controls, error priority, hints and rotation passed")

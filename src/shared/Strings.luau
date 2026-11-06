@@ -299,6 +299,14 @@ ru["floor-easel-v1Description"] =
 en["floor-planter-v1Description"] = "A wooden box of greenery to make a corner feel alive."
 ru["floor-planter-v1Description"] =
 	"Деревянный ящик с зеленью для уютного уголка."
+en["homeHudBase"], ru["homeHudBase"] = "My room · %d/%d", "Моя комната · %d/%d"
+en["homeHudCreative"], ru["homeHudCreative"] =
+	"Rest & create · %d/%d", "Отдых и творчество · %d/%d"
+en["homeHudReady"], ru["homeHudReady"] =
+	"Your room is furnished", "Комната обустроена"
+en["homeHudHint"], ru["homeHudHint"] =
+	"Choose your next furnishing in the room plan.",
+	"Выбери следующее улучшение в плане комнаты."
 en["creativeCorner"], ru["creativeCorner"] =
 	"Rest & create · optional", "Отдых и творчество · по желанию"
 en["floor-plant-v1"] = "Floor plant"

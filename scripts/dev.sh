@@ -69,6 +69,7 @@ case "${1:-check}" in
     python3 tests/ClientDecorModels.test.py
     python3 tests/CreativeModels.test.py
     python3 tests/CreativePlannerUI.test.py
+    python3 tests/HomeObjectiveUI.test.py
     python3 tests/FirstStepsUI.test.py
     python3 tests/PhoneInput.test.py
     python3 tests/FirstPurchase.test.py

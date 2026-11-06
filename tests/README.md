@@ -6,6 +6,11 @@
 два анализатора Luau и сборку двух независимых `.rbxlx`. Нужны установленные инструменты и
 `bash scripts/dev.sh prepare`. Никаких npm/Wally-зависимостей нет.
 
+`HomeObjective`, `HomeObjectiveUI` и `HudLayout` проверяют домашнюю цель из
+подтверждённой мебели, приоритеты/реальный callback, EN/RU, throttle и очистку
+подписок. Нативные клики, выход/возврат домой и три размера проверяются отдельно
+в одиночном Play: [HOME_HUD.md](../docs/HOME_HUD.md).
+
 `PaintFinish` и `PaintFinishPersistence` проверяют худшую стену, 94/95/100%,
 ограниченную схему, атомарные маски/оплату, replay/unknown/reload, deep copy,
 schema 1/2 → 3 и сохранение мебели/денег. `PaintResultScene` исполняет полный

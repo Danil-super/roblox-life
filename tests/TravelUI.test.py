@@ -26,7 +26,7 @@ local routeButton={Activated={Connect=function(_,fn)clicked=fn end}}
 '''
 shop_checks = r'''
 clicked();assert(routeActive and not homePanel.Visible and hidden==1,"Route did not activate")
-clicked();assert(not routeActive and rendered==1 and hidden==1,"Stop closed catalog or retained route")
+clicked();assert(not routeActive and rendered==2 and hidden==1,"Stop closed catalog or retained route")
 state.available=false;clicked();assert(not routeActive,"Busy profile selected route")
 state.available=true;status="Loading";clicked();status="Error";clicked()
 assert(not routeActive,"Unavailable profile selected route")

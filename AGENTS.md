@@ -102,6 +102,15 @@
   All; purchase/store/Build/не-Ready блокируют смену вкладки. Обычный sync
   сохраняет карточки/scroll, явная смена сбрасывает scroll. Протокол и профиль
   прежние; docs/FURNITURE_INVENTORY.md.
+  HomeObjective: дома после DONE и без активной работы/маршрута/pending/error
+  HUD показывает Base5 → Creative3 → Ready из согласованных items/plan.
+  Только HUD NextAction открывает Room; Jobs/Map/Guide используют прежний
+  activate. Main связывает callback, HomeObjectiveState/OnboardingStep/Building
+  обновляют проекцию. Новые подписки и Home sync отключаются при Destroy HUD.
+  Существующий секундный Home sync работает после DONE с закрытым меню для
+  подтверждённого nearHome, без записи профиля/новых remotes/циклов. Компактный
+  HUD 100 px сохраняет цель/кнопку ≥44; ошибки и обучение прежние.
+  Схема/экономика прежние; docs/HOME_HUD.md.
   Paint finish: schemaVersion=3, decode мигрирует 1/2 без выдуманных масок.
   Jobs.submit сохраняет Painting.finish вместе с оплатой; Completed replay
   не меняет маску. JobResult выдаёт копию только с подтверждённой квитанцией.

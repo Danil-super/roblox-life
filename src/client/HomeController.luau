@@ -12,6 +12,7 @@ local Inventory = require(RS.Shared.FurnitureInventory)
 local Goals = require(RS.Shared.NavigationGoal)
 local Build = require("./BuildController")
 local RoomPlanner = require("./HomePlannerController")
+local Objective = require(RS.Shared.HomeObjective)
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -210,6 +211,9 @@ function Controller.start(
 			or builder.isActive()
 			or player:GetAttribute("ProfileStatus") ~= "Ready"
 	end
+	local function homeObjective(): Objective.Cue?
+		return Objective.evaluate(state, planBlocked() or routeActive)
+	end
 	local function thumbnail(parent: Instance, catalogId: string): ()
 		local viewport = Instance.new("ViewportFrame")
 		viewport.Name = "Preview"
@@ -309,6 +313,8 @@ function Controller.start(
 
 	local function render(): ()
 		local s = state
+		local cue = homeObjective()
+		screen:SetAttribute("HomeObjectiveState", if cue then cue.key else "")
 		planner.render(s, planBlocked())
 		if storing or (focus and focus.tab == "Furniture") then
 			inventoryFilter = "All"
@@ -592,6 +598,7 @@ function Controller.start(
 			routeActive = true
 			hidePanels()
 			homePanel.Visible = false
+			render()
 		end
 	end)
 	event.OnClientEvent:Connect(function(s: Types.Snapshot)
@@ -626,19 +633,29 @@ function Controller.start(
 			send("sync", nil)
 		end
 	end)
-	RunService.RenderStepped:Connect(function()
+	local homeSync = RunService.RenderStepped:Connect(function()
 		local inBuild = builder.isActive()
 		if
-			(shop.Visible or inventory.Visible or planner.isVisible() or inBuild or routeActive)
-			and os.clock() - syncAt > 1
+			(
+				shop.Visible
+				or inventory.Visible
+				or planner.isVisible()
+				or inBuild
+				or routeActive
+				or (state ~= nil and state.onboarding == "DONE")
+			) and os.clock() - syncAt > 1
 		then
 			syncAt = os.clock()
 			send("sync", nil)
 			render()
 		end
 	end)
+	screen.Destroying:Once(function()
+		homeSync:Disconnect()
+	end)
 	send("sync", nil)
 	return {
+		objective = homeObjective,
 		travel = function(): Goals.Goal?
 			if not routeActive then
 				return nil

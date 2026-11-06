@@ -9,12 +9,15 @@ source = (ROOT / "src/client/HomeController.luau").read_text()
 a = source.index("\tinventoryTitle.Visible = false")
 construction = source[a:source.index("\n\tlocal returnButton", a)]
 a = source.index("\tlocal function render(): ()")
+helper = source[source.index('\tlocal function homeObjective('):source.index('\tlocal function thumbnail(')]
 render = source[a:source.index("\n\tfor _, entry in sections do", a)]
 a = source.index("\tfor _, entry in sections do", a + len(render))
 callbacks = source[a:source.index("\n\tplanner = RoomPlanner.start", a)]
 a = source.index("\tfor _, back in { shopBack, inventoryBack } do", source.index("\tplanner = RoomPlanner.start"))
 back = source[a:source.index("\n\treturnButton.Activated", a)]
 header = r'''
+local Objective=require("../src/shared/HomeObjective")
+local screen={SetAttribute=function()end}
 local Inventory=require("../src/shared/FurnitureInventory")
 local Strings=require("../src/shared/Strings")
 local StoreFlow=require("../src/shared/StoreFlow")
@@ -114,6 +117,6 @@ assert(state.dollars==70 and state.revision==2,"Filters mutated money or housing
 print("PASS InventoryUI: actual tabs/render/callbacks, counts, empty/unknown, focus, scroll and pending intent")
 '''
 with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
-    script.write(header + construction + render + callbacks + back + checks)
+    script.write(header + helper + construction + render + callbacks + back + checks)
     script.flush()
     subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)

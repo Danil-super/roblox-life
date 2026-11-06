@@ -17,6 +17,7 @@ local FirstSteps = require("./FirstStepsController")
 local WorkPlan = require("./JobWorkPlanController")
 local Finish = require(ReplicatedStorage.Shared.PaintFinish)
 local ResultScene = require("./PaintResultScene")
+local HomeObjective = require(ReplicatedStorage.Shared.HomeObjective)
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -25,7 +26,8 @@ function Controller.start(
 	homeAction: (string) -> (),
 	hideHousing: () -> (),
 	travelGoal: () -> Goals.Goal?,
-	stopTravel: () -> ()
+	stopTravel: () -> (),
+	getHomeObjective: () -> HomeObjective.Cue?
 )
 	local player = Players.LocalPlayer
 	local command = ReplicatedStorage:WaitForChild("JobCommand")
@@ -203,6 +205,24 @@ function Controller.start(
 	local acceptancePending: () -> boolean = function(): boolean
 		return false
 	end
+	local function currentHomeCue(): HomeObjective.Cue?
+		local s = state
+		if
+			s == nil
+			or not s.available
+			or (s.phase ~= "Offer" and s.phase ~= "Completed")
+			or player:GetAttribute("ProfileStatus") ~= "Ready"
+			or player:GetAttribute("OnboardingStep") ~= "DONE"
+			or screen:GetAttribute("Building") == true
+			or travelGoal() ~= nil
+			or acceptancePending()
+			or (abandon and abandon.pending())
+			or (lastError ~= nil and os.clock() < errorUntil)
+		then
+			return nil
+		end
+		return getHomeObjective()
+	end
 	local function send(actionName: string, fields: { [string]: unknown }?): ()
 		if ((abandon and abandon.pending()) or acceptancePending()) and actionName ~= "sync" then
 			return
@@ -374,7 +394,14 @@ function Controller.start(
 			homeAction(target)
 		end
 	end)
-	local navigation = Navigation.start(screen, activate)
+	local function activateObjective(): ()
+		if currentHomeCue() then
+			homeAction("Room")
+		else
+			activate()
+		end
+	end
+	local navigation = Navigation.start(screen, activateObjective)
 	local function revealActions(): ()
 		if jobs.Visible then
 			local phase = if state then state.phase else "Offer"
@@ -506,6 +533,7 @@ function Controller.start(
 		map.render()
 		painter.render()
 		local travel = travelGoal()
+		local homeCue = currentHomeCue()
 		local onboarding = player:GetAttribute("OnboardingStep")
 		local nextKey = if phase == "Completed" and onboarding == "BUY"
 			then "shopTitle"
@@ -515,6 +543,7 @@ function Controller.start(
 			t(
 				if travel
 					then (if travel.near then "openShop" else "openMap")
+					elseif homeCue then "roomPlan"
 					elseif s and s.destination and not nearWall then "openMap"
 					else nextKey
 			),
@@ -595,6 +624,7 @@ function Controller.start(
 			and receipt ~= nil
 			and player:GetAttribute("ProfileStatus") == "Ready"
 		resultContinue.AutoButtonColor = resultContinue.Active
+		screen:SetAttribute("HomeObjectiveQuiet", homeCue ~= nil)
 		screen:SetAttribute("JobHintError", lastError ~= nil and os.clock() < errorUntil)
 		local objective = screen:FindFirstChild("Objective")
 		if
@@ -605,16 +635,27 @@ function Controller.start(
 			local label = objective:FindFirstChild("Title")
 			local detail = objective:FindFirstChild("Hint")
 			if label and label:IsA("TextLabel") then
-				label.Text = t(
-					if travel
-						then (if travel.near then "arrivedShop" else "goToShop")
-						elseif s and s.destination and not nearWall then "goToClient"
-						else phaseKeys[phase] or "jobOffer"
-				)
+				label.Text = if homeCue
+					then (if homeCue.kind == "Ready"
+						then t("homeHudReady")
+						else string.format(
+							t("homeHud" .. homeCue.kind),
+							homeCue.placed,
+							homeCue.total
+						))
+					else t(
+						if travel
+							then (if travel.near then "arrivedShop" else "goToShop")
+							elseif s and s.destination and not nearWall then "goToClient"
+							else phaseKeys[phase] or "jobOffer"
+					)
 			end
 			if detail and detail:IsA("TextLabel") then
-				detail.Text = if travel
-					then t(if travel.near then "shopArrivalHint" else "shopRouteHint")
+				detail.Text = if homeCue
+					then t("homeHudHint")
+					elseif travel then t(
+						if travel.near then "shopArrivalHint" else "shopRouteHint"
+					)
 					else stepHint(phase)
 			end
 		end
@@ -821,6 +862,14 @@ function Controller.start(
 			send("sync", nil)
 			render()
 		end
+	end)
+	local homeChanged = screen:GetAttributeChangedSignal("HomeObjectiveState"):Connect(render)
+	local onboardingChanged = player:GetAttributeChangedSignal("OnboardingStep"):Connect(render)
+	local buildChanged = screen:GetAttributeChangedSignal("Building"):Connect(render)
+	screen.Destroying:Once(function()
+		homeChanged:Disconnect()
+		onboardingChanged:Disconnect()
+		buildChanged:Disconnect()
 	end)
 	send("sync", nil)
 	return {

@@ -13,6 +13,7 @@ local Layout = require(ReplicatedStorage.Shared.HudLayout)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 local InputConfig = require(ReplicatedStorage.Shared.InputConfig)
 local Goals = require(ReplicatedStorage.Shared.NavigationGoal)
+local HomeObjective = require(ReplicatedStorage.Shared.HomeObjective)
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("ReturnHome")
 assert(remote:IsA("RemoteEvent"), "ReturnHome remote missing")
@@ -138,6 +139,9 @@ local travelGoal: () -> Goals.Goal? = function(): Goals.Goal?
 	return nil
 end
 local stopTravel: () -> () = function(): () end
+local getHomeObjective: () -> HomeObjective.Cue? = function(): HomeObjective.Cue?
+	return nil
+end
 local jobs = JobController.start(screen, panel, function(): string
 	return language
 end, function(tab: string): ()
@@ -148,6 +152,8 @@ end, function(): Goals.Goal?
 	return travelGoal()
 end, function()
 	stopTravel()
+end, function(): HomeObjective.Cue?
+	return getHomeObjective()
 end)
 local housing = HomeController.start(
 	screen,
@@ -161,6 +167,7 @@ local housing = HomeController.start(
 	end
 )
 travelGoal, stopTravel = housing.travel, housing.stopRoute
+getHomeObjective = housing.objective
 openHousing = function(tab: string): ()
 	housing.show(tab)
 end
@@ -311,7 +318,15 @@ local function resize(): ()
 	local ready = player:GetAttribute("ProfileStatus") == "Ready"
 	local hints = screen:GetAttribute("ShowHints") ~= false
 		or screen:GetAttribute("JobHintError") == true
-	local layout = Layout.compute(size.X, size.Y, touch, ready, hints)
+	local layout = Layout.compute(
+		size.X,
+		size.Y,
+		touch,
+		ready,
+		hints,
+		screen:GetAttribute("HomeObjectiveQuiet") == true
+			and screen:GetAttribute("JobHintError") ~= true
+	)
 	place(wallet, layout.wallet)
 	place(languageButton, layout.language)
 	place(homeButton, layout.home)
@@ -360,6 +375,7 @@ hintsButton.Activated:Connect(function()
 	resize()
 end)
 screen:GetAttributeChangedSignal("JobHintError"):Connect(resize)
+screen:GetAttributeChangedSignal("HomeObjectiveQuiet"):Connect(resize)
 UIS:GetPropertyChangedSignal("TouchEnabled"):Connect(resize)
 resize()
 player:GetAttributeChangedSignal("ProfileStatus"):Connect(render)
