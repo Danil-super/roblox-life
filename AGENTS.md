@@ -41,6 +41,15 @@
   только читается и отключает tween также в полном режиме. Замена renderer
   восстанавливает mask без сброса ввода/очереди/заказа, подписки снимаются
   при Destroy HUD. docs/PAINT_EFFECTS.md.
+  PaintWorksite — серверное оформление подготовленного заказа. Из send берёт
+  phaseOf/work.config.colorId/available/secondary: ChooseMaterial/Painting/
+  SurfaceReady/Ready показывают 24/33 дополнительных Parts, Protection отдельно.
+  Cache сохраняет модель и две краски; nextSurface меняет только цвет. Inspect/
+  Prepare/Offer/Completed/недоступность/удаление комнаты очищают. Нет collision/
+  query/touch/shadow, remotes, полей профиля, циклов/подписок. Нижняя лента
+  ограничена реальным верхом Floor: B имеет другой низ, unit использует
+  настоящий ClientScene.configureWalls. Runtime-косметика не доказывает право
+  на оплату. docs/PAINT_WORKSITE.md.
   PaintRoller: локальная модель из 11 Parts/13 объектов с Sound, под камерой,
   без collision/query/touch/shadow. PaintRollerMotion крутит шубку от движения,
   без таймера; hover не пишет очередь/маску/sequence, Touch только при held.

@@ -10,6 +10,7 @@ local Painting = require("./Domain/Painting")
 local EconomyConfig = require("./Domain/EconomyConfig")
 local World = require("./World")
 local ClientScene = require("./ClientScene")
+local PaintWorksite = require("./PaintWorksite")
 local Meeting = require("./Domain/ClientMeeting")
 local Dialogue = require(ReplicatedStorage.Shared.ClientDialogue)
 local FirstSteps = require(ReplicatedStorage.Shared.FirstSteps)
@@ -24,6 +25,7 @@ type Context = {
 	tokens: number,
 	lastAt: number,
 	scene: ClientScene.API?,
+	site: PaintWorksite.API?,
 	lastTalk: number,
 }
 local Service = {}
@@ -45,6 +47,7 @@ function Service.start(profiles: ProfileService.API): ()
 				tokens = 30,
 				lastAt = os.clock(),
 				scene = nil,
+				site = nil,
 				lastTalk = -math.huge,
 			}
 			contexts[player] = ctx
@@ -95,6 +98,7 @@ function Service.start(profiles: ProfileService.API): ()
 			end
 			local room = World.createWorkplace(player, home)
 			ctx.room = room
+			ctx.site = PaintWorksite.attach(room.model)
 			local wall = room.model:FindFirstChild("PaintableWall")
 			assert(wall ~= nil and wall:IsA("BasePart"), "Work wall missing")
 			ctx.wall = wall
@@ -212,6 +216,15 @@ function Service.start(profiles: ProfileService.API): ()
 		local work, room, wall = ctx.work, ctx.room, ctx.wall
 		local phase = phaseOf(p, ctx)
 		local available = p ~= nil and not ctx.saving
+		local site = ctx.site
+		if site then
+			site.update(
+				phase,
+				if work then work.config.colorId elseif contract then contract.colorId else nil,
+				available,
+				contract ~= nil and contract.secondaryColorId ~= nil
+			)
+		end
 		local scene = ctx.scene
 		if scene then
 			scene.prompt.Enabled = available and phase ~= "Offer"
