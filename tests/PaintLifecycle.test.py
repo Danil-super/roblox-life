@@ -27,8 +27,8 @@ local previousCameraType,previousSubject,previousFrame,previousFov=nil,{Parent=t
 local part={Parent=true,LocalTransparencyModifier=1}
 local altered={[part]=0.3}
 local surface={Destroy=function() destroyed+=1 end}
-local roller={Destroy=function() destroyed+=1 end}
-local cylinder,handle,sound={},{},{}
+local roller={destroy=function() destroyed+=1 end}
+local sound={}
 local strokes={1}
 local gui={Visible=false,IsA=function() return true end}
 local onDestroy,viewUnbound,inputDisconnected=nil,0,0

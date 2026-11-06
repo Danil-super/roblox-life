@@ -13,6 +13,7 @@ type Segment = { points: { Point }, starts: boolean }
 local View = require(ReplicatedStorage.Shared.PaintView)
 local Aim = require(ReplicatedStorage.Shared.PaintAim)
 local PaintSurface = require("./PaintSurfaceController")
+local PaintRoller = require("./PaintRoller")
 local Controller = {}
 function Controller.start(
 	screen: ScreenGui,
@@ -41,9 +42,7 @@ function Controller.start(
 	local surface: SurfaceGui? = nil
 	local ink: PaintSurface.API? = nil
 	local strokes: { UIStroke } = {}
-	local roller: Model? = nil
-	local cylinder: Part? = nil
-	local handle: Part? = nil
+	local roller: PaintRoller.API? = nil
 	local sound: Sound? = nil
 	local held = false
 	local touch: InputObject? = nil
@@ -153,11 +152,9 @@ function Controller.start(
 			surface = nil
 		end
 		if roller then
-			roller:Destroy()
+			roller.destroy()
 			roller = nil
 		end
-		cylinder = nil
-		handle = nil
 		sound = nil
 		strokes = {}
 		for _, name in { "Objective", "Home", "Wallet", "Language" } do
@@ -354,33 +351,8 @@ function Controller.start(
 				table.insert(strokes, stroke)
 			end
 		end
-		local model = Instance.new("Model")
-		model.Name = "LocalRoller"
-		model.Parent = camera
-		roller = model
-		local function part(size: Vector3, color: Color3): Part
-			local p = Instance.new("Part")
-			p.Anchored = true
-			p.CanCollide = false
-			p.CanQuery = false
-			p.Size = size
-			p.Color = color
-			p.Parent = model
-			return p
-		end
-		local roll = part(Vector3.new(1.1 * brushScale(), 0.38, 0.38), paintColor())
-		roll.Shape = Enum.PartType.Cylinder
-		cylinder = roll
-		handle = part(Vector3.new(0.12, 1.1, 0.12), Color3.fromRGB(65, 91, 91))
-		local contact = Instance.new("Sound")
-		sound = contact
-		contact.SoundId = "rbxasset://sounds/action_footsteps_plastic.mp3"
-		contact.Volume = 0.12
-		contact.PlaybackSpeed = 0.65
-		contact.Looped = true
-		contact.Parent = camera
-		-- Keep audio owned by the roller so every exit destroys it.
-		contact.Parent = cylinder
+		local visual = PaintRoller.new(camera, paintColor(), brushScale())
+		roller, sound = visual, visual.sound
 		render()
 	end
 	review.Activated:Connect(function()
@@ -472,7 +444,7 @@ function Controller.start(
 			inflight = nil
 			sequence = s.sequence
 		end
-		if held and os.clock() - lastSample >= 0.03 then
+		if os.clock() - lastSample >= 0.03 then
 			lastSample = os.clock()
 			local pos = if touch then pointer else UIS:GetMouseLocation()
 			if touch then
@@ -489,12 +461,21 @@ function Controller.start(
 				target.Size.Z,
 				Config.edgeAssist
 			)
-			if p then
-				local localPoint = Vector3.new(
-					(p.u - 0.5) * target.Size.X,
-					(0.5 - p.v) * target.Size.Y,
-					target.Size.Z / 2
-				)
+			if roller then
+				if p and not inspectPending and (not UIS.TouchEnabled or held) then
+					roller.update(
+						target,
+						p.u,
+						p.v,
+						held,
+						screen:GetAttribute("LightPaintEffects") ~= true
+							and not GuiService.ReducedMotionEnabled
+					)
+				else
+					roller.hide()
+				end
+			end
+			if held and not inspectPending and p then
 				local segment = current
 				if segment and #segment.points < 24 then
 					local last = segment.points[#segment.points]
@@ -506,13 +487,8 @@ function Controller.start(
 					end
 				end
 				lastHit = os.clock()
-				if cylinder and handle then
-					cylinder.CFrame = target.CFrame
-						* CFrame.new(localPoint.X, localPoint.Y, 0.4)
-						* CFrame.Angles(os.clock() * 4, 0, 0)
-					handle.CFrame = target.CFrame
-						* CFrame.new(localPoint.X, localPoint.Y - 0.6, 0.55)
-				end
+			else
+				lastHit = 0
 			end
 		end
 		if sound then

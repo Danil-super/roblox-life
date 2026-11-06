@@ -41,6 +41,14 @@
   только читается и отключает tween также в полном режиме. Замена renderer
   восстанавливает mask без сброса ввода/очереди/заказа, подписки снимаются
   при Destroy HUD. docs/PAINT_EFFECTS.md.
+  PaintRoller: локальная модель из 11 Parts/13 объектов с Sound, под камерой,
+  без collision/query/touch/shadow. PaintRollerMotion крутит шубку от движения,
+  без таймера; hover не пишет очередь/маску/sequence, Touch только при held.
+  LightPaintEffects/ReducedMotion отключают spin/tilt, сохраняя наведение.
+  Единственный PaintingView и прежний sampling 0,03 с; renderer без своих
+  подписок/tween/remotes. hide сбрасывает жест, stop/Destroy удаляют модель/
+  звук и запрещают late update. Это локальный инструмент, не новая скелетная
+  анимация. Сервер/схема/оплата прежние; docs/PAINT_TOOL.md.
   NeighborhoodScenery создаёт улицу при Play и входные накладки при cloneRoom;
   StreetLayout проверяет проходы для 16 слотов. StreetDetails — до 300 деталей,
   start идемпотентен, SurfaceGui переводит WorldSignsController по событиям.

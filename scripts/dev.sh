@@ -49,6 +49,8 @@ case "${1:-check}" in
     python3 tests/StoreUI.test.py
     python3 tests/PlacementAdapter.test.py
     python3 tests/PaintScopeAdapter.test.py
+    python3 tests/PaintRoller.test.py
+    python3 tests/PaintPointer.test.py
     python3 tests/PaintLifecycle.test.py
     python3 tests/PaintFeedbackUI.test.py
     python3 tests/PaintSurfaceUI.test.py
