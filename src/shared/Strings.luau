@@ -286,6 +286,21 @@ en["rotateItem"] = "Rotate"
 ru["rotateItem"] = "Повернуть"
 en["cancelBuild"] = "Cancel"
 ru["cancelBuild"] = "Отмена"
+en["cozy-sofa-v1"], ru["cozy-sofa-v1"] = "Cosy sofa", "Уютный диван"
+en["floor-easel-v1"], ru["floor-easel-v1"] = "Artist's easel", "Напольный мольберт"
+en["floor-planter-v1"], ru["floor-planter-v1"] = "Planter box", "Ящик с растениями"
+en["cozy-sofa-v1Description"] = "A soft sofa for your own room. Sit down; jump to get up."
+ru["cozy-sofa-v1Description"] =
+	"Мягкий диван для своей комнаты. Можно сесть; прыжок поднимет персонажа."
+en["floor-easel-v1Description"] =
+	"An easel with a little painting. Decorative furniture for the floor."
+ru["floor-easel-v1Description"] =
+	"Мольберт с небольшой картиной. Декоративный предмет для установки на пол."
+en["floor-planter-v1Description"] = "A wooden box of greenery to make a corner feel alive."
+ru["floor-planter-v1Description"] =
+	"Деревянный ящик с зеленью для уютного уголка."
+en["creativeCorner"], ru["creativeCorner"] =
+	"Rest & create · optional", "Отдых и творчество · по желанию"
 en["floor-plant-v1"] = "Floor plant"
 ru["floor-plant-v1"] = "Напольное растение"
 en["side-table-v1"] = "Side table"

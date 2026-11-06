@@ -113,3 +113,55 @@ assert(not Jobs.offers(Profile.new(3))[5].unlocked, "New unlock crossed players"
 print(
 	"ExtendedContracts: exact gates, six natural jobs/nine walls, one payout, replay, reload, masks and next goals passed"
 )
+
+-- Natural earnings also fund every optional furnishing, without a test balance grant.
+local HomePlan = require("../src/shared/HomePlan")
+local Furniture = require("../src/server/Domain/Furniture")
+local EconomyRules = require("../src/server/Domain/Economy")
+local layout = {
+	{ id = "floor-plant-v1", x = 5, z = 3, r = 0 },
+	{ id = "reading-chair-v1", x = -6, z = 4, r = 0 },
+	{ id = "side-table-v1", x = 9, z = 3, r = 0 },
+	{ id = "floor-lamp-v1", x = 12, z = 3, r = 0 },
+	{ id = "bookcase-v1", x = 7, z = -2, r = 90 },
+	{ id = "cozy-sofa-v1", x = -7, z = 9, r = 0 },
+	{ id = "floor-easel-v1", x = -13, z = 4, r = 0 },
+	{ id = "floor-planter-v1", x = 10, z = 9, r = 0 },
+}
+local furnishings: { HomePlan.Item } = {}
+for i, entry in layout do
+	local itemId = "natural-home-" .. i
+	assert(
+		EconomyRules.purchase(p, "natural-buy-" .. i, entry.id, itemId, 100 + i),
+		"Earned campaign could not buy all furniture"
+	)
+	assert(
+		Furniture.place(
+			p,
+			itemId,
+			{ x = entry.x, z = entry.z, rotationY = entry.r, mode = "Grid" },
+			p.housing.revision
+		),
+		"Eight-item layout did not fit real room rules"
+	)
+	local decoded = Profile.decode(p, 2)
+	assert(decoded, "Natural home did not reload")
+	p = decoded
+	table.insert(furnishings, {
+		id = itemId,
+		catalogId = entry.id,
+		purchaseOperationId = "natural-buy-" .. i,
+		placed = p.housing.placements[itemId],
+	})
+end
+local base = HomePlan.evaluate(furnishings)
+assert(
+	p.wallet.dollars == 500
+		and p.progression.paintingXP == 630
+		and HomePlan.isComplete(base)
+		and HomePlan.displayGoals(base, furnishings)[4].complete,
+	"Natural basic+creative room did not finish at $500 / 630 XP"
+)
+print(
+	"ExtendedContracts: earned $2700 -> eight real purchases/placements/reloads -> $500, basic5 and optional3 complete"
+)

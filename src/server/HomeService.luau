@@ -31,13 +31,21 @@ function Service.start(profiles: ProfileService.API): ()
 	local shop = workspace:WaitForChild("NeighborhoodShop")
 	local counter = shop:WaitForChild("Counter")
 	assert(counter:IsA("BasePart"), "Shop counter missing")
-	for index, id in
-		{ "floor-plant-v1", "side-table-v1", "floor-lamp-v1", "reading-chair-v1", "bookcase-v1" }
-	do
-		local model = Models.create(id)
+	local displays = {
+		{ id = "floor-plant-v1", x = 24, z = -8, yaw = 0 },
+		{ id = "side-table-v1", x = 27, z = -8, yaw = 0 },
+		{ id = "floor-lamp-v1", x = 30, z = -8, yaw = 0 },
+		{ id = "reading-chair-v1", x = 34, z = -8, yaw = 0 },
+		{ id = "bookcase-v1", x = 39, z = -8, yaw = 0 },
+		{ id = "cozy-sofa-v1", x = 25.8, z = 5, yaw = 0 },
+		{ id = "floor-easel-v1", x = 39, z = 0, yaw = math.pi },
+		{ id = "floor-planter-v1", x = 38.5, z = 5, yaw = 0 },
+	}
+	for index, display in displays do
+		local model = Models.create(display.id)
 		if model then
 			model.Name = "Display" .. index
-			model:PivotTo(CFrame.new(({ 24, 27, 30, 34, 39 })[index], 0, -8))
+			model:PivotTo(CFrame.new(display.x, 0, display.z) * CFrame.Angles(0, display.yaw, 0))
 			model.Parent = shop
 		end
 	end

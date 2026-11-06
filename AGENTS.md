@@ -117,7 +117,7 @@
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
 - Profile/ProfileStore подключены к runtime. Jobs/Painting вызывают Economy
   при серверной приёмке; HomeService использует Economy для покупок и Furniture
-  для размещения. Каталог содержит пять тестовых предметов. Контракты/награды в EconomyConfig,
+  для размещения. Каталог содержит восемь тестовых предметов. Контракты/награды в EconomyConfig,
   радиусы/материалы в PaintConfig. Клиент не назначает XP, доступ и радиус.
   План комнаты вычисляется из подтверждённых экземпляров/установки: покупка
   и дубликаты не подменяют отсутствующую мебель, убирание на склад снимает текущий пункт без штрафа.
@@ -131,7 +131,17 @@
   операций сохраняются. Проекция не резервирует деньги. docs/HOME_BUDGET.md.
   HomePlan.isComplete сверяет все установленные требования/уникальные предметы
   и счётчики. Готовый план показывает 5/5 и Jobs; переход не принимает заказ.
-  Store снимает текущую готовность. RoomProgression проверяет $0 → четыре
+  Store снимает текущую готовность. HomePlan.displayGoals добавляет creativeCorner
+  только после базового 5/5: cozy-sofa-v1 ($480), floor-easel-v1 ($360),
+  floor-planter-v1 ($240). Optional3 не меняет базовую готовность/обучение;
+  счёт из подтверждённых items/placements, storage снимает только optional.
+  HomePlanner использует те же goals для cache/render/Earn, pending guards прежние.
+  Фабрика повторно использует ClientDecorModels для двух товаров; sofa — 14 Parts,
+  один Seat, Disabled=true в фабрике, сервер включает только установленный.
+  Восемь витринных моделей, сиденья выключены. docs/CREATIVE_HOME.md.
+  Language.ZIndex=20: кнопка выше phone/RoomPlan (Sibling, panel=10), в том
+  числе 666×316. Covered/Clipped не обходить — исправить слой/прокрутить.
+  RoomProgression проверяет $0 → четыре
   контракта/пять стен → пять предметов/$330/330 XP с memory reload, без выдачи
   баланса. Это не cloud gate. docs/NATURAL_PROGRESSION.md.
   HomeLights включает E/Touch только у подтверждённо установленного торшера;

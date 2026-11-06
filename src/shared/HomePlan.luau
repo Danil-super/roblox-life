@@ -13,8 +13,11 @@ local definitions = {
 	{ id = "readingCorner", products = { "reading-chair-v1", "side-table-v1", "floor-lamp-v1" } },
 	{ id = "homeStorage", products = { "bookcase-v1" } },
 }
+local creative = {
+	{ id = "creativeCorner", products = { "cozy-sofa-v1", "floor-easel-v1", "floor-planter-v1" } },
+}
 local Plan = {}
-function Plan.evaluate(items: { Item }): Progress
+local function evaluate(items: { Item }, goals: { { id: string, products: { string } } }): Progress
 	local selected: { [string]: Item } = {}
 	for _, item in items do
 		local old = selected[item.catalogId]
@@ -27,7 +30,7 @@ function Plan.evaluate(items: { Item }): Progress
 		end
 	end
 	local result: Progress = { placed = 0, total = 0, goals = {} }
-	for _, definition in definitions do
+	for _, definition in goals do
 		local goal: Goal = { id = definition.id, complete = true, requirements = {} }
 		for _, catalogId in definition.products do
 			local item = selected[catalogId]
@@ -45,6 +48,9 @@ function Plan.evaluate(items: { Item }): Progress
 		table.insert(result.goals, goal)
 	end
 	return result
+end
+function Plan.evaluate(items: { Item }): Progress
+	return evaluate(items, definitions)
 end
 function Plan.isComplete(progress: Progress?): boolean
 	if progress == nil or progress.placed ~= progress.total or #progress.goals ~= #definitions then
@@ -75,5 +81,13 @@ function Plan.isComplete(progress: Progress?): boolean
 		end
 	end
 	return actual == expected and actual == progress.total
+end
+-- Optional furnishing is visible only after the original five installed requirements.
+function Plan.displayGoals(progress: Progress, items: { Item }): { Goal }
+	local goals = table.clone(progress.goals)
+	if Plan.isComplete(progress) then
+		table.insert(goals, evaluate(items, creative).goals[1])
+	end
+	return goals
 end
 return table.freeze(Plan)

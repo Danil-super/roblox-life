@@ -1,12 +1,20 @@
 --!strict
+local Decor = require(script.Parent.ClientDecorModels)
 local Models = {}
 function Models.create(id: string): Model?
+	if id == "floor-easel-v1" or id == "floor-planter-v1" then
+		local model = Decor.create(if id == "floor-easel-v1" then "easel" else "planter")
+		assert(model, "Missing creative furniture model")
+		model.Name = id
+		return model
+	end
 	if
 		id ~= "floor-plant-v1"
 		and id ~= "side-table-v1"
 		and id ~= "floor-lamp-v1"
 		and id ~= "reading-chair-v1"
 		and id ~= "bookcase-v1"
+		and id ~= "cozy-sofa-v1"
 	then
 		return nil
 	end
@@ -75,6 +83,29 @@ function Models.create(id: string): Model?
 			true, true, fabric, Enum.Material.Fabric
 		seat.TopSurface, seat.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 		seat.Parent = model
+	elseif id == "cozy-sofa-v1" then
+		local fabric = Color3.fromRGB(70, 115, 115)
+		for _, x in { -2.5, 2.5 } do
+			for _, z in { -1.35, 1.35 } do
+				part("Foot", Vector3.new(0.35, 0.4, 0.35), Vector3.new(x, 0.2, z), wood)
+			end
+		end
+		part("Base", Vector3.new(6, 0.6, 3.8), Vector3.new(0, 0.7, 0), wood)
+		part("Back", Vector3.new(6, 2.4, 0.45), Vector3.new(0, 2.3, -1.675), fabric)
+		for _, x in { -2.775, 2.775 } do
+			part("Arm", Vector3.new(0.45, 1.5, 3.8), Vector3.new(x, 1.8, 0), fabric)
+		end
+		for _, x in { -1.25, 1.25 } do
+			part("Cushion", Vector3.new(2.4, 0.4, 2.9), Vector3.new(x, 1.2, 0.2), fabric)
+		end
+		for _, x in { -1.7, 1.7 } do
+			part("Pillow", Vector3.new(1.1, 0.9, 0.3), Vector3.new(x, 2, -1.25), cream)
+		end
+		local seat = Instance.new("Seat")
+		seat.Name, seat.Size = "Seat", Vector3.new(4.8, 0.1, 2.6)
+		seat.CFrame = CFrame.new(0, 1.4, 0.15) * CFrame.Angles(0, math.pi, 0)
+		seat.Anchored, seat.Disabled, seat.Transparency = true, true, 1
+		seat.CastShadow, seat.Parent = false, model
 	elseif id == "bookcase-v1" then
 		part("Back", Vector3.new(4, 6, 0.15), Vector3.new(0, 3, -0.675), wood)
 		for _, x in { -1.85, 1.85 } do

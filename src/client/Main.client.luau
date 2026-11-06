@@ -80,6 +80,7 @@ title.TextColor3 = muted
 local balance = text(wallet, "Dollars", UDim2.fromOffset(14, 28), UDim2.new(1, -28, 0, 36), 28)
 local languageButton =
 	button(screen, "Language", UDim2.new(1, -86, 0, 12), UDim2.fromOffset(70, 44))
+languageButton.ZIndex = 20
 local homeButton = button(screen, "Home", UDim2.new(1, -104, 1, -68), UDim2.fromOffset(88, 52))
 
 local objective = card("Objective", UDim2.new(0, 16, 1, -172), UDim2.new(1, -136, 0, 156))

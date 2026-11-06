@@ -60,12 +60,12 @@ print("PASS HomePlannerUI: owned targets, earn, pending purchase/store/build and
 planner_source=(ROOT/'src/client/HomePlannerController.luau').read_text()
 a=planner_source.index('\t\t\t\t\tfindWork.Activated:Connect(function()')
 b=planner_source.index('\n\t\t\t\t\tend)',a)+len('\n\t\t\t\t\tend)')
-callback=planner_source[a:b]
+callback=planner_source[planner_source.index('local function goals('):planner_source.index('function Planner.start(')]+planner_source[a:b]
 header='''
 local Budget=require("../src/shared/HomeBudget")
 local Plan=require("../src/shared/HomePlan")
 local goal=Plan.evaluate({}).goals[1]
-local state={available=true,dollars=0,catalog={{id="floor-plant-v1",dollars=180}},plan={goals={goal}}}
+local state={available=true,items={},dollars=0,catalog={{id="floor-plant-v1",dollars=180}},plan={goals={goal}}}
 local stateBlocked=false
 local panel={Visible=true}
 local clicked

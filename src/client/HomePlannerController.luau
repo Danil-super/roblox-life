@@ -12,6 +12,9 @@ export type API = {
 	isVisible: () -> boolean,
 }
 local Planner = {}
+local function goals(s: Types.Snapshot): { Plan.Goal }
+	return if s.plan then Plan.displayGoals(s.plan, s.items) else {}
+end
 function Planner.start(
 	screen: ScreenGui,
 	language: () -> string,
@@ -109,8 +112,8 @@ function Planner.start(
 				nextKey ..= product.id .. product.dollars
 			end
 		end
-		if plan then
-			for _, goal in plan.goals do
+		if plan and s then
+			for _, goal in goals(s) do
 				for _, r in goal.requirements do
 					nextKey ..= r.catalogId .. (r.itemId or "") .. tostring(r.placed)
 				end
@@ -123,7 +126,7 @@ function Planner.start(
 		body:ClearAllChildren()
 		local y = 0
 		if plan and s then
-			for _, goal in plan.goals do
+			for _, goal in goals(s) do
 				local budget = Budget.evaluate(goal, s.catalog, s.dollars, not blocked)
 				local needsWork = budget.ready and budget.action == "Earn"
 				local startY = if needsWork then 160 else 104
@@ -153,7 +156,7 @@ function Planner.start(
 						then
 							return
 						end
-						for _, currentGoal in current.plan.goals do
+						for _, currentGoal in goals(current) do
 							if
 								currentGoal.id == goal.id
 								and Budget.evaluate(

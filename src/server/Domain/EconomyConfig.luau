@@ -93,6 +93,21 @@ local catalog: {
 	[string]: { dollars: number, modelVersion: number, width: number, depth: number, height: number },
 } =
 	{
+		["cozy-sofa-v1"] = { dollars = 480, modelVersion = 1, width = 6, depth = 3.8, height = 3.5 },
+		["floor-easel-v1"] = {
+			dollars = 360,
+			modelVersion = 1,
+			width = 3,
+			depth = 2.6,
+			height = 4.5,
+		},
+		["floor-planter-v1"] = {
+			dollars = 240,
+			modelVersion = 1,
+			width = 3.2,
+			depth = 1.6,
+			height = 2.1,
+		},
 		["floor-plant-v1"] = { dollars = 180, modelVersion = 1, width = 2, depth = 2, height = 4 },
 		["side-table-v1"] = { dollars = 120, modelVersion = 1, width = 3, depth = 2, height = 2.5 },
 		["floor-lamp-v1"] = { dollars = 220, modelVersion = 1, width = 2, depth = 2, height = 6 },
