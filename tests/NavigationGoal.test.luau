@@ -60,3 +60,64 @@ assert(
 print(
 	"NavigationGoal: job phases, shop selection/arrival/unavailable, independent unchanged job passed"
 )
+local homeState: Goal.Home =
+	{ available = true, nearHome = false, homeName = "Home_1", origin = { 64, 0, 128 } }
+local home = required(Goal.home(true, homeState))
+assert(
+	home.kind == "Home" and home.key == "home:Home_1" and home.roomName == "Home_1",
+	"Wrong home identity"
+)
+assert(
+	home.destination[1] == 64 and home.destination[2] == 3 and home.destination[3] == 128,
+	"Home target not inside owned room"
+)
+assert(
+	home.labelKey == "home" and home.areaKey == "home" and home.available and not home.near,
+	"Home labels/confirmation missing"
+)
+home.destination[1] = -999
+assert(homeState.origin[1] == 64, "Renderer changed confirmed origin")
+assert(
+	Goal.home(false, homeState) == nil and Goal.home(true, nil) == nil,
+	"Missing/cancelled home invented target"
+)
+homeState.nearHome = true
+homeState.available = false
+local unavailable = required(Goal.home(true, homeState))
+assert(
+	unavailable.near and not unavailable.available,
+	"Busy home became interactive or invented arrival"
+)
+homeState.available = true
+assert(required(Goal.home(true, homeState)).near, "Confirmed home arrival lost")
+homeState.homeName = ""
+assert(Goal.home(true, homeState) == nil, "Missing owned room invented goal")
+homeState.homeName = "Home_1"
+for _, origin in
+	{
+		{},
+		{ 0, 0 },
+		{ 0, 0, 0, 0 },
+		{ 0 / 0, 0, 0 },
+		{ 0, math.huge, 0 },
+		{ 0, 0, -math.huge },
+		{ 1e6, 0, 0 },
+		{ 0, -1e6, 0 },
+	}
+do
+	homeState.origin = origin
+	assert(Goal.home(true, homeState) == nil, "Invalid room origin reached pathfinding")
+end
+local other = required(
+	Goal.home(
+		true,
+		{ available = true, nearHome = false, homeName = "Home_2", origin = { 192, 0, 128 } }
+	)
+)
+assert(
+	other.key ~= home.key and other.destination[1] == 192 and job.workId == "w1",
+	"Independent home changed job/another goal"
+)
+print(
+	"NavigationGoal: home origin/identity/copy, selection/arrival/unavailable/invalid and independence passed"
+)

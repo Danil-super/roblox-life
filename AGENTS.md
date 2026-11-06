@@ -77,6 +77,12 @@
   из HomeState, право покупки заново проверяет HomeService. Покупка/обустройство
   снимают Shop, Jobs/справка/разговор с жителем возвращают текущую работу; выбор только на сеанс.
   Отдельные ShopRoute/ShopMarker удалены. docs/SHOP_NAVIGATION.md.
+  Home/Shop — одна локальная выбранная цель поверх Job. NavigationGoal.home
+  проверяет HomeState.origin/homeName; nearHome/available подтверждает сервер.
+  Кнопка «Дом пешком» рядом с планом; по прибытии прежний RoomPlan, без
+  автопокупки/установки/телепорта. Map выделяет один существующий знак дома,
+  TravelState обновляет HUD/arrival и снимает подписку при Destroy. Pending
+  IDs/job/work/профиль прежние; docs/HOME_NAVIGATION.md.
   PaintingMastery проецирует подтверждённые XP/offers: ближайший порог,
   постоянная шкала Jobs, открытия по XP квитанции. Несогласованные данные
   не дают рекомендацию. Result Continue сохраняет BUY/PLACE, после DONE

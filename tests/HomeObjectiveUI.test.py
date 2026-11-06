@@ -69,6 +69,12 @@ end
 lastError="TooFar";errorUntil=20;redraw()
 assert(not attrs.HomeObjectiveQuiet and attrs.JobHintError and labels.Hint.Text=="job-error-or-hint","Error stayed compact or lost its text")
 lastError=nil;travel={near=false};redraw();assert(not attrs.HomeObjectiveQuiet and labels.Title.Text==t("goToShop"),"Home cue overrode shop route")
+for _,locale in {"en","ru"}do
+ lang=locale;travel={kind="Home",near=false};redraw()
+ assert(labels.Title.Text==t("goToHome")and labels.Hint.Text==t("homeRouteHint"),"Home walk showed shop/work instructions")
+ travel.near=true;redraw()
+ assert(labels.Title.Text==t("arrivedHome")and labels.Hint.Text==t("homeArrivalHint"),"Home arrival did not explain next action")
+end
 travel=nil;cue=nil;state.phase="Inspect";redraw();assert(labels.Title.Text==t("jobInspect"),"No-home changed work caption")
 print("PASS HomeObjectiveUI: real selector, HUD-only callback, all guards, captions/EN/RU and error/route priority")
 '''
@@ -83,7 +89,7 @@ b = home.index('\n\tsend("sync", nil)', a)
 body = home[a:b]
 probe = r'''
 local now,syncAt=0,0;local os={clock=function()return now end}
-local state={onboarding="DONE"};local routeActive=false
+local state={onboarding="DONE"};local routeTarget=nil
 local shop,inventory={Visible=false},{Visible=false}
 local planner={isVisible=function()return false end}
 local builder={isActive=function()return false end}
@@ -112,7 +118,7 @@ with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT/'.tools') as f:
     subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)
 
 # The actual observer block must refresh both snapshot and attribute ordering, then detach.
-a = s.index('\tlocal homeChanged =')
+a = s.index('\tlocal travelChanged =')
 b = s.index('\n\tsend("sync", nil)', a)
 observers = s[a:b]
 probe = r'''
@@ -133,11 +139,11 @@ local screen={GetAttributeChangedSignal=function(_,name)return signal(name)end,D
 local player={GetAttributeChangedSignal=function(_,name)return signal(name)end}
 local function render()draws+=1 end
 ''' + observers + r'''
-for _,name in {"HomeObjectiveState","OnboardingStep","Building"}do signal(name):Fire()end
-assert(draws==3,"Snapshot/attribute/build changes did not refresh HUD")
+for _,name in {"HomeObjectiveState","TravelState","OnboardingStep","Building"}do signal(name):Fire()end
+assert(draws==4,"Snapshot/attribute/build changes did not refresh HUD")
 signal("Destroy"):Fire()
-for _,name in {"HomeObjectiveState","OnboardingStep","Building"}do signal(name):Fire()end
-assert(draws==3,"Destroyed HUD retained new home observers")
+for _,name in {"HomeObjectiveState","TravelState","OnboardingStep","Building"}do signal(name):Fire()end
+assert(draws==4,"Destroyed HUD retained new home observers")
 print("PASS HomeObjectiveUI: actual observers cover event ordering and disconnect on HUD destruction")
 '''
 with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT/'.tools') as f:

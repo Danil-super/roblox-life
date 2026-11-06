@@ -13,7 +13,7 @@ a = job.index('\tlocal function activate(): ()')
 b = job.index('\n\tinteraction = ', a)
 objective = job[a:b]
 header = r'''
-local routeActive=false
+local routeTarget=nil
 local status="Ready"
 local player={GetAttribute=function(_,key)if key=="ProfileStatus"then return status end return "DONE"end}
 local state={available=true,phase="Inspect",jobId="same-job",workId="same-work"}
@@ -25,12 +25,12 @@ local function render()rendered+=1 end
 local routeButton={Activated={Connect=function(_,fn)clicked=fn end}}
 '''
 shop_checks = r'''
-clicked();assert(routeActive and not homePanel.Visible and hidden==1,"Route did not activate")
-clicked();assert(not routeActive and rendered==2 and hidden==1,"Stop closed catalog or retained route")
-state.available=false;clicked();assert(not routeActive,"Busy profile selected route")
+clicked();assert(routeTarget=="Shop" and not homePanel.Visible and hidden==1,"Route did not activate")
+clicked();assert(routeTarget==nil and rendered==2 and hidden==1,"Stop closed catalog or retained route")
+state.available=false;clicked();assert(routeTarget==nil,"Busy profile selected route")
 state.available=true;status="Loading";clicked();status="Error";clicked()
-assert(not routeActive,"Unavailable profile selected route")
-status="Ready";state=nil;clicked();assert(not routeActive,"No snapshot selected route")
+assert(routeTarget==nil,"Unavailable profile selected route")
+status="Ready";state=nil;clicked();assert(routeTarget==nil,"No snapshot selected route")
 '''
 objective_header = r'''
 local function acceptancePending()return false end
@@ -46,15 +46,20 @@ local function currentWall()return nil end
 local painter={enter=function()error("Unexpected paint entry")end}
 '''
 objective_checks = r'''
-travel={available=true,near=false};activate()
+travel={kind="Shop",available=true,near=false};activate()
 assert(shown==1 and opened==nil and #sent==0,"Far shop action did not select map exclusively")
 travel.near=true;activate()
 assert(opened=="Shop" and #sent==0,"Arrival invented buy/job command")
 opened=nil;travel.available=false;activate()
 assert(opened==nil and shown==1,"Busy arrival interacted")
 travel.available=true;status="Error";activate();assert(opened==nil,"Lost profile opened shop")
+status="Ready";travel={kind="Home",available=true,near=false};activate()
+assert(shown==2 and opened==nil and #sent==0,"Home walk did not open map exclusively")
+travel.near=true;activate();assert(opened=="Room"and #sent==0,"Home arrival teleported, placed or opened shop")
+opened=nil;travel.available=false;activate();assert(opened==nil,"Busy home opened plan")
+travel.available=true;status="Error";activate();assert(opened==nil,"Lost profile opened home plan")
 status="Ready";travel=nil;activate()
-assert(shown==2 and #sent==0,"Cancelling travel did not return to same job")
+assert(shown==3 and #sent==0,"Cancelling travel did not return to same job")
 assert(state.jobId=="same-job" and state.workId=="same-work","Travel changed job identity")
 nearWall=true;activate();assert(sent[1]=="talk","Job arrival stopped dispatching real action")
 '''
@@ -109,7 +114,7 @@ local function enterClient()
 ''' + open_client + r'''
 end
 enterClient()
-assert(not routeActive,"NPC interaction left Shop overriding the next work action")
+assert(routeTarget==nil,"NPC interaction left Shop overriding the next work action")
 assert(jobId=="same-work" and not jobs.Visible and not results.Visible and not homePanel.Visible,"NPC entry changed work identity or left competing menus")
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools') as script:

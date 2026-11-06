@@ -124,7 +124,8 @@ local mapButton = button(apps, "Map", UDim2.new(0.5, 4, 0, 0), UDim2.new(0.5, -2
 local shopButton = button(apps, "Shop", UDim2.fromOffset(20, 52), UDim2.new(0.5, -24, 0, 44))
 local furnitureButton =
 	button(apps, "Furniture", UDim2.new(0.5, 4, 0, 52), UDim2.new(0.5, -24, 0, 44))
-local roomButton = button(apps, "RoomPlan", UDim2.fromOffset(20, 104), UDim2.new(1, -40, 0, 44))
+local roomButton = button(apps, "RoomPlan", UDim2.fromOffset(20, 104), UDim2.new(0.5, -24, 0, 44))
+button(apps, "WalkHome", UDim2.new(0.5, 4, 0, 104), UDim2.new(0.5, -24, 0, 44))
 local guideButton = button(apps, "Guide", UDim2.fromOffset(20, 156), UDim2.new(1, -40, 0, 44))
 local hintsButton = button(apps, "Hints", UDim2.fromOffset(20, 208), UDim2.new(1, -40, 0, 44))
 local effectsButton =

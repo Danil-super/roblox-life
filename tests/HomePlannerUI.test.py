@@ -23,7 +23,7 @@ local purchase,storing=nil,nil
 local building=false
 local builder={isActive=function()return building end}
 local homePanel={Visible=true}
-local routeActive=true
+local routeTarget="Shop"
 local hidden,opened=0,0
 local function hidePanels()hidden+=1 end
 local function openJobs()opened+=1 end
@@ -49,7 +49,7 @@ for _,blocked in {"purchase","store","build","profile"}do
  assert(opened==0 and hidden==0 and renders==before,"Pending/lost context was interrupted")
 end
 purchase=nil;storing=nil;building=false;status="Ready"
-earn();assert(opened==1 and hidden==1 and not homePanel.Visible and not routeActive,"Earn did not open jobs exclusively")
+earn();assert(opened==1 and hidden==1 and not homePanel.Visible and routeTarget==nil,"Earn did not open jobs exclusively")
 state.available=false;earn();assert(opened==1,"Unavailable snapshot opened work")
 '''
 with tempfile.NamedTemporaryFile("w",suffix=".luau",dir=ROOT/".tools")as script:

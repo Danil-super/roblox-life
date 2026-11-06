@@ -35,7 +35,7 @@ function Controller.start(
 	local purchase: PurchaseFlow.Pending? = nil
 	local storing: StoreFlow.Pending? = nil
 	local purchasedItem: string? = nil
-	local routeActive = false
+	local routeTarget: ("Home" | "Shop")? = nil
 	local syncAt = 0
 	local listKey = ""
 	local focus: { tab: string, id: string }? = nil
@@ -148,6 +148,9 @@ function Controller.start(
 	end
 	local returnButton = button(inventory, "ReturnHome")
 	local routeButton = button(shop, "Route")
+	local apps = homePanel:FindFirstChild("Apps")
+	local homeRouteButton = if apps then apps:FindFirstChild("WalkHome") else nil
+	assert(homeRouteButton and homeRouteButton:IsA("TextButton"), "Home route button missing")
 	for _, back in { shopBack, inventoryBack } do
 		back.Size = UDim2.new(0.5, -24, 0, 48)
 	end
@@ -170,7 +173,7 @@ function Controller.start(
 	end
 	local function show(tab: string): ()
 		if tab ~= "Shop" then
-			routeActive = false
+			routeTarget = nil
 		end
 		exclusive()
 		homePanel.Visible = false
@@ -212,7 +215,7 @@ function Controller.start(
 			or player:GetAttribute("ProfileStatus") ~= "Ready"
 	end
 	local function homeObjective(): Objective.Cue?
-		return Objective.evaluate(state, planBlocked() or routeActive)
+		return Objective.evaluate(state, planBlocked() or routeTarget ~= nil)
 	end
 	local function thumbnail(parent: Instance, catalogId: string): ()
 		local viewport = Instance.new("ViewportFrame")
@@ -313,6 +316,15 @@ function Controller.start(
 
 	local function render(): ()
 		local s = state
+		local selected = routeTarget
+		screen:SetAttribute(
+			"TravelState",
+			if selected
+				then selected .. ":" .. tostring(s ~= nil and s.available) .. ":" .. tostring(
+					s ~= nil and (if selected == "Home" then s.nearHome else s.nearShop)
+				)
+				else ""
+		)
 		local cue = homeObjective()
 		screen:SetAttribute("HomeObjectiveState", if cue then cue.key else "")
 		planner.render(s, planBlocked())
@@ -339,11 +351,23 @@ function Controller.start(
 		shopBack.Text = t(if purchasedItem then "openInventory" else "backHome")
 		inventoryBack.Text = t("backHome")
 		returnButton.Text = t("returnHome")
-		routeButton.Text = t(if routeActive then "stopShopRoute" else "showShopRoute")
-		local routeReady = routeActive
+		routeButton.Text = t(if routeTarget == "Shop" then "stopShopRoute" else "showShopRoute")
+		local routeReady = routeTarget == "Shop"
 			or (s ~= nil and s.available and player:GetAttribute("ProfileStatus") == "Ready")
 		routeButton.Active, routeButton.AutoButtonColor = routeReady, routeReady
 		routeButton.BackgroundTransparency = if routeReady then 0 else 0.5
+		homeRouteButton.Text = t(
+			if routeTarget == "Home"
+				then "stopHomeRoute"
+				elseif s and s.nearHome then "alreadyHome"
+				else "walkHome"
+		)
+		local homeRouteReady = s ~= nil
+			and s.available
+			and not planBlocked()
+			and (routeTarget == "Home" or not s.nearHome)
+		homeRouteButton.Active, homeRouteButton.AutoButtonColor = homeRouteReady, homeRouteReady
+		homeRouteButton.BackgroundTransparency = if homeRouteReady then 0 else 0.5
 		local errorText = if lastError and os.clock() < errorUntil
 			then t("homeError" .. lastError)
 			else nil
@@ -566,7 +590,7 @@ function Controller.start(
 		if current == nil or not current.available or planBlocked() then
 			return
 		end
-		routeActive = false
+		routeTarget = nil
 		hidePanels()
 		homePanel.Visible = false
 		openJobs()
@@ -590,12 +614,26 @@ function Controller.start(
 			send("sync", nil)
 		end)
 	end)
+	homeRouteButton.Activated:Connect(function()
+		local current = state
+		if not homePanel.Visible or current == nil or not current.available or planBlocked() then
+			return
+		end
+		if routeTarget == "Home" then
+			routeTarget = nil
+		elseif not current.nearHome then
+			routeTarget = "Home"
+			hidePanels()
+			homePanel.Visible = false
+		end
+		render()
+	end)
 	routeButton.Activated:Connect(function()
-		if routeActive then
-			routeActive = false
+		if routeTarget == "Shop" then
+			routeTarget = nil
 			render()
 		elseif state and state.available and player:GetAttribute("ProfileStatus") == "Ready" then
-			routeActive = true
+			routeTarget = "Shop"
 			hidePanels()
 			homePanel.Visible = false
 			render()
@@ -620,7 +658,7 @@ function Controller.start(
 		if outcome == "Confirmed" then
 			purchasedItem = itemId
 			lastError, errorUntil = "Bought", os.clock() + 4
-			routeActive = false
+			routeTarget = nil
 		end
 		if s.openShop then
 			show("Shop")
@@ -641,7 +679,7 @@ function Controller.start(
 				or inventory.Visible
 				or planner.isVisible()
 				or inBuild
-				or routeActive
+				or routeTarget ~= nil
 				or (state ~= nil and state.onboarding == "DONE")
 			) and os.clock() - syncAt > 1
 		then
@@ -657,7 +695,10 @@ function Controller.start(
 	return {
 		objective = homeObjective,
 		travel = function(): Goals.Goal?
-			if not routeActive then
+			if routeTarget == "Home" then
+				return Goals.home(true, state)
+			end
+			if routeTarget ~= "Shop" then
 				return nil
 			end
 			local shopModel = workspace:FindFirstChild("NeighborhoodShop")
@@ -666,10 +707,11 @@ function Controller.start(
 				return nil
 			end
 			local position = counter.Position + Vector3.new(0, 1.5, 6)
-			return Goals.shop(routeActive, state, { position.X, position.Y, position.Z })
+			return Goals.shop(true, state, { position.X, position.Y, position.Z })
 		end,
 		stopRoute = function(): ()
-			routeActive = false
+			routeTarget = nil
+			render()
 		end,
 		render = render,
 		show = function(tab: string): ()

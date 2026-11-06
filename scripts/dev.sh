@@ -60,6 +60,7 @@ case "${1:-check}" in
     python3 tests/PaintEffectsUI.test.py
     python3 tests/WalkingRoute.test.py
     python3 tests/TravelUI.test.py
+    python3 tests/HomeRouteUI.test.py
     python3 tests/WalletDisplay.test.py
     python3 tests/ModalControls.test.py
     python3 tests/JobResultUI.test.py

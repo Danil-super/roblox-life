@@ -83,6 +83,8 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 	for _, icon in { playerIcon, homeIcon, clientIcon } do
 		icon.Size, icon.Parent = UDim2.fromOffset(10, 10), body
 	end
+	local homeLegendOutline = homeIcon:FindFirstChildOfClass("UIStroke")
+	assert(homeLegendOutline, "Home legend outline missing")
 	local hint = label(body, "Hint", 12)
 	local function button(name: string, x: number): TextButton
 		local b = Instance.new("TextButton")
@@ -103,7 +105,10 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 		end
 		local remaining: number? = nil
 		local d = if s then s.destination else nil
-		target.Visible = d ~= nil and base ~= nil
+		local homeTarget = s ~= nil and s.kind == "Home"
+		target.Visible = d ~= nil and base ~= nil and not homeTarget
+		outline.Color = if homeTarget then playerDot.BackgroundColor3 else house.BackgroundColor3
+		homeLegendOutline.Color = outline.Color
 		house.Visible, playerDot.Visible = base ~= nil, base ~= nil and root ~= nil
 		if base then
 			local bounds =
@@ -163,15 +168,15 @@ function Controller.start(screen: ScreenGui, phone: Frame, language: () -> strin
 		heading.Text, back.Text, follow.Text = t("map"), t("backHome"), t("followRoute")
 		youLabel.Text, homeLabel.Text, clientLabel.Text =
 			t("mapYou"),
-			t("home"),
+			t(if homeTarget then "mapHomeGoal" else "home"),
 			t(
 				if s and s.kind == "Shop"
 					then "mapShop"
 					elseif s then s.areaKey
 					else "clientApartment"
 			)
-		clientLabel.Visible = d ~= nil
-		clientIcon.Visible = d ~= nil
+		clientLabel.Visible = d ~= nil and not homeTarget
+		clientIcon.Visible = d ~= nil and not homeTarget
 		local current = root
 		hint.Text = if Players.LocalPlayer:GetAttribute("ProfileStatus") ~= "Ready"
 				or (s ~= nil and not s.available)

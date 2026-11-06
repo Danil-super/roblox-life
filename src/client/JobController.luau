@@ -307,7 +307,7 @@ function Controller.start(
 		if travel then
 			if travel.available and player:GetAttribute("ProfileStatus") == "Ready" then
 				if travel.near then
-					homeAction("Shop")
+					homeAction(if travel.kind == "Home" then "Room" else "Shop")
 				else
 					jobs.Visible = false
 					map.show()
@@ -542,7 +542,10 @@ function Controller.start(
 		navigation.render(
 			t(
 				if travel
-					then (if travel.near then "openShop" else "openMap")
+					then (if not travel.near
+						then "openMap"
+						elseif travel.kind == "Home" then "roomPlan"
+						else "openShop")
 					elseif homeCue then "roomPlan"
 					elseif s and s.destination and not nearWall then "openMap"
 					else nextKey
@@ -645,7 +648,9 @@ function Controller.start(
 						))
 					else t(
 						if travel
-							then (if travel.near then "arrivedShop" else "goToShop")
+							then (if travel.kind == "Home"
+								then (if travel.near then "arrivedHome" else "goToHome")
+								else (if travel.near then "arrivedShop" else "goToShop"))
 							elseif s and s.destination and not nearWall then "goToClient"
 							else phaseKeys[phase] or "jobOffer"
 					)
@@ -654,7 +659,9 @@ function Controller.start(
 				detail.Text = if homeCue
 					then t("homeHudHint")
 					elseif travel then t(
-						if travel.near then "shopArrivalHint" else "shopRouteHint"
+						if travel.kind == "Home"
+							then (if travel.near then "homeArrivalHint" else "homeRouteHint")
+							else (if travel.near then "shopArrivalHint" else "shopRouteHint")
 					)
 					else stepHint(phase)
 			end
@@ -824,9 +831,15 @@ function Controller.start(
 			end
 		end
 		if travel then
+			local homes = workspace:FindFirstChild("Homes")
+			local room = if homes and travel.roomName
+				then homes:FindFirstChild(travel.roomName)
+				else nil
 			local shop = workspace:FindFirstChild("NeighborhoodShop")
-			local counter = if shop then shop:FindFirstChild("Counter") else nil
-			target = if counter and counter:IsA("BasePart") then counter else nil
+			local destination = if travel.kind == "Home"
+				then (if room then room:FindFirstChild("HomeSpawn") else nil)
+				else (if shop then shop:FindFirstChild("Counter") else nil)
+			target = if destination and destination:IsA("BasePart") then destination else nil
 		else
 			goal = Goals.job(s, nearWall)
 		end
@@ -863,10 +876,12 @@ function Controller.start(
 			render()
 		end
 	end)
+	local travelChanged = screen:GetAttributeChangedSignal("TravelState"):Connect(render)
 	local homeChanged = screen:GetAttributeChangedSignal("HomeObjectiveState"):Connect(render)
 	local onboardingChanged = player:GetAttributeChangedSignal("OnboardingStep"):Connect(render)
 	local buildChanged = screen:GetAttributeChangedSignal("Building"):Connect(render)
 	screen.Destroying:Once(function()
+		travelChanged:Disconnect()
 		homeChanged:Disconnect()
 		onboardingChanged:Disconnect()
 		buildChanged:Disconnect()

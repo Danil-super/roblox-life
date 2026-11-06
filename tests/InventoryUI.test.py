@@ -53,7 +53,8 @@ local player={GetAttribute=function()return status end}
 local builder={render=function()end,isActive=function()return false end}
 local planner={render=function()end}
 local purchase,storing,purchasedItem,focus=nil,nil,nil,nil
-local routeActive=false
+local routeTarget=nil
+local homeRouteButton=node("walkHome")
 local lastError,errorUntil=nil,0
 local listKey=""
 local inventoryFilter="All"
