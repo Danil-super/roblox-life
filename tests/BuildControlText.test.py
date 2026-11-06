@@ -30,6 +30,7 @@ local active,valid,pinned,waiting=true,true,false,false
 local confirmedAt,reason,pending=0,"Valid",nil
 local snapshot={available=true}
 local ghost,guides=nil,nil
+local mouseHeld,touch=false,nil
 '''
 checks = r'''
 local count=0
@@ -43,15 +44,22 @@ end
 assert(count==5,"Missing direction control")
 for _,locale in {"en","ru"}do
  lang=locale
- for _,touch in {false,true}do
-  UIS.TouchEnabled=touch;waiting=false;pending=nil;valid=true;pinned=false;now=0
+ for _,deviceTouch in {false,true}do
+  UIS.TouchEnabled=deviceTouch;waiting=false;pending=nil;valid=true;pinned=false;now=0
   render()
   assert(title.Text==string.format(t("buildAngle"),t(item.catalogId),105),"Current item/angle missing")
-  assert(status.Text==t(if touch then "touchFloor"else "clickFloor"),"Wrong input instruction")
+  assert(status.Text==t(if deviceTouch then "touchFloor"else "clickFloor"),"Wrong input instruction")
   assert(buttons.Rotate.Text:find("+15°",1,true)and buttons.RotateLeft.Text:find("-15°",1,true),"Free rotation step missing")
   assert(not buttons.Confirm.Active,"Unpinned preview enabled save")
+  for _,gesture in {"mouse","touch"}do
+   mouseHeld=gesture=="mouse";touch=if gesture=="touch"then {}else nil
+   render();assert(status.Text==t("releaseFurniture")and not buttons.Confirm.Active,"Dragging enabled save or hid release instruction")
+   valid=false;reason="Blocked";render();assert(status.Text==t("homeErrorBlocked"),"Drag hint concealed server refusal")
+   valid=true;reason="Valid"
+  end
+  mouseHeld=false;touch=nil
   pinned=true;render();assert(buttons.Confirm.Active,"Confirmed pose did not enable save")
-  if touch then
+  if deviceTouch then
    assert(buttons.Mode.Text==t("buildFreeCompact") and buttons.Confirm.Text==t("buildConfirmCompact"),"Compact controls kept long labels")
    assert(not buttons.Rotate.Text:find("R",1,true),"Touch requested keyboard")
   else
@@ -63,9 +71,9 @@ for _,locale in {"en","ru"}do
   waiting=true;render()
   assert(not buttons.Confirm.Active,"Waiting enabled immediate retry")
   assert(not buttons.RotateLeft.Active and not buttons.Rotate.Active and not buttons.Mode.Active and not buttons.Cancel.Active,"Pending controls remained active")
-  assert(buttons.Confirm.Text==(if touch then t("buildWaitCompact")else t("saving").." [Enter]"),"Wrong pending caption")
+  assert(buttons.Confirm.Text==(if deviceTouch then t("buildWaitCompact")else t("saving").." [Enter]"),"Wrong pending caption")
   now=8;render()
-  assert(buttons.Confirm.Active and buttons.Confirm.Text==(if touch then t("buildRetryCompact")else t("retryPlacement").." [Enter]"),"Retry label/guard missing")
+  assert(buttons.Confirm.Active and buttons.Confirm.Text==(if deviceTouch then t("buildRetryCompact")else t("retryPlacement").." [Enter]"),"Retry label/guard missing")
  end
 end
 active=false;render();assert(not buttons.Confirm.Active and not buttons.RotateLeft.Active,"Closed controls remained active")

@@ -16,9 +16,10 @@ update = "local " + source[start:source.index("\n\t\tend,", start) + len("\n\t\t
 start = housing.index("\tlocal builder = Build.start(")
 exit_callback = housing[start:housing.index("\n\tlocal function thumbnail", start)]
 start = source.index("\t\tdeathConnection = humanoid.Died:Once")
-death_hook = source[start:source.index("\n\t\tpinned = false", start)]
+death_hook = source[start:source.index("\n\t\tmouseHeld = false", start)]
 header = r'''
 local active, waiting, valid, touch = true, true, true, {}
+local mouseHeld=true
 local pending = {requestId="place-old"}
 local bar = {Visible=true}
 local attributes = {}
@@ -97,6 +98,8 @@ start = source.index("\tscreen.Destroying:Once(function()")
 hook = source[start:source.index("\n\treturn {", start)]
 destroy_setup = '''
 local disposed=false
+local focusDisconnected=0
+local focusConnection={Disconnect=function()focusDisconnected+=1 end}
 local destroyHud
 screen.Destroying={Once=function(_,fn)destroyHud=fn end}
 local cameraUnbound=0
@@ -109,6 +112,7 @@ destroyHud()
 assert(disposed and not active and not inventory.Visible and not bar.Visible,"Destroyed HUD retained editor")
 assert(guideDestroyed==1 and guides==nil and destroyed==1 and cameraUnbound==1,"Destroyed HUD retained guides or camera binding")
 assert(camera.CameraType=="Custom" and pending==nil,"Destroyed HUD retained camera or placement")
+assert(focusDisconnected==1 and not mouseHeld,"Destroyed HUD retained focus observer or drag")
 '''
 with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
     script.write(header + exit_callback + stop + destroy_setup + hook + destroy_checks)

@@ -41,6 +41,7 @@ function Controller.start(
 	local reason = "Checking"
 	local pointer = Vector2.zero
 	local touch: InputObject? = nil
+	local mouseHeld = false
 	local deathConnection: RBXScriptConnection? = nil
 	local oldType = Enum.CameraType.Custom
 	local oldSubject: Instance? = nil
@@ -106,8 +107,9 @@ function Controller.start(
 		status.Text = t(
 			if waiting
 				then (if retry then "placementDelayed" else "homeErrorSaving")
-				elseif valid and not pinned then (if compact
-					then "touchFloor"
+				elseif valid and not pinned then (if mouseHeld or touch ~= nil
+					then "releaseFurniture"
+					elseif compact then "touchFloor"
 					else "clickFloor")
 				else "homeError" .. reason
 		)
@@ -186,6 +188,7 @@ function Controller.start(
 		pending = nil
 		valid = false
 		touch = nil
+		mouseHeld = false
 		bar.Visible = false
 		CAS:UnbindAction("FurnitureMovement")
 		local camera = workspace.CurrentCamera
@@ -343,7 +346,8 @@ function Controller.start(
 		deathConnection = humanoid.Died:Once(function()
 			stop(false)
 		end)
-		pinned = false
+		mouseHeld = false
+		pinned = owned.placed ~= nil
 		screen:SetAttribute("Building", true)
 		mode = if owned.placed then "Free" else "Grid"
 		waiting = false
@@ -439,6 +443,17 @@ function Controller.start(
 		if s == nil or base == nil or camera == nil then
 			return false
 		end
+		local inset = GuiService:GetGuiInset()
+		if
+			pos.X ~= pos.X
+			or pos.Y ~= pos.Y
+			or pos.X < 0
+			or pos.X >= camera.ViewportSize.X
+			or pos.Y < inset.Y
+			or pos.Y >= bar.AbsolutePosition.Y + inset.Y
+		then
+			return false
+		end
 		local ray = camera:ViewportPointToRay(pos.X, pos.Y)
 		local filter = RaycastParams.new()
 		filter.IncludeInstances = { base }
@@ -467,13 +482,23 @@ function Controller.start(
 		if processed or UIS:GetFocusedTextBox() ~= nil then
 			return
 		end
-		if not waiting and input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if
+			not waiting
+			and touch == nil
+			and input.UserInputType == Enum.UserInputType.MouseButton1
+		then
 			if aim(UIS:GetMouseLocation()) then
-				pinned = true
+				mouseHeld = true
+				pinned = false
 				render()
 			end
 		end
-		if not waiting and input.UserInputType == Enum.UserInputType.Touch and touch == nil then
+		if
+			not waiting
+			and not mouseHeld
+			and input.UserInputType == Enum.UserInputType.Touch
+			and touch == nil
+		then
 			pinned = false
 			touch = input
 			pointer = Vector2.new(input.Position.X, input.Position.Y)
@@ -494,11 +519,29 @@ function Controller.start(
 		end
 	end)
 	UIS.InputEnded:Connect(function(input: InputObject)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and mouseHeld then
+			mouseHeld = false
+			if active and not waiting then
+				pinned = UIS:GetFocusedTextBox() == nil and aim(UIS:GetMouseLocation())
+				render()
+			end
+		end
 		if input == touch then
 			touch = nil
 			if active and not waiting then
 				local inset = GuiService:GetGuiInset()
-				pinned = aim(Vector2.new(input.Position.X, input.Position.Y) + inset)
+				pinned = UIS:GetFocusedTextBox() == nil
+					and aim(Vector2.new(input.Position.X, input.Position.Y) + inset)
+				render()
+			end
+		end
+	end)
+	local focusConnection = UIS.WindowFocusReleased:Connect(function()
+		if mouseHeld or touch ~= nil then
+			mouseHeld = false
+			touch = nil
+			if active and not waiting then
+				pinned = false
 				render()
 			end
 		end
@@ -600,6 +643,7 @@ function Controller.start(
 		disposed = true
 		stop(false)
 		RunService:UnbindFromRenderStep("FurnitureView")
+		focusConnection:Disconnect()
 	end)
 	return {
 		enter = enter,

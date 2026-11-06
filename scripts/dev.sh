@@ -44,6 +44,7 @@ case "${1:-check}" in
     python3 tests/BuildLifecycle.test.py
     python3 tests/BuildGuidesUI.test.py
     python3 tests/PlacementUI.test.py
+    python3 tests/BuildDrag.test.py
     python3 tests/BuildControls.test.py
     python3 tests/BuildControlText.test.py
     python3 tests/StoreUI.test.py

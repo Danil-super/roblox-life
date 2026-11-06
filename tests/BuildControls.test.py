@@ -35,7 +35,7 @@ local inputBegan
 local focused=nil
 local UIS={InputBegan={Connect=function(_,fn)inputBegan=fn end},GetMouseLocation=function()return{}end,GetFocusedTextBox=function()return focused end}
 local Enum={KeyCode={Escape="Escape",Q="Q",R="R",G="G",Return="Return"},UserInputType={MouseButton1="MouseButton1",Touch="Touch"}}
-local touch,pointer=nil,nil
+local touch,pointer,mouseHeld=nil,nil,false
 local Vector2={new=function(x,y)return{X=x,Y=y}end}
 local function aim()return false end
 local function key(k,processed)inputBegan({KeyCode=k,UserInputType="Keyboard"},processed==true)end

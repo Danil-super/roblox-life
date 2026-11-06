@@ -43,6 +43,11 @@ Grid/Free/поворот, исключение из физики/raycast и clea
 В Studio отдельно проверить отказ в обозначенном проходе, установку, Touch,
 отмену и смерть: [HOME_GUIDES.md](../docs/HOME_GUIDES.md).
 
+`BuildDrag` исполняет настоящий ввод/кадровую выборку/aim guard/enter:
+мышь и Touch, отпускание/UI/потеря фокуса, pending intent и исходная поза.
+Остальные lifecycle/recovery/caption-тесты сохранены. Реальное непрерывное
+движение и сохранение проверяются отдельно: [HOME_DRAG.md](../docs/HOME_DRAG.md).
+
 `BuildControls` исполняет команды, callbacks и клавиатурный обработчик редактора:
 Q/R/G/Enter, оба направления/границы угла, processed/focus, подтверждение и
 неизменный Retry. `BuildControlText` проверяет реальное построение пяти кнопок,

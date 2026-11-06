@@ -45,9 +45,14 @@ local reason = "Saving"
 local stopCalls, renderCalls = 0, 0
 local function stop(): () stopCalls += 1 end
 local function render(): () renderCalls += 1 end
-local pinned, touch = false, nil
+local pinned, touch, mouseHeld = false, nil, false
 local ended
-local UIS = { InputEnded = { Connect = function(_, callback) ended = callback end } }
+local UIS = {
+ InputEnded = { Connect = function(_, callback) ended = callback end },
+ WindowFocusReleased = { Connect = function()return {Disconnect=function()end}end },
+ GetFocusedTextBox = function()return nil end,
+}
+local Enum={UserInputType={MouseButton1="MouseButton1"}}
 -- Coordinate-only stand-ins: the callback still decides when and how to aim/pin.
 local Vector2 = {}
 local vectorMetatable = {

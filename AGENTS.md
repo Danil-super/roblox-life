@@ -114,6 +114,14 @@
   предмет/угол. Пять кнопок с короткими Touch-подписями, цели ≥44 px при 320.
   Processed/focus блокируют новые клавиши, pending сохраняет прежний intent
   и Retry. Сервер/схема/правила размещения прежние; docs/HOME_CONTROLS.md.
+  Build drag: mouseHeld и один Touch InputObject не перехватывают друг друга.
+  Down снимает pinned, существующий FurnitureView ведёт ghost, up заново aim
+  по последней точке и фиксирует только preview. Панель/top inset/offscreen/
+  промах не фиксируют; WindowFocusReleased очищает жест без позднего up.
+  При enter установленный предмет pinned в исходной позе, склад — нет.
+  Pending intent/Retry прежние, фокус не меняет отправленную позу. Stop/
+  Destroy очищают mouseHeld, новая focus-подписка снимается. EN/RU release-
+  подсказка уступает ошибкам. Сервер/схема прежние; docs/HOME_DRAG.md.
   Inventory: All/Stored/Placed — проекция подтверждённых экземпляров HomeState,
   дубликаты товара учитываются отдельно. Pending store/focus предмета раскрывают
   All; purchase/store/Build/не-Ready блокируют смену вкладки. Обычный sync
