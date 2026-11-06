@@ -15,6 +15,7 @@ removal = source[start:source.index("\n\tlocal beganConnection = UIS.InputBegan"
 header = r'''
 local active,held,touch = true,true,{}
 local disposed=false
+local missing,manualGaps=true,true
 local queue,current,inflight,inspectPending = {{points={1}}},{},7,true
 local toolbar={Visible=true}
 local unbound,disconnected,destroyed,inkDestroyed=0,0,0,0
@@ -51,6 +52,7 @@ cases = {
 died()
 assert(not active and not held and touch==nil and #queue==0 and current==nil and inflight==nil)
 assert(not toolbar.Visible and not inspectPending and destroyed==2 and disconnected==1 and inkDestroyed==1 and ink==nil)
+assert(not missing and not manualGaps,"Gap guide leaked into another work session")
 ''',
     "camera_and_visibility_restored": '''
 stop()

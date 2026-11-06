@@ -36,6 +36,12 @@
   dedup маски и cleanup. Предсказание не подтверждает покрытие; контуры 12×8
   появляются при Review/Coverage. FixedSize/clip, повторный вход из mask;
   Destroy HUD освобождает renderer/render binding/ввод. docs/PAINTING.md.
+  PaintToolbar.Gaps — добровольная подсветка из подтверждённой mask, включая
+  оставшиеся участки после порога 80%. Coverage автоматически показывает её
+  ниже порога; явное скрытие имеет приоритет. Sync/эффекты сохраняют выбор,
+  stop/новая стена/смерть его сбрасывают. Никаких stroke/review/денег из toggle;
+  три кнопки ≥44 px в прежнем toolbar. HUD DisplayOrder=10 выше TouchGui=0;
+  зоны родных контролов и строгий studio_ui preflight сохраняются.
   Home переключает LightPaintEffects на текущий сеанс: 96 пикселей/четыре
   следа, без tween; полный режим прежний. GuiService.ReducedMotionEnabled
   только читается и отключает tween также в полном режиме. Замена renderer

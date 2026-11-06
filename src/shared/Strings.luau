@@ -414,6 +414,9 @@ en["paintExcellent"], ru["paintExcellent"] =
 en["paintPerfect"], ru["paintPerfect"] =
 	"Perfect · %d%% · Review to finish",
 	"Идеально · %d%% · Проверь результат"
+en["paintGapsShow"], ru["paintGapsShow"] = "Show gaps · %d", "Пропуски · %d"
+en["paintGapsHide"], ru["paintGapsHide"] = "Hide gaps · %d", "Скрыть · %d"
+en["paintNoGaps"], ru["paintNoGaps"] = "No gaps", "Без пропусков"
 en["resultAfter"] = "After · accepted"
 ru["resultAfter"] = "После · принято"
 en["resultXP"] = "+%d painting XP"

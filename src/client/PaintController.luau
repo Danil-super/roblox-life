@@ -57,6 +57,7 @@ function Controller.start(
 	local lastHit = 0
 	local inspectPending = false
 	local missing = false
+	local manualGaps = false
 	local toolbar = Instance.new("Frame")
 	toolbar.Name = "PaintToolbar"
 	toolbar.AnchorPoint = Vector2.new(0.5, 1)
@@ -99,7 +100,7 @@ function Controller.start(
 		local b = Instance.new("TextButton")
 		b.Name = name
 		b.Position = UDim2.new(x, 8, 1, -60)
-		b.Size = UDim2.new(0.5, -16, 0, 48)
+		b.Size = UDim2.new(1 / 3, -16, 0, 48)
 		b.BackgroundColor3 = Color3.fromRGB(55, 120, 102)
 		b.TextColor3 = Color3.fromRGB(244, 239, 224)
 		b.Font = Enum.Font.GothamMedium
@@ -110,7 +111,8 @@ function Controller.start(
 		return b
 	end
 	local review = button("Review", 0)
-	local leave = button("Leave", 0.5)
+	local gaps = button("Gaps", 1 / 3)
+	local leave = button("Leave", 2 / 3)
 	local function stop(): ()
 		if not active then
 			return
@@ -126,6 +128,7 @@ function Controller.start(
 		current = nil
 		inflight = nil
 		inspectPending = false
+		missing, manualGaps = false, false
 		toolbar.Visible = false
 		CAS:UnbindAction("PaintMovement")
 		local camera = workspace.CurrentCamera
@@ -246,12 +249,23 @@ function Controller.start(
 		fill.Size = UDim2.fromScale(coverage.fill, 1)
 		review.Text = t("inspectResult")
 		leave.Text = t("leaveWork")
+		local remaining = math.max(0, Config.columns * Config.rows - s.count)
+		local showGaps = manualGaps or (missing and not coverage.covered)
+		gaps.Text = if remaining == 0
+			then t("paintNoGaps")
+			else string.format(
+				t(if showGaps then "paintGapsHide" else "paintGapsShow"),
+				remaining
+			)
+		gaps.Active = active and not inspectPending and remaining > 0
+		gaps.AutoButtonColor = gaps.Active
+		gaps.BackgroundTransparency = if gaps.Active then 0 else 0.6
 		if ink then
 			ink.update(s.mask)
 			ink.step(os.clock())
 		end
 		for i, stroke in strokes do
-			stroke.Enabled = missing and not coverage.covered and string.sub(s.mask, i, i) ~= "1"
+			stroke.Enabled = showGaps and string.sub(s.mask, i, i) ~= "1"
 		end
 	end
 	local function refreshInk(): ()
@@ -293,6 +307,7 @@ function Controller.start(
 		previousFrame = camera.CFrame
 		previousFov = camera.FieldOfView
 		missing = false
+		manualGaps = false
 		toolbar.Visible = true
 		for _, container in { target.Parent, player.Character } do
 			if container then
@@ -357,6 +372,23 @@ function Controller.start(
 		roller, sound = visual, visual.sound
 		render()
 	end
+	gaps.Activated:Connect(function()
+		local s = snapshot
+		if
+			not active
+			or disposed
+			or inspectPending
+			or s == nil
+			or s.phase ~= "Painting"
+			or s.count >= Config.columns * Config.rows
+		then
+			return
+		end
+		local coverage = View.progress(s.count, Config.columns * Config.rows, Config.threshold)
+		manualGaps = not (manualGaps or (missing and not coverage.covered))
+		missing = false
+		render()
+	end)
 	review.Activated:Connect(function()
 		held = false
 		current = nil

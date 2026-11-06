@@ -31,6 +31,7 @@ local screen = Instance.new("ScreenGui")
 screen.Name = "NeighborhoodHUD"
 screen.ResetOnSpawn = false
 screen.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+screen.DisplayOrder = 10
 screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screen.Parent = player:WaitForChild("PlayerGui")
 
