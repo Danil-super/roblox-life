@@ -167,6 +167,15 @@ for r=0,7 do local row={};for col=0,11 do
             self.note(f"Real painting input: row {index + 1}/8")
         self.lua('assert(' + PREFIX + '.job.count>=77 and ' + PREFIX + '.mouse,"Server coverage or actual mouse input missing")')
 
+    def select_grid(self) -> None:
+        expression = "game.Players.LocalPlayer.PlayerGui.NeighborhoodHUD.BuildToolbar.Mode.Text"
+        label = self.value(expression)
+        if label.startswith(("Free", "Своб")):
+            self.click("BuildToolbar.Mode")
+            label = self.value(expression)
+        if not label.startswith(("Grid", "Сетка")):
+            raise RuntimeError("Exact QA placement requires the confirmed Grid control")
+
     def place(self, item: str, x: int, z: int) -> None:
         state = self.state()
         if not state["inventory"]:
@@ -175,6 +184,7 @@ for r=0,7 do local row={};for col=0,11 do
             self.click("HomePanel.Apps.Furniture", "InventoryPanel")
         self.lua('local b=game.Players.LocalPlayer.PlayerGui.NeighborhoodHUD.InventoryPanel.Body;b.CanvasPosition=Vector2.zero')
         self.click("InventoryPanel.Body." + item + ".Place", "BuildToolbar")
+        self.select_grid()
         point = self.value('''(function()task.wait(.4);local origin=Vector3.new(table.unpack(''' + PREFIX + '''.home.origin))
 local p=workspace.CurrentCamera:WorldToViewportPoint(origin+Vector3.new(''' + str(x) + ',0,' + str(z) + '''));local inset=game.GuiService:GetGuiInset()
 return{x=p.X-inset.X,y=p.Y-inset.Y}end)()''')

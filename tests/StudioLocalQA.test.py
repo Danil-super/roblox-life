@@ -15,6 +15,20 @@ import studio_local_qa
 
 
 class LocalQA(unittest.TestCase):
+    def test_exact_placement_explicitly_selects_grid_through_ui(self):
+        class FakeQA(studio_local_qa.LocalQA):
+            def __init__(self, labels):self.labels,self.clicked=iter(labels),[]
+            def value(self, expression):return next(self.labels)
+            def click(self, path, expect=None):self.clicked.append(path)
+        for labels in (["Free: 0.1 stud [G]", "Grid: 1 stud [G]"], ["Своб.", "Сетка"]):
+            qa=FakeQA(labels);qa.select_grid()
+            self.assertEqual(qa.clicked,["BuildToolbar.Mode"])
+        for label in ("Grid: 1 stud [G]", "Сетка: 1 [G]"):
+            qa=FakeQA([label]);qa.select_grid();self.assertEqual(qa.clicked,[])
+        for labels in (["Loading"], ["Free", "Free"]):
+            qa=FakeQA(labels)
+            with self.assertRaisesRegex(RuntimeError,"Grid"):qa.select_grid()
+
     def test_only_fresh_preview_is_allowed(self):
         valid = dict(ready=True, preview=True, dollars=0, xp=0, step="INTRO", building=False)
         validate_start(valid)
