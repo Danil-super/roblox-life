@@ -110,7 +110,7 @@ local job={id="job"}
 local contract={colorId="mint",secondaryColorId="rose"}
 local cloth={Transparency=.35,IsA=function()return true end}
 local room={model={FindFirstChild=function()return cloth end}}
-local walls={{Color="mint"},{Color="partial rose"}}
+local walls={{Color="mint",Size={X=16,Y=8}},{Color="partial rose",Size={X=8,Y=8}}}
 local HttpService={GenerateGUID=function()return "respawn"end}
 local os={clock=function()return 100 end}
 local Color3={fromRGB=function()return "grey"end}
@@ -121,6 +121,7 @@ ensure()
 assert(ctx.character==newCharacter and ctx.wall==walls[1],"Respawn retained second active surface")
 assert(ctx.work.workId=="respawn" and ctx.work.phase=="Inspect" and ctx.work.count==0 and #ctx.work.completedMasks==0,"Respawn inherited first wall or partial paint")
 assert(walls[1].Color=="grey" and walls[2].Color=="grey" and cloth.Transparency==1,"Respawn retained misleading accepted wall")
+assert(ctx.work.sizes[1].width==16 and ctx.work.sizes[2].width==8,"Recovery lost actual surface geometry")
 local work=ctx.work;ensure();assert(ctx.work==work,"Sync reset live work")
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:

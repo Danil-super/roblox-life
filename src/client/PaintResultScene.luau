@@ -67,25 +67,36 @@ function Scene.start(parent: GuiObject): API
 	): ()
 		local world = Instance.new("WorldModel")
 		world.Name, world.Parent = "Room", view
+		local layout = receipt.sizes
+		local firstWidth = if layout then layout[1].width * 0.65 else 10
+		local depth = if layout and layout[2]
+			then layout[2].width * 0.65
+			else (if layout then 6 else 8)
 		part(
 			world,
 			"Floor",
-			CFrame.new(0, -0.1, 4),
-			Vector3.new(10.4, 0.2, 8.4),
+			CFrame.new(0, -0.1, depth / 2),
+			Vector3.new(firstWidth + 0.4, 0.2, depth + 0.4),
 			Color3.fromRGB(173, 131, 89)
 		)
 		for index, mask in data.masks do
+			local size = if layout then layout[index] else nil
+			local width = if size then size.width * 0.65 else (if index == 1 then 10 else 8)
+			local height = if size then size.height * 0.65 else 6
 			local cf = if index == 1
-				then CFrame.new(0, 3, 0)
-				else CFrame.new(-5, 3, 4) * CFrame.Angles(0, math.pi / 2, 0)
-			local width = if index == 1 then 10 else 8
+				then CFrame.new(0, height / 2, 0)
+				else CFrame.new(-firstWidth / 2, height / 2, width / 2) * CFrame.Angles(
+					0,
+					math.pi / 2,
+					0
+				)
 			local id = if index == 1 then receipt.primaryColorId else receipt.secondaryColorId
 			local color = Color3.new(table.unpack(Config.palette[id or ""] or Config.color))
 			local wall = part(
 				world,
 				"Wall" .. index,
 				cf,
-				Vector3.new(width, 6, 0.2),
+				Vector3.new(width, height, 0.2),
 				Color3.fromRGB(145, 148, 140)
 			)
 			if before then
@@ -127,12 +138,12 @@ function Scene.start(parent: GuiObject): API
 								cf
 									* CFrame.new(
 										((first + col) / 2 / data.columns - 0.5) * width,
-										(0.5 - (row + 0.5) / data.rows) * 6,
+										(0.5 - (row + 0.5) / data.rows) * height,
 										0.12
 									),
 								Vector3.new(
 									(col - first) * width / data.columns,
-									6 / data.rows,
+									height / data.rows,
 									0.05
 								),
 								color
@@ -164,7 +175,15 @@ function Scene.start(parent: GuiObject): API
 				clear()
 				return
 			end
+			local shapeKey = ""
+			local sizes = receipt.sizes
+			if sizes then
+				for _, size in sizes do
+					shapeKey ..= ":" .. size.width .. "x" .. size.height
+				end
+			end
 			local nextKey = receipt.operationId
+				.. shapeKey
 				.. (receipt.primaryColorId or "")
 				.. (receipt.secondaryColorId or "")
 				.. data.columns

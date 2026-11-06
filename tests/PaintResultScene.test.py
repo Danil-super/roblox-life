@@ -9,6 +9,7 @@ source = (ROOT / "src/client/PaintResultScene.luau").read_text()
 body = source[source.index("function Scene.start("):source.rindex("\nreturn Scene")]
 header = r'''
 local Finish=require("../src/shared/PaintFinish")
+local Geometry=require("../src/shared/PaintGeometry")
 local Config=require("../src/shared/PaintConfig")
 local Scene={}
 local pool={}
@@ -52,6 +53,18 @@ assert(root.Visible and alive("WorldModel")==2 and alive("Camera")==2,"Preview d
 assert(alive("Part")==8,"Full single wall needs no per-cell parts")
 local after=child(child(root,"After"),"Room")
 assert(child(after,"Wall1").Color==Color3.new(table.unpack(Config.color)),"Wrong receipt colour")
+for _,id in {"paint-tutorial-v1","paint-mint-v1","paint-rose-v1","paint-duo-v1","paint-sunroom-v1","paint-atelier-v1"}do
+ local sizes=Geometry.layout(id);receipt.sizes=sizes
+ receipt.finish.masks={string.rep("1",96)}
+ if #sizes==2 then receipt.finish.masks[2]=string.rep("1",96)end
+ api.render(receipt,"old");local room=child(child(root,"After"),"Room")
+ for i,size in sizes do
+  local wall=child(room,"Wall"..i)
+  assert(math.abs(wall.Size.X-size.width*.65)<.001 and math.abs(wall.Size.Y-size.height*.65)<.001,"Result lost surface proportions")
+ end
+ local before=#pool;api.render(receipt,"old");assert(#pool==before,"Shape result churned models")
+end
+receipt.sizes=nil;receipt.finish.masks={string.rep("1",96)};api.render(receipt,"old")
 local count=#pool;for _=1,120 do api.render(receipt,"translated")end
 assert(#pool==count,"Ordinary render allocated geometry")
 receipt.finish.masks[1]="0"..string.rep("1",95);api.render(receipt,"old")

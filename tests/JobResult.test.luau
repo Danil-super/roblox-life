@@ -42,3 +42,40 @@ assert(Result.read(p) == nil, "Mismatched receipt accepted")
 job.receipt = nil
 assert(Result.read(p) == nil, "Missing receipt accepted")
 print("JobResult: 8 confirmed/read-only/isolation/rejection scenarios passed")
+
+local shaped = completed(3, "shaped")
+local active = assert(shaped.jobs.active, "Fixture missing")
+active.finish = { columns = 12, rows = 8, masks = { string.rep("1", 96) } }
+local savedFinish = assert(active.finish, "Missing finish")
+local geometry = { { width = 16, height = 6 } }
+local projected = assert(Result.read(shaped, geometry), "Confirmed geometry result missing")
+local sizes = assert(projected.sizes, "Runtime result lost geometry")
+geometry[1].width = 8
+assert(sizes[1].width == 16, "Result shares runtime geometry")
+sizes[1].height = 64
+assert(
+	geometry[1].height == 6 and savedFinish.masks[1] == string.rep("1", 96),
+	"Renderer mutated work/profile"
+)
+assert(
+	assert(Result.read(shaped), "Missing result").sizes == nil,
+	"Reload invented historical dimensions"
+)
+for _, bad in
+	{
+		{},
+		{ { width = 16, height = 6 }, { width = 8, height = 8 } },
+		{ { width = 0 / 0, height = 6 } },
+		{ { width = 16, height = math.huge } },
+	}
+do
+	assert(
+		assert(Result.read(shaped, bad), "Result missing").sizes == nil,
+		"Invalid dimensions reached renderer"
+	)
+end
+active.status = "Accepted"
+assert(Result.read(shaped, geometry) == nil, "Geometry manufactured a receipt")
+print(
+	"JobResult: runtime-only copied geometry, reload fallback, bounds and confirmed receipt guard passed"
+)

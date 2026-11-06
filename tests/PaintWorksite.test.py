@@ -7,6 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 tree=ast.parse((ROOT/'tests/ClientDecorModels.test.py').read_text())
 header=next(ast.literal_eval(n.value)for n in tree.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='header'for t in n.targets))
 header+=r'''
+local Geometry=require("../src/shared/PaintGeometry")
 local Config=require("../src/shared/PaintConfig")
 function meta:PointToObjectSpace(p)
  local out={};for i=1,3 do out[i]=0;for k=1,3 do out[i]+=self.r[k][i]*(({p.X,p.Y,p.Z})[k]-self.p[k])end end

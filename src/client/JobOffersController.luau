@@ -6,6 +6,7 @@ local Types = require(RS.Shared.JobTypes)
 local Config = require(RS.Shared.PaintConfig)
 local Mastery = require(RS.Shared.PaintingMastery)
 local Theme = require(RS.Shared.Theme)
+local Geometry = require(RS.Shared.PaintGeometry)
 local Flow = require(RS.Shared.JobAcceptFlow)
 export type API = {
 	render: (Types.Snapshot?) -> (),
@@ -44,7 +45,7 @@ function Controller.start(
 		return f
 	end
 	local list, details = scroll("List"), scroll("Details")
-	details.CanvasSize = UDim2.fromOffset(0, 280)
+	details.CanvasSize = UDim2.fromOffset(0, 332)
 	local function label(
 		parent: Instance,
 		name: string,
@@ -72,7 +73,8 @@ function Controller.start(
 	local reward = label(details, "Reward", 44, 28, 16)
 	local requirements = label(details, "Requirements", 78, 62, 14)
 	local brief = label(details, "Brief", 148, 72, 14)
-	local locked = label(details, "Availability", 228, 44, 14)
+	local shape = label(details, "SurfaceSize", 228, 44, 14)
+	local locked = label(details, "Availability", 280, 44, 14)
 	local confirm = Instance.new("TextButton")
 	confirm.Name, confirm.Position, confirm.Size =
 		"AcceptOffer", UDim2.new(0.5, 8, 1, -56), UDim2.new(0.5, -24, 0, 44)
@@ -159,6 +161,16 @@ function Controller.start(
 				.. t(offer.clientKey or "residentNina")
 				.. " · "
 				.. t("contractAddress")
+			local layout = Geometry.layout(offer.id)
+			local sizes: { string } = {}
+			if layout then
+				for _, size in layout do
+					table.insert(sizes, size.width .. "×" .. size.height)
+				end
+			end
+			shape.Text = if layout
+				then string.format(t("paintSurfaceSizes"), table.concat(sizes, " + "))
+				else ""
 			locked.Text = if target
 				then t("acceptPendingStatus")
 				elseif offer.unlocked then t("offerReady")

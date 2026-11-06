@@ -83,6 +83,13 @@ local reduced=Surface.new({}, {}, false, true)
 reduced.update(blank,true);reduced.update(string.rep("1",96))
 assert(created-before==898 and played==animations,"Reduced motion animated or silently reduced field resolution")
 reduced.destroy()
+instances={}
+local shaped=Surface.new({}, {}, true, true,16,6)
+shaped.update(blank,true);shaped.predict(.5,.5,1,1)
+local mark=child("Mark1")
+assert(math.abs(mark.Size.x-1.3/16)<.00001 and math.abs(mark.Size.y-1.3/6)<.00001,"Predicted brush still uses grid dimensions")
+assert(child("Pixel40").BackgroundTransparency==1,"Variant prediction confirmed paint")
+shaped.destroy()
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
  f.write(header+body+'\n'+checks);f.flush()

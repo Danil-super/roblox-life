@@ -15,6 +15,7 @@ export type ConfigData = {
 	colorId: string,
 	secondaryColorId: string?,
 }
+export type Size = { width: number, height: number }
 type Point = { u: number, v: number }
 export type State = {
 	config: ConfigData,
@@ -31,6 +32,7 @@ export type State = {
 	toolId: string,
 	basicRadius: number,
 	completedMasks: { string },
+	sizes: { Size },
 }
 export type Colors = { primary: string, secondary: string? }
 export type Finish = { columns: number, rows: number, masks: { string } }
@@ -89,10 +91,29 @@ function Painting.new(
 	workId: string,
 	now: number,
 	rawConfig: unknown,
-	colors: Colors?
+	colors: Colors?,
+	geometry: { Size }?
 ): State
 	assert(finite(now), "Valid clock required")
 	local Config = settings(rawConfig, colors)
+	local total = if Config.secondaryColorId then 2 else 1
+	assert(geometry == nil or #geometry == total, "Paint size count must match surfaces")
+	local sizes: { Size } = {}
+	for i = 1, total do
+		local size = if geometry
+			then geometry[i]
+			else { width = Config.columns, height = Config.rows }
+		assert(
+			finite(size.width)
+				and finite(size.height)
+				and size.width >= 1
+				and size.width <= 64
+				and size.height >= 1
+				and size.height <= 64,
+			"Invalid paint surface size"
+		)
+		table.insert(sizes, { width = size.width, height = size.height })
+	end
 	return {
 		config = table.clone(Config),
 		jobId = jobId,
@@ -108,6 +129,7 @@ function Painting.new(
 		toolId = "basic",
 		basicRadius = Config.rollerRadius,
 		completedMasks = {},
+		sizes = sizes,
 	}
 end
 function Painting.surface(s: State): number
@@ -248,14 +270,20 @@ local function points(Config: ConfigData, raw: unknown): { Point }?
 	end
 	return result
 end
-local function mark(Config: ConfigData, cells: { [number]: boolean }, p: Point): ()
+local function mark(Config: ConfigData, size: Size, cells: { [number]: boolean }, p: Point): ()
 	local x, y = p.u * Config.columns, p.v * Config.rows
 	local cx, cy =
 		math.min(math.floor(x), Config.columns - 1), math.min(math.floor(y), Config.rows - 1)
 	cells[cy * Config.columns + cx + 1] = true
-	for row = math.max(0, cy - 1), math.min(Config.rows - 1, cy + 1) do
-		for col = math.max(0, cx - 1), math.min(Config.columns - 1, cx + 1) do
-			if (col + 0.5 - x) ^ 2 + (row + 0.5 - y) ^ 2 <= Config.rollerRadius ^ 2 then
+	local cellWidth, cellHeight = size.width / Config.columns, size.height / Config.rows
+	local rx, ry =
+		math.ceil(Config.rollerRadius / cellWidth), math.ceil(Config.rollerRadius / cellHeight)
+	for row = math.max(0, cy - ry), math.min(Config.rows - 1, cy + ry) do
+		for col = math.max(0, cx - rx), math.min(Config.columns - 1, cx + rx) do
+			if
+				((col + 0.5 - x) * cellWidth) ^ 2 + ((row + 0.5 - y) * cellHeight) ^ 2
+				<= Config.rollerRadius ^ 2
+			then
 				cells[row * Config.columns + col + 1] = true
 			end
 		end
@@ -282,6 +310,7 @@ function Painting.batch(
 	then
 		return false
 	end
+	local size = s.sizes[Painting.surface(s)]
 	local path = points(Config, raw)
 	if path == nil then
 		return false
@@ -298,10 +327,15 @@ function Painting.batch(
 			local from = previous
 			local steps = math.max(1, math.ceil(distance / 0.02))
 			for i = 1, steps do
-				mark(Config, cells, { u = from.u + du * i / steps, v = from.v + dv * i / steps })
+				mark(
+					Config,
+					size,
+					cells,
+					{ u = from.u + du * i / steps, v = from.v + dv * i / steps }
+				)
 			end
 		else
-			mark(Config, cells, p)
+			mark(Config, size, cells, p)
 		end
 		previous = p
 	end

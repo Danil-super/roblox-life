@@ -10,8 +10,20 @@ export type API = {
 	destroy: () -> (),
 }
 local Surface = {}
-function Surface.new(gui: SurfaceGui, colour: Color3, light: boolean?, reducedMotion: boolean?): API
+function Surface.new(
+	gui: SurfaceGui,
+	colour: Color3,
+	light: boolean?,
+	reducedMotion: boolean?,
+	width: number?,
+	height: number?
+): API
 	local columns, rows = Field.dimensions(light)
+	local wallWidth, wallHeight = width or Config.columns, height or Config.rows
+	assert(
+		wallWidth >= 1 and wallWidth <= 64 and wallHeight >= 1 and wallHeight <= 64,
+		"Invalid visual paint size"
+	)
 	local ink, predictions = Instance.new("Frame"), Instance.new("Frame")
 	for _, layer in { ink, predictions } do
 		layer.Size, layer.BackgroundTransparency, layer.Parent = UDim2.fromScale(1, 1), 1, gui
@@ -96,7 +108,10 @@ function Surface.new(gui: SurfaceGui, colour: Color3, light: boolean?, reducedMo
 			mark.expires = now + 0.35
 			mark.frame.Position, mark.frame.Size =
 				UDim2.fromScale(u, v),
-				UDim2.fromScale(1.3 * scale / Config.columns, 1.3 * scale / Config.rows)
+				UDim2.fromScale(
+					2 * Config.rollerRadius * scale / wallWidth,
+					2 * Config.rollerRadius * scale / wallHeight
+				)
 			mark.frame.BackgroundTransparency, mark.frame.Visible = 0.15, true
 		end,
 		step = function(now: number): ()

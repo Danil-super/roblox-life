@@ -522,6 +522,8 @@ ru["briefRose"] =
 	"Клиент хочет спальню в розовых тонах. Подготовь комнату и покрась стену в нужный оттенок."
 en["contractAddress"] = "Client apartment · next building"
 ru["contractAddress"] = "Квартира клиента · соседний дом"
+en["paintSurfaceSizes"] = "Walls: %s"
+ru["paintSurfaceSizes"] = "Стены: %s"
 en["contractMaterial"] = "Requested colour: %s"
 ru["contractMaterial"] = "Нужный цвет: %s"
 en["contractReward"] = "$%d · +%d XP"

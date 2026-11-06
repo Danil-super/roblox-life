@@ -116,7 +116,8 @@ function Service.start(profiles: ProfileService.API): ()
 		assert(room, "Workplace missing after creation")
 		local walls = ClientScene.configureWalls(
 			room.model,
-			contract ~= nil and contract.secondaryColorId ~= nil
+			contract ~= nil and contract.secondaryColorId ~= nil,
+			job.templateId
 		)
 		if ctx.scene and contract then
 			ctx.scene.apply(contract.roomStyle, contract.clientKey)
@@ -136,10 +137,14 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local old = ctx.work
 		if old == nil or old.jobId ~= job.id or ctx.character ~= player.Character then
+			local sizes: { Painting.Size } = {}
+			for _, wall in walls do
+				table.insert(sizes, { width = wall.Size.X, height = wall.Size.Y })
+			end
 			ctx.work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), Config, {
 				primary = if contract then contract.colorId else Config.colorId,
 				secondary = if contract then contract.secondaryColorId else nil,
-			})
+			}, sizes)
 			ctx.character = player.Character
 			for _, wall in walls do
 				wall.Color = Color3.fromRGB(145, 148, 140)
@@ -257,7 +262,17 @@ function Service.start(profiles: ProfileService.API): ()
 				then job.receipt.dollarsDelta
 				elseif reward then reward.dollars
 				else EconomyConfig.rewards["paint-tutorial-v1"].dollars,
-			result = if p then Result.read(p) else nil,
+			result = if p
+				then Result.read(
+					p,
+					if work
+							and job
+							and work.jobId == job.id
+							and Painting.allReady(work)
+						then work.sizes
+						else nil
+				)
+				else nil,
 			near = eligible(player, ctx),
 			error = reason,
 			location = if room then room.model.Name else nil,

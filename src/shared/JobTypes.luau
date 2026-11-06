@@ -1,8 +1,10 @@
 --!strict
 local ClientDialogue = require("./ClientDialogue")
 local FirstSteps = require("./FirstSteps")
+local Geometry = require("./PaintGeometry")
 local PaintFinish = require("./PaintFinish")
 export type Result = {
+	sizes: { Geometry.Size }?,
 	jobId: string,
 	operationId: string,
 	dollars: number,

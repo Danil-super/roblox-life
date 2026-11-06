@@ -50,11 +50,13 @@ local function renderer()return {destroy=function()destroyed+=1 end,update=funct
  updates+=1
 end}end
 local ink=renderer()
+local wall={Size={X=16,Y=6}}
 local surface,snapshot,disposed={},{mask="1010",workId="same",sequence=7},false
 local screen={GetAttribute=function()return true end}
 local GuiService={ReducedMotionEnabled=true}
 local function paintColor()return "mint" end
-local PaintSurface={new=function(gui,colour,light,motion)
+local PaintSurface={new=function(gui,colour,light,motion,width,height)
+ assert(width==16 and height==6,"Effect replacement lost wall geometry")
  assert(gui==surface and colour=="mint" and light and motion,"Wrong effect settings")
  created+=1;return renderer()
 end}

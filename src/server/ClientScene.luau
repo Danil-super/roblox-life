@@ -9,14 +9,24 @@ export type API = {
 	prompt: ProximityPrompt,
 	apply: (string, string) -> (),
 }
+local Geometry = require(game:GetService("ReplicatedStorage").Shared.PaintGeometry)
 local Scene = {}
 -- The second surface faces into the room, clear of the doorway and resident.
-function Scene.configureWalls(room: Model, secondary: boolean): { BasePart }
+function Scene.configureWalls(room: Model, secondary: boolean, templateId: string?): { BasePart }
 	local first, floor = room:FindFirstChild("PaintableWall"), room:FindFirstChild("Floor")
 	assert(
 		first and first:IsA("BasePart") and floor and floor:IsA("BasePart"),
 		"Work wall/floor missing"
 	)
+	local layout = Geometry.layout(templateId)
+	local frame = floor.CFrame * CFrame.new(0, floor.Size.Y / 2, 0)
+	local primary = if layout then layout[1] else { width = 12, height = 8 }
+	first.Size = Vector3.new(primary.width, primary.height, 0.25)
+	first.CFrame = frame * CFrame.new(0, primary.height / 2 + 0.5, -11.35)
+	local cloth = room:FindFirstChild("Protection")
+	if cloth and cloth:IsA("BasePart") then
+		cloth.Size = Vector3.new(primary.width + 2, 0.03, 5)
+	end
 	local walls: { BasePart } = { first }
 	local second = room:FindFirstChild("PaintableWallB")
 	if secondary then
@@ -30,6 +40,11 @@ function Scene.configureWalls(room: Model, secondary: boolean): { BasePart }
 			second = wall
 		end
 		assert(second and second:IsA("BasePart"), "Invalid second wall")
+		local size = if layout and layout[2] then layout[2] else { width = 12, height = 8 }
+		second.Size = Vector3.new(size.width, size.height, 0.3)
+		second.CFrame = frame
+			* CFrame.new(14, size.height / 2, 0)
+			* CFrame.Angles(0, -math.pi / 2, 0)
 		table.insert(walls, second)
 	elseif second then
 		second:Destroy()

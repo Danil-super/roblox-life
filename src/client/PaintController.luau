@@ -265,7 +265,9 @@ function Controller.start(
 				gui,
 				paintColor(),
 				screen:GetAttribute("LightPaintEffects") == true,
-				GuiService.ReducedMotionEnabled
+				GuiService.ReducedMotionEnabled,
+				if wall then wall.Size.X else nil,
+				if wall then wall.Size.Y else nil
 			)
 			visual.update(state.mask, true)
 			ink = visual

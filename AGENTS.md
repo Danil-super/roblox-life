@@ -152,6 +152,13 @@
   объектов renderer. Hide удаляет модели, Destroy запрещает старый render;
   две камеры переиспользуются, глобальная камера не меняется. docs/PAINT_FINISH.md,
   docs/PAINT_RESULTS.md. Старый schema-2 writer не читает schema 3; cloud gate открыт.
+  PaintGeometry задаёт размеры шести шаблонов; configureWalls берёт серверный
+  templateId, Painting.new копирует фактические Size каждой стены. Радиус
+  валика в studs, сетка 12×8/порог/награды прежние. Predicted след учитывает
+  Size; модель инструмента не масштабируется. Worksite сохраняет 24/33 Parts,
+  подстраивает защиту/инвентарь. Result.sizes — копия текущего allReady work
+  только с квитанцией/finish, после reload схема без выдуманных размеров.
+  Профиль schema3 прежний; docs/PAINT_SHAPES.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

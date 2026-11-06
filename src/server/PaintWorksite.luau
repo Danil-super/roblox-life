@@ -104,13 +104,17 @@ function Worksite.attach(room: Model): API
 				)
 			end
 		end
-		floorTape("FloorTape", 0, -8.5, 14, 5)
+		floorTape("FloorTape", 0, -8.5, cloth.Size.X, cloth.Size.Z)
 		for i = 1, 3 do
 			part(
 				"ClothFold" .. i,
 				Vector3.new(1.3, 0.01, 0.08),
 				frame
-					* CFrame.new(-5.7 + (i - 1) * 0.3, 0.062, -6.6 - (i - 1) * 0.2)
+					* CFrame.new(
+						-cloth.Size.X / 2 + 1.3 + (i - 1) * 0.3,
+						0.062,
+						-6.6 - (i - 1) * 0.2
+					)
 					* CFrame.Angles(0, -0.5, 0),
 				Color3.fromRGB(206, 198, 177),
 				Enum.Material.Fabric,
@@ -118,7 +122,7 @@ function Worksite.attach(room: Model): API
 			)
 		end
 		wallTape("PaintableWall")
-		local tray = frame * CFrame.new(-4.2, 0.12, -8.4)
+		local tray = frame * CFrame.new(math.max(-4.2, -cloth.Size.X / 2 + 1.6), 0.12, -8.4)
 		part("TrayBase", Vector3.new(2.8, 0.2, 1.9), tray, dark, nil, nil)
 		for _, side in { -1, 1 } do
 			part(
@@ -149,7 +153,7 @@ function Worksite.attach(room: Model): API
 				nil
 			)
 		)
-		local bucket = frame * CFrame.new(5.2, 0, -8.7)
+		local bucket = frame * CFrame.new(math.min(5.2, cloth.Size.X / 2 - 0.8), 0, -8.7)
 		part(
 			"BucketBody",
 			Vector3.new(0.9, 1.1, 1.1),
@@ -204,15 +208,18 @@ function Worksite.attach(room: Model): API
 			nil
 		)
 		if secondary then
+			local wall = room:FindFirstChild("PaintableWallB")
+			assert(wall and wall:IsA("BasePart"), "Second protection wall missing")
+			local length = wall.Size.X + 2
 			part(
 				"SideCloth",
-				Vector3.new(5, 0.03, 14),
+				Vector3.new(5, 0.03, length),
 				frame * CFrame.new(11.3, 0.04, 0),
 				canvas,
 				Enum.Material.Fabric,
 				nil
 			)
-			floorTape("SideFloorTape", 11.3, 0, 5, 14)
+			floorTape("SideFloorTape", 11.3, 0, 5, length)
 			wallTape("PaintableWallB")
 		end
 		group.Parent = room
