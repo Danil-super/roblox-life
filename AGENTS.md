@@ -176,6 +176,11 @@
   подстраивает защиту/инвентарь. Result.sizes — копия текущего allReady work
   только с квитанцией/finish, после reload схема без выдуманных размеров.
   Профиль schema3 прежний; docs/PAINT_SHAPES.md.
+  PaintOfferScene показывает одну статичную схему выбранного предложения:
+  PaintGeometry/палитра/прежнее растение, ≤11 Parts/15 объектов. Подпись
+  задумки не означает результат; locked/Accept/Retry прежние. Sync/язык/
+  resize сохраняют модель, закрытие/Enabled=false/Destroy удаляют геометрию
+  и подписки видимости. Нет циклов/remotes/новой схемы; docs/OFFER_PLAN.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.

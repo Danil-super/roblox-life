@@ -8,6 +8,7 @@ local Mastery = require(RS.Shared.PaintingMastery)
 local Theme = require(RS.Shared.Theme)
 local Geometry = require(RS.Shared.PaintGeometry)
 local Flow = require(RS.Shared.JobAcceptFlow)
+local OfferScene = require("./PaintOfferScene")
 export type API = {
 	render: (Types.Snapshot?) -> (),
 	show: (string?) -> (),
@@ -33,6 +34,8 @@ function Controller.start(
 	local pendingOffer: Types.Offer? = nil
 	local disposed = false
 	local listKey = ""
+	local ancestor = panel:FindFirstAncestorOfClass("ScreenGui")
+	local screen = if ancestor and ancestor:IsA("ScreenGui") then ancestor else nil
 	local root = Instance.new("Frame")
 	root.Name, root.Position, root.Size =
 		"Offers", UDim2.fromOffset(0, 54), UDim2.new(1, 0, 1, -122)
@@ -45,7 +48,7 @@ function Controller.start(
 		return f
 	end
 	local list, details = scroll("List"), scroll("Details")
-	details.CanvasSize = UDim2.fromOffset(0, 332)
+	details.CanvasSize = UDim2.fromOffset(0, 506)
 	local function label(
 		parent: Instance,
 		name: string,
@@ -71,10 +74,12 @@ function Controller.start(
 		accent, 0, 11, progressTrack
 	local title = label(details, "Title", 0, 40, 18)
 	local reward = label(details, "Reward", 44, 28, 16)
-	local requirements = label(details, "Requirements", 78, 62, 14)
-	local brief = label(details, "Brief", 148, 72, 14)
-	local shape = label(details, "SurfaceSize", 228, 44, 14)
-	local locked = label(details, "Availability", 280, 44, 14)
+	local previewCaption = label(details, "PlanCaption", 78, 24, 13)
+	local preview = OfferScene.start(details)
+	local requirements = label(details, "Requirements", 252, 62, 14)
+	local brief = label(details, "Brief", 322, 72, 14)
+	local shape = label(details, "SurfaceSize", 402, 44, 14)
+	local locked = label(details, "Availability", 454, 44, 14)
 	local confirm = Instance.new("TextButton")
 	confirm.Name, confirm.Position, confirm.Size =
 		"AcceptOffer", UDim2.new(0.5, 8, 1, -56), UDim2.new(0.5, -24, 0, 44)
@@ -117,6 +122,10 @@ function Controller.start(
 		end
 		local offer = selectedOffer()
 		list.Visible, details.Visible = offer == nil, offer ~= nil
+		previewCaption.Text = t("offerPlanCaption")
+		previewCaption.Visible = preview.render(
+			if panel.Visible and visible and (screen == nil or screen.Enabled) then offer else nil
+		)
 		confirm.Visible = visible and offer ~= nil
 		back.Size = if confirm.Visible then UDim2.new(0.5, -24, 0, 44) else UDim2.new(1, -32, 0, 44)
 		back.Text = t(if target or not confirm.Visible then "backHome" else "backOffers")
@@ -259,9 +268,18 @@ function Controller.start(
 			end
 		end)
 	end)
+	local visibilityConnection = panel:GetPropertyChangedSignal("Visible"):Connect(render)
+	local enabledConnection = if screen
+		then screen:GetPropertyChangedSignal("Enabled"):Connect(render)
+		else nil
 	panel.Destroying:Once(function()
 		disposed = true
 		target, pendingOffer, state = nil, nil, nil
+		visibilityConnection:Disconnect()
+		if enabledConnection then
+			enabledConnection:Disconnect()
+		end
+		preview.render(nil)
 	end)
 	return {
 		render = function(s: Types.Snapshot?): ()

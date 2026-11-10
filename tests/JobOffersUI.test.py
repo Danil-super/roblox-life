@@ -20,6 +20,11 @@ local Controller={}
 local now,serial=10,0
 local os={clock=function()return now end}
 local HttpService={GenerateGUID=function()serial+=1;return "request-"..serial end}
+local previews={}
+local OfferScene={start=function(parent)
+ local r={parent=parent};table.insert(previews,r)
+ return{render=function(offer)r.offer=offer;return offer~=nil end}
+end}
 local pool={}
 local Instance={new=function(kind)
  local o={ClassName=kind,Visible=true,Active=true}
@@ -29,6 +34,9 @@ local Instance={new=function(kind)
  function o:Destroy()for _,v in self:GetChildren()do v:Destroy()end;self.Destroyed=true;self.Parent=nil end
  o.Activated={Connect=function(_,fn)o.clicked=fn end}
  o.Destroying={Once=function(_,fn)o.onDestroy=fn end}
+ function o:GetPropertyChangedSignal(name)return{Connect=function(_,fn)if name=="Visible"then o.visibilityChanged=fn else o.enabledChanged=fn end;return{Disconnect=function()if name=="Visible"then o.visibilityDisconnected=true else o.enabledDisconnected=true end end}end}end
+ function o:FindFirstAncestorOfClass(kind)return if self.Parent and self.Parent.ClassName==kind then self.Parent else nil end
+ function o:IsA(kind)return self.ClassName==kind end
  return o
 end}
 local function find(name)
@@ -46,7 +54,8 @@ local function accept(offer,job,request)table.insert(requests,{offerId=offer,job
 local profileReady=true
 local function ready()return profileReady end
 local function language()return "en"end
-local panel=Instance.new("Frame");panel.Parent={}
+local screenGui=Instance.new("ScreenGui");screenGui.Enabled=true
+local panel=Instance.new("Frame");panel.Parent=screenGui
 local workBody=Instance.new("ScrollingFrame")
 local back=Instance.new("TextButton")
 local function snapshot()
@@ -56,22 +65,26 @@ end
 '''
 checks = r'''
 local api=Controller.start(panel,workBody,back,language,accept,ready)
+assert(#previews==1,"Offer details have no bounded plan renderer")
 local s=snapshot();api.render(s);api.show("paint-mint-v1")
 assert(not find("AcceptOffer").Visible,"Locked recommendation opened as ready")
-find("paint-mint-v1").clicked();find("AcceptOffer").clicked()
+find("paint-mint-v1").clicked();assert(previews[1].offer.id=="paint-mint-v1","Locked detail has no planned room")
+screenGui.Enabled=false;assert(screenGui.enabledChanged,"Preview does not observe disabled HUD");screenGui.enabledChanged();assert(previews[1].offer==nil and #requests==0,"Disabled HUD retained preview")
+screenGui.Enabled=true;screenGui.enabledChanged();assert(previews[1].offer.id=="paint-mint-v1")
+find("AcceptOffer").clicked()
 assert(#requests==0 and not find("AcceptOffer").Active,"Locked preview accepted")
 api.show("missing");assert(not find("AcceptOffer").Visible,"Missing offer selected")
 api.show("paint-tutorial-v1");assert(find("AcceptOffer").Active and #requests==0,"Preview auto-accepted")
 assert(find("SurfaceSize").Text==string.format(Strings.text("en","paintSurfaceSizes"),"12×8"),"Job details hid real shape")
 local confirm=find("AcceptOffer")
-panel.Visible=false;confirm.clicked();assert(#requests==0,"Hidden confirm sent acceptance")
+panel.Visible=false;panel.visibilityChanged();assert(previews[1].offer==nil,"Closed pending details retained the plan");confirm.clicked();assert(#requests==0,"Hidden confirm sent acceptance")
 panel.Visible=true;confirm.clicked();confirm.clicked()
 assert(#requests==1 and api.pending() and not confirm.Active,"Rapid acceptance duplicated")
 assert(back.Text==Strings.text("en","backHome"),"Pending Back advertised switching offers")
 assert(requests[1].jobId=="" and requests[1].offerId=="paint-tutorial-v1")
 now=17.999;timers[1]();assert(api.pending() and not confirm.Active,"Timer invented a known outcome")
 now=18;timers[1]();assert(api.pending() and confirm.Active and confirm.Text==Strings.text("en","acceptRetry"))
-api.back();panel.Visible=false;confirm.clicked();assert(api.pending() and #requests==1,"Close lost unknown request")
+api.back();panel.Visible=false;panel.visibilityChanged();assert(previews[1].offer==nil,"Closed pending details retained the plan");confirm.clicked();assert(api.pending() and #requests==1,"Close lost unknown request")
 panel.Visible=true;api.show("paint-mint-v1")
 assert(find("Details"):FindFirstChild("Title").Text==Strings.text("en","contractTutorial"),"Reopen changed pending offer")
 find("paint-mint-v1").clicked();assert(find("Details"):FindFirstChild("Title").Text==Strings.text("en","contractTutorial"),"Hidden card replaced pending target")
@@ -94,6 +107,7 @@ assert(confirm.Active and #requests==before,"Next completed-job preview auto-acc
 confirm.clicked();assert(api.pending() and requests[#requests].jobId=="previous-job")
 local count=#requests;panel.onDestroy();timers[#timers]();api.show();api.render(s);confirm.clicked()
 assert(not api.pending() and #requests==count,"Destroyed panel revived acceptance")
+assert(previews[1].offer==nil and panel.visibilityDisconnected and screenGui.enabledDisconnected,"Destroyed offers retained the plan or visibility observer")
 '''
 with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
     script.write(header + body + "\n" + checks)

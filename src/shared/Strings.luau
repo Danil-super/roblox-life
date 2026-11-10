@@ -517,6 +517,8 @@ en["profileReasonInvalidOwner"] = "Your account could not be verified. Leave and
 ru["profileReasonInvalidOwner"] =
 	"Не удалось подтвердить аккаунт. Выйди и зайди снова."
 en["contractTutorial"] = "First renovation"
+en["offerPlanCaption"] = "Client's plan · illustration"
+ru["offerPlanCaption"] = "Задумка клиента · схема"
 ru["contractTutorial"] = "Первый ремонт"
 en["contractMint"] = "Mint living room"
 ru["contractMint"] = "Мятная гостиная"

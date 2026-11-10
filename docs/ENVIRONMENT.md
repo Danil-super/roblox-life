@@ -3289,3 +3289,68 @@ Ignored-доказательства: `.tools/character-ready/check-complete.log
 `codegraph.log`. Инструкции: docs/ENTRY_READY.md.
 Физический телефон/FPS, настоящий сетевой отказ загрузки, cloud/rejoin и
 несколько клиентов не проверены этим этапом. Общие P0-gate остаются открытыми.
+
+## 10 ноября 2026 — OFFER-PLAN-23, схема выбранного заказа
+
+В подробности Jobs добавлена одна статичная мини-комната. PaintGeometry
+задаёт действительные размеры одной/двух стен, предложение — палитру;
+растение повторно использует ClientDecorModels. Подпись «Задумка клиента ·
+схема», закреплённые Accept/Back и прежние locked/Retry/pending guards.
+Single 9 Parts/13 объектов, Duo 11/15; один Camera/WorldModel, без циклов,
+физики, новых remotes/ассетов/зависимостей/полей профиля. Источник денег/XP
+прежний. Язык/resize/sync сохраняют модель; скрытие/Enabled/Destroy очищают.
+
+Red/green: отсутствие renderer, неполная вторичная палитра и отсутствие
+Enabled cleanup обнаружены тестами до исправлений. PaintOfferScene исполняет
+реальный renderer и Decor, JobOffersUI — настоящий контроллер с сохранёнными
+сценариями принятия/Retry. Полный `bash scripts/dev.sh check` прошёл:
+StyLua/Selene, pure/adapter/UI tests, оба strict-анализатора и обе Rojo-сборки.
+
+Один прежний PID34722, последовательные solo Play в MemoryPreview:
+
+- Native выбор всех шести предложений: tutorial 12×8, mint 8×8, rose 8×9,
+  duo 16×8+8×8, sunroom 16×6+10×8, atelier 8×9+16×6. Формы/палитра/бюджет
+  подтверждены; просмотр сохранил $0/0 XP/Offer без jobId. Locked Accept
+  неактивен, safe preflight отказал в клике по нему.
+- EN/RU на 1449×846, 374×608 и 666×316: настоящие клики языка,
+  TextFits/прокрутка/полная видимость схемы и неизменная ссылка WorldModel.
+  Скрытие, реальный sync и Enabled=false/true проверены отдельно.
+- Прежний естественный цикл: Touch 96/96 → Review/Submit → $250/50 XP →
+  растение $180/$70 → установка/DONE → явный Grid (9,6) → склад/повторная
+  установка → Mint/подтверждённый отказ. Output подтвердил девять уникальных
+  пакетов, $70/50 XP/одну установленную модель, без новых операций от схемы.
+- Первая дополнительная визуальная попытка истекла в ожидании просмотра;
+  штатно остановлена в Edit и не засчитана. Повтор завершился: снимок native
+  окна показывает Duo со стенами нужных цветов/полом/растением; настоящий
+  Destroy HUD удалил WorldModel со всеми детьми, $0/0 XP сохранились.
+  Официальный screen_capture дал GUI без 3D-слоя; пустой кадр не трактуется
+  как дефект renderer или доказательство визуальной приёмки. Код по этому
+  кадру не менялся. После прогона default device восстановлен, режим Edit.
+
+85 Source совпадают с текущей канонической сборкой; Edit без runtime-комнат,
+ghost/guides. CodeGraph текущего root: 216 файлов/3427 узлов/6209 связей,
+pending changes/refs=0. Graphify code-only: 799 узлов/1488 связей, перечитан
+MCP с абсолютным project_path. Частичный Luau AST предупреждает о
+JobOffersController/PaintOfferScene; строгие анализаторы прошли, связи сверены
+по исходникам. Документы/медиа/секреты/runtime-данные не индексировались.
+
+Ресурсы: 137 замеров основного и коротких визуальных прогонов в общем логе;
+MemAvailable минимум 10691 MiB, PSI full avg10 максимум 0%, swap used
+3865–3988 MiB. Guard не срабатывал; дополнительных Studio/клиентов не было,
+чужие приложения не закрывались. Полный check выполнен вне Play с nice10;
+инкрементальный Graphify занял менее секунды в конце визуальной паузы.
+
+Context7 resolve/query с `/websites/create_roblox_reference_engine` успешны:
+[ViewportFrame](https://create.roblox.com/docs/reference/engine/classes/ViewportFrame),
+[WorldModel](https://create.roblox.com/docs/reference/engine/classes/WorldModel).
+
+Ignored-доказательства: `.tools/offer-plan/check.log`, `renderer-red.log`,
+`palette-red.log`, `controller-red.log`, `enabled-red.log`, `play.log`,
+`play-report.json`, `visual.log` (тайм-аут), `visual2.log`,
+`visual-report.json` (успешный повтор), `native-play.png` (видимый 3D),
+`official-0.png` (без 3D), `resources.jsonl`, `sources-final.log`,
+`clean-edit.log`, `graphify.log`, `codegraph-status.json`.
+
+Это локальный этап P0. Cloud/rejoin, физический телефон/FPS и несколько
+клиентов остаются непроверенными; публикация и push не выполнялись.
+Контракт: [OFFER_PLAN.md](OFFER_PLAN.md).
