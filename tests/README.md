@@ -970,3 +970,20 @@ PaintOfferScene исполняет реальный renderer/декор: шес�
 может сохранить GUI без 3D. Затем прежний естественный цикл/девять пакетов.
 Отдельный свежий Play с открытой схемой: Destroy HUD удаляет модель целиком.
 Restore device/Stop/85 Source/чистый Edit. [Контракт](../docs/OFFER_PLAN.md).
+
+## PAINT-CAMERA-24: вход в рабочий ракурс
+
+PaintCamera исполняет настоящий entry/framing/active guard: 0/0,15/0,3 с,
+resize, конечный fit, Light/Reduced и переключение без повторного запуска,
+stop/Destroy. PaintFocus проверяет ранние Mouse/Touch/Review, новое нажатие
+и Escape; PaintLifecycle — восстановление камеры/готовности; PaintFeedbackUI
+— disabled controls. Полный check включает все эти сценарии.
+
+В одном solo Play наблюдать промежуточные Camera.CFrame/FOV и неактивный
+Review, повторный вход, возврат предыдущей камеры и Light без промежуточных
+кадров. Затем портретный Touch 96/96 и прежний полный цикл/9 пакетов.
+Проверка раннего down в коротком интервале требует зафиксированного InputBegan
+именно до готовности; отсутствие такого события не считается успешным тестом.
+ReducedMotion-настройку аккаунта не менять. MCP восстановление Fixed отделять
+по Output; вернуть default device/Stop и сверить 85 Source/чистый Edit.
+[Контракт](../docs/PAINT_CAMERA.md).

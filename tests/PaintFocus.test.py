@@ -17,6 +17,8 @@ local UIS={InputBegan=signal("begin"),InputChanged=signal("changed"),InputEnded=
 local Enum={KeyCode={Escape="Escape"},UserInputType={MouseButton1="Mouse",Touch="Touch"}}
 local Vector2={new=function(x,y)return{X=x,Y=y}end}
 local active,held,touch=true,false,nil
+local cameraReady=true
+local disposed=false
 local pointer=Vector2.new(0,0)
 local queue,current={},nil
 local sequence,inflight,inspectPending=7,7,false
@@ -31,6 +33,17 @@ local mouse=input("Mouse")
 local finger,other=input("Touch"),input("Touch",40,50)
 '''
 cases = {
+    "camera_transition_requires_a_new_gesture": '''
+cameraReady=false
+callbacks.begin(mouse,false);callbacks.begin(finger,false);callbacks.review()
+assert(not held and touch==nil and #queue==0 and not inspectPending and flushed==0,"Moving camera admitted input or Review")
+callbacks.ended(mouse);callbacks.ended(finger)
+cameraReady=true;assert(not held and #queue==0,"Early press turned into a late stroke")
+callbacks.begin(finger,false);assert(held and touch==finger and #queue==1)
+callbacks.ended(finger);assert(not held and flushed==1)
+cameraReady=false;local escape=input("Mouse");escape.KeyCode="Escape";callbacks.begin(escape,true)
+assert(not active,"Camera transition blocked Escape")
+''',
     "focus_releases_mouse_without_losing_recorded_packet": '''
 callbacks.begin(mouse,false);assert(held and #queue==1)
 local old=current;table.insert(old.points,{u=.2,v=.3})

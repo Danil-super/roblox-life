@@ -14,6 +14,7 @@ start = source.index("\tlocal removingConnection = player.CharacterRemoving:Conn
 removal = source[start:source.index("\n\tlocal beganConnection = UIS.InputBegan", start)]
 header = r'''
 local active,held,touch = true,true,{}
+local cameraReady=true
 local disposed=false
 local missing,manualGaps=true,true
 local queue,current,inflight,inspectPending = {{points={1}}},{},7,true
@@ -60,6 +61,7 @@ assert(not missing and not manualGaps,"Gap guide leaked into another work sessio
 stop()
 assert(camera.CameraType=="Custom" and camera.CameraSubject==previousSubject)
 assert(camera.CFrame=="saved" and camera.FieldOfView==70 and gui.Visible)
+assert(not cameraReady,"Stopped view retained camera readiness")
 assert(part.LocalTransparencyModifier==0.3 and #strokes==0 and inkDestroyed==1)
 ''',
     "removal_fallback": '''

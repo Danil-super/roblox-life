@@ -25,6 +25,7 @@ local ink={update=function(mask)receivedMask=mask end,step=function()end}
 local missing=false
 local disposed=false
 local active,manualGaps=true,false
+local cameraReady=true
 local toggle
 local gaps={Activated={Connect=function(_,fn)toggle=fn end}}
 local queue,current,inflight,sequence,inspectPending={17},{23},7,7,false
@@ -33,6 +34,9 @@ local sends=0
 local function send()sends+=1 end
 '''
 checks = '''
+cameraReady=false;render()
+assert(not review.Active and not gaps.Active,"Moving camera enabled work controls")
+cameraReady=true
 render()
 assert(fill.Size.x==0 and receivedMask==snapshot.mask,"Visual layer invented confirmed area")
 for _,s in strokes do assert(not s.Enabled,"Grid shown during normal painting")end

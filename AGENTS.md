@@ -75,6 +75,10 @@
   подписок/tween/remotes. hide сбрасывает жест, stop/Destroy удаляют модель/
   звук и запрещают late update. Это локальный инструмент, не новая скелетная
   анимация. Сервер/схема/оплата прежние; docs/PAINT_TOOL.md.
+  PaintingView плавно входит за 0,3 с через CFrame/FOV без нового binding/
+  Tween. До финального fit нет жестов/Review/Gaps; ранний down не переносится
+  на готовую камеру. Light/ReducedMotion завершают переход без перезапуска.
+  Stop/смерть/Destroy немедленно возвращают прежний ракурс; docs/PAINT_CAMERA.md.
   NeighborhoodScenery создаёт улицу при Play и входные накладки при cloneRoom;
   StreetLayout проверяет проходы для 16 слотов. StreetDetails — до 300 деталей,
   start идемпотентен, SurfaceGui переводит WorldSignsController по событиям.

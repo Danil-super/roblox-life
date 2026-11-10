@@ -3354,3 +3354,77 @@ Ignored-доказательства: `.tools/offer-plan/check.log`, `renderer-r
 Это локальный этап P0. Cloud/rejoin, физический телефон/FPS и несколько
 клиентов остаются непроверенными; публикация и push не выполнялись.
 Контракт: [OFFER_PLAN.md](OFFER_PLAN.md).
+
+## 10 ноября 2026 — PAINT-CAMERA-24, плавный вход в покраску
+
+PaintingView использует прежний render binding и конечный PaintView.fit,
+но CFrame/FOV переходят от сохранённого ракурса за 0,3 с. До готовности нет
+жестов/предсказания/flush/Review/Gaps; ранний down требует нового нажатия.
+Light/ReducedMotion пропускают движение без повторного запуска при отключении.
+Leave/Escape/смерть/Destroy немедленно возвращают прежнюю камеру; никаких
+новых объектов, remotes, схемы профиля, зависимостей и серверных выплат.
+
+Red: PaintCamera обнаружил мгновенную камеру, PaintFocus — ранний ввод/Review.
+Green исполняет настоящие entry/framing/input/cleanup callbacks, реальные
+PaintView.fit и границы 0/0,15/0,299999/0,3 с; resize/Light/Reduced/stop/Destroy
+не пересоздают переход. PaintFeedbackUI проверяет disabled buttons. Полный
+`bash scripts/dev.sh check` прошёл после финальных тестовых изменений:
+формат/Selene, pure/adapter/UI, оба strict-анализатора и обе Rojo-сборки.
+
+Одна Studio PID34722, последовательные solo MemoryPreview:
+
+- Первые наблюдения дали 18 промежуточных кадров, затем тест возврата
+  обнаружил Fixed, сохранённый MCP при ожидании аватара. Output явно содержит
+  Resetting Custom back to Fixed. Для финального прогона тест восстановил
+  Custom/Subject после завершения команды; игровой код для обхода не менялся.
+- Два прогона остановлены строгим preflight NotHit: нативное окно уменьшилось,
+  HUD стал 625×230, Home остался в старой позиции (696,532). Клик не обходился.
+  Одно существующее окно увеличено до 1280×900; RandR в тот момент не отдавал
+  мониторы, размер запрошен по текущему _NET_WORKAREA. Последующее изменение
+  рабочего стола дало viewport 1943×1172. Ошибка низкого HUD остаётся отдельным
+  HUD-RESIZE-25, не объявляется исправленной изменением окна.
+- Попытка раннего down не зафиксировала InputBegan в интервале 0,3 с и не
+  засчитана. Guard раннего Mouse/Touch/Review/Escape проверен детерминированно.
+  Прогон Touch сначала остановил desktop-only флаг общего runner `.mouse`;
+  временный Touch-runner проверяет настоящее `.touch`, не подставляет успех.
+- Финальный прогон: пять входов (первый/повторный desktop, Light, первый/
+  повторный portrait). Четыре плавных входа показали по пять промежуточных
+  кадров с disabled Review; Light — ни одного, сразу готов. После Leave
+  фактически восстановлены Custom и FOV70. В предшествующем прогоне тех же
+  переходов было 18–19 кадров; постоянный FPS этим не утверждается.
+- Touch 96/96 → Review/сдача $250/50 XP → растение/$70 → установка/DONE →
+  Grid (9,6) → склад/повторная установка → Mint/подтверждённый отказ.
+  Реальный Output подтвердил девять уникальных пакетов; итог $70/50 XP,
+  один установленный предмет. Native capture показывает полный цвет стены
+  и доступную рабочую панель. Default device восстановлен, Stop дал Edit.
+
+Финальный report.status=passed/finalMode=Edit и PASS записаны. Exec-сессия
+после этого вернула 143; причину завершения оболочки не установили. Результат
+сценария подтверждается отчётом/Output, а Source/чистый Edit сверены отдельно
+новым клиентом. Это не объявляется нулевым exit status этой exec-сессии.
+
+85 Source соответствуют канонической сборке; runtime-комнаты/ghost/guides
+в Edit отсутствуют. CodeGraph текущего root: 217 файлов/3441 узел/6224 связи,
+pending changes/refs=0. Graphify code-only: 801 узел/1492 связи, перечитан MCP;
+частичный Luau AST PaintController остаётся ограничением графа. Strict-проверки
+прошли, связи дополнительно сверены по исходникам. Исключения сохранены.
+
+Ресурсы: 184 замера всех попыток, MemAvailable минимум 10657 MiB, sampled
+PSI full avg10 максимум 2,87%, swap used 3824–4095 MiB. Между прогонами отдельное
+чтение показало full avg10=6,36%: повторы приостановлены, финальный Play начат
+при 0%; по завершении avg10 также 0%. Чужие VM/приложения не закрывались,
+новых Studio/клиентов не создавалось. Анализаторы/сборки выполнялись вне Play.
+
+Context7 успешно сверил Camera/CFrame:Lerp/BindToRenderStep/ReducedMotion:
+[Camera](https://create.roblox.com/docs/reference/engine/classes/Camera),
+[CFrame](https://create.roblox.com/docs/reference/engine/datatypes/CFrame),
+[RunService](https://create.roblox.com/docs/reference/engine/classes/RunService),
+[GuiService](https://create.roblox.com/docs/reference/engine/classes/GuiService).
+
+Ignored-доказательства: `.tools/paint-camera/camera-red.log`, `input-red.log`,
+`check-final.log`, `attempt1..5.log`/отчёты, `play-final.log`, `play-report.json`,
+`console-attempt1.txt`, `preflight-failed.png`, `native-paint.png`,
+`resources.jsonl`, `sources-final.log`, `clean-edit.log`, `graphify.log`,
+`codegraph-status.json`. Контракт: [PAINT_CAMERA.md](PAINT_CAMERA.md).
+Cloud/rejoin, физический телефон/FPS, несколько клиентов, native ReducedMotion
+и native раннее нажатие/смерть внутри перехода этим этапом не проверены.

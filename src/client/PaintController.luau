@@ -38,6 +38,8 @@ function Controller.start(
 	local previousSubject: Instance? = nil
 	local previousFrame = CFrame.identity
 	local previousFov = 70
+	local focusStarted = 0
+	local cameraReady = false
 	local altered: { [BasePart]: number } = {}
 	local surface: SurfaceGui? = nil
 	local ink: PaintSurface.API? = nil
@@ -119,6 +121,7 @@ function Controller.start(
 			return
 		end
 		active = false
+		cameraReady = false
 		if deathConnection then
 			deathConnection:Disconnect()
 			deathConnection = nil
@@ -249,6 +252,9 @@ function Controller.start(
 			) .. " · " .. title.Text
 		end
 		fill.Size = UDim2.fromScale(coverage.fill, 1)
+		review.Active = active and cameraReady and not inspectPending
+		review.AutoButtonColor = review.Active
+		review.BackgroundTransparency = if review.Active then 0 else 0.6
 		review.Text = t("inspectResult")
 		leave.Text = t("leaveWork")
 		local remaining = math.max(0, Config.columns * Config.rows - s.count)
@@ -259,7 +265,7 @@ function Controller.start(
 				t(if showGaps then "paintGapsHide" else "paintGapsShow"),
 				remaining
 			)
-		gaps.Active = active and not inspectPending and remaining > 0
+		gaps.Active = active and cameraReady and not inspectPending and remaining > 0
 		gaps.AutoButtonColor = gaps.Active
 		gaps.BackgroundTransparency = if gaps.Active then 0 else 0.6
 		if ink then
@@ -308,6 +314,8 @@ function Controller.start(
 		previousSubject = camera.CameraSubject
 		previousFrame = camera.CFrame
 		previousFov = camera.FieldOfView
+		focusStarted = os.clock()
+		cameraReady = false
 		missing = false
 		manualGaps = false
 		toolbar.Visible = true
@@ -379,6 +387,7 @@ function Controller.start(
 		if
 			not active
 			or disposed
+			or not cameraReady
 			or inspectPending
 			or s == nil
 			or s.phase ~= "Painting"
@@ -392,6 +401,9 @@ function Controller.start(
 		render()
 	end)
 	review.Activated:Connect(function()
+		if not active or disposed or not cameraReady or inspectPending then
+			return
+		end
 		held = false
 		touch = nil
 		current = nil
@@ -408,7 +420,7 @@ function Controller.start(
 			stop()
 			return
 		end
-		if processed or inspectPending then
+		if processed or inspectPending or not cameraReady then
 			return
 		end
 		if
@@ -487,12 +499,27 @@ function Controller.start(
 		)
 		local center = target.Position
 		camera.CameraType = Enum.CameraType.Scriptable
-		camera.FieldOfView = 50
-		camera.CFrame = CFrame.lookAt(
+		local goal = CFrame.lookAt(
 			target.CFrame:PointToWorldSpace(Vector3.new(0, 0, distance)),
 			center
 		) * CFrame.new(0, offset, 0)
+		local alpha = if cameraReady
+				or GuiService.ReducedMotionEnabled
+				or screen:GetAttribute("LightPaintEffects") == true
+			then 1
+			else math.clamp((os.clock() - focusStarted) / 0.3, 0, 1)
+		local eased = alpha * alpha * (3 - 2 * alpha)
+		camera.CFrame = if alpha < 1 then previousFrame:Lerp(goal, eased) else goal
+		camera.FieldOfView = previousFov + (50 - previousFov) * eased
 		camera.Focus = CFrame.new(center)
+		cameraReady = alpha >= 1
+		if not cameraReady then
+			if roller then
+				roller.hide()
+			end
+			render()
+			return
+		end
 		if inflight and os.clock() - sentAt > 2 then
 			inflight = nil
 			sequence = s.sequence
