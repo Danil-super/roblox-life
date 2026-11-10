@@ -3205,3 +3205,87 @@ Graphify code-only перечитан MCP: 792 узла/1472 связи. AST-п�
 `graphify-final.log`, `codegraph-final.log`, `memory-reclaim.json`.
 Cloud/rejoin, физический телефон/FPS и несколько клиентов остаются
 непроверенными и не входят в закрытые локальные этапы.
+
+
+## 10 ноября 2026 — ENTRY-READY-22, первый вход и возрождение
+
+ProfileRecoveryController теперь использует прежний ProfilePanel для первого
+nil/Loading и Ready-профиля без текущего живого аватара. Error приоритетен,
+Loading после ошибки продолжает прежнее восстановление. Готовность требует
+player.Character, Workspace, живой Humanoid и BasePart HumanoidRootPart;
+это клиентская проекция, не доказательство прав на игровую операцию.
+
+Новые EN/RU-тексты объясняют подготовку комнаты/персонажа. Во время avatar-wait
+не отправляются ProfileCommand/reload, нет выдуманного процента; Retry/Exit
+скрыты, родное меню Roblox остаётся доступным. Backend Retry/Exit, схема 3,
+награды и сохранённые намерения не менялись. Main проверяет isBlocking() для
+M/кнопки телефона. События модели/Health заменили фиксированный WaitForChild:
+поздние части и родитель тоже обновляют экран, старая модель не разблокирует
+новую. Очистка снимает шесть подписок игрока/профиля и до четырёх модельных;
+Destroy инвалидирует отложенный Retry и блокирует старый обработчик телефона.
+
+Red/green: старый код воспроизвёл «First loading is hidden» и пропуск M через
+ложную готовность профиля. Actual render/callbacks: шесть ProfileRecoveryUI,
+шесть CharacterReadyUI, три RecoveryCamera и прежний PhoneInput с новой
+блокировкой. Поздние root/Humanoid, неверный класс, модель вне Workspace,
+Health=0, старый CharacterRemoving, исходно живой аватар, приоритет ошибки,
+EN/RU и полное снятие подписок проверены настоящими функциями контроллера.
+В ревью найдена ещё одна граница: API возвращал false после Destroy; отдельный
+red «Destroyed recovery UI reopened the phone gate» исправлен fail-closed
+isBlocking(). Full check после финальной правки прошёл: формат, Selene,
+standalone/адаптеры, strict-анализаторы и обе сборки Rojo.
+
+Нативная проверка в существующем PID Studio, без новых экземпляров/клиентов:
+
+- Один свежий MemoryPreview, готовый живой персонаж, настоящий серверный
+  Health=0. Только для времени проверки макетов Players.RespawnTime временно
+  установлен в 90 с; исходное значение восстановлено до ожидания нового
+  аватара, тестовая глобальная переменная очищена. Это не обычное время
+  возрождения игры и не измерение скорости Roblox-загрузчика.
+- На смерти появился character-wait, сохранив серверный Ready/$0/0 XP.
+  Home получил Covered без клика; реальный M не открыл телефон.
+- Native Language-кнопка, EN/RU на 1449×846, 374×608 и 666×316; шесть
+  сочетаний TextFits, цели языка ≥44 px, скрытые/неактивные Retry/Exit,
+  ModalOpen/TouchControls проверены. Снимок портретного режима осмотрен.
+- Реально появился новый Character: ожидание закрылось, CameraType Custom/
+  CameraSubject нового Humanoid и Touch controls восстановились. Профиль
+  всё время наблюдения сохранял Ready, деньги/XP не изменились.
+- После этого тот же solo Play прошёл естественный цикл: Touch 96/96 →
+  приёмка/$250/50 XP → растение за $180/$70 → установка/DONE → Grid move
+  (9,6) → store/reinstall (8,6) → принятие/подтверждённая отмена Mint.
+  Actual Output подтвердил девять уникальных пакетов, одна модель/$70/50 XP.
+
+После уточнения Destroy API отдельно запущен ещё один последовательный solo
+Play в том же редакторе: фактический M открыл и закрыл телефон; Destroy HUD →
+третий unprocessed M оставил сохранённый удалённый HomePanel закрытым.
+Профиль Ready/$0/0 XP и отсутствие нового HUD подтверждены. Это конкретная
+проверка позднего ввода, не имитация переподключения клиента.
+
+Оба Play завершены, device default восстановлен ещё в Play. Все 84 Source
+совпали с финальной сборкой, Edit чист (Homes пуст, нет guides/ghost).
+CodeGraph текущего проекта: 214 файлов/3400 узлов/6167 связей, up to date.
+Graphify code-only: 795 узлов/1477 связей, перечитан MCP. Парсер предупредил
+о частичном Luau AST Main/ProfileRecoveryController; полное извлечение этих
+файлов не утверждается, связи проверены по исходникам и strict-анализаторам.
+Исключения .tools/build/данных сохранены, документы/медиа не индексировались.
+
+Ресурсы: 92 замера основного прогона, MemAvailable минимум 12617 MiB,
+PSI full avg10 максимум 0%, swap used 3922–3959 MiB. В коротком Destroy-прогоне
+12 замеров: минимум 12407 MiB, PSI 0%, swap 4088–4092 MiB. Высокое заполнение
+swap не сопровождалось текущим давлением в этих замерах; guard не срабатывал.
+Использовалась одна Studio; чужие приложения/системные лимиты не менялись.
+Локальные анализаторы/сборки выполнялись вне Play с низким приоритетом.
+
+Context7 resolve завершился HTTP transport error. API сверены по официальным
+[Player](https://create.roblox.com/docs/reference/engine/classes/Player),
+[Humanoid](https://create.roblox.com/docs/reference/engine/classes/Humanoid) и
+[Instance](https://create.roblox.com/docs/reference/engine/classes/Instance).
+
+Ignored-доказательства: `.tools/character-ready/check-complete.log`,
+`render-red.log`, `phone-red.log`, `destroy-red.log`, `destroy-green.log`,
+`play.log`, `play-report.json`, `destroy-native.log`, `destroy-report.json`,
+`resources-main.jsonl`, `resources-destroy.jsonl`, `respawn-portrait.png`,
+`sources-before.log`, `sources-final.log`, `clean-edit.log`, `graphify.log`,
+`codegraph.log`. Инструкции: docs/ENTRY_READY.md.
+Физический телефон/FPS, настоящий сетевой отказ загрузки, cloud/rejoin и
+несколько клиентов не проверены этим этапом. Общие P0-gate остаются открытыми.

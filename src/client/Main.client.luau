@@ -270,6 +270,7 @@ end
 local function togglePhone(): ()
 	if
 		player:GetAttribute("ProfileStatus") ~= "Ready"
+		or recovery.isBlocking()
 		or screen:GetAttribute("Building") == true
 		or jobs.isWorking()
 	then

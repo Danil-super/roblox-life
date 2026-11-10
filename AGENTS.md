@@ -244,6 +244,14 @@
 - Profile_Load_Error имеет серверный Retry/Exit. Uncertain повторяет тот же
   intent; Locked не снимает чужой lease; Lost/Corrupt/конфигурация не пересоздают
   профиль. Busy и cooldown 10 с проверяются на сервере, не по клиентскому атрибуту.
+- ProfilePanel показывает первый Loading и Ready без живого текущего
+  Humanoid/root в Workspace, не меняя серверный ProfileStatus. Ошибка профиля
+  приоритетна. CharacterAdded/Removing, children/ancestry/Health обслуживают
+  ожидание без polling; старый персонаж не освобождает новое ожидание.
+  Main проверяет recovery.isBlocking() для M/кнопки. Destroy снимает все
+  подписки этого контроллера, отменяет поздний UI Retry; isBlocking после
+  Destroy остаётся true. Avatar-wait не посылает Retry/Exit; выход через
+  родное меню Roblox. Сервер/схема прежние; docs/ENTRY_READY.md.
 - Если официальный start_stop_play завис, использовать `python3 scripts/studio_test.py
   start|stop|status`: официальный MCP + одиночный StudioTestService с непустым args.
   Не добавлять клиентов для обхода зависания. Mode Play не доказывает приёмку игры.

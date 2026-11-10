@@ -8,12 +8,18 @@ function Controller.start(
 	language: () -> string,
 	suspend: () -> (),
 	toggleLanguage: () -> ()
-)
+): { render: () -> (), isBlocking: () -> boolean }
 	local player = Players.LocalPlayer
 	local command = RS:WaitForChild("ProfileCommand")
 	assert(command:IsA("RemoteEvent"), "ProfileCommand missing")
 	local seenError, awaiting, exiting, epoch = false, false, false, 0
 	local cameraPending = false
+	local disposed = false
+	local connections: { RBXScriptConnection } = {}
+	local characterConnections: { RBXScriptConnection } = {}
+	local observedCharacter: Model? = nil
+	local observedHumanoid: Humanoid? = nil
+	local healthConnection: RBXScriptConnection? = nil
 	local panel = Instance.new("Frame")
 	panel.Name, panel.Size = "ProfilePanel", UDim2.fromScale(1, 1)
 	panel.BackgroundColor3, panel.BackgroundTransparency = Color3.fromRGB(12, 24, 24), 0.12
@@ -49,8 +55,24 @@ function Controller.start(
 	local lang = button("Language", 0)
 	lang.Position, lang.Size = UDim2.new(1, -60, 0, 12), UDim2.fromOffset(48, 44)
 	lang.Activated:Connect(toggleLanguage)
+	local function characterReady(): boolean
+		local character = observedCharacter
+		local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
+		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		return character ~= nil
+			and player.Character == character
+			and character:IsDescendantOf(workspace)
+			and humanoid ~= nil
+			and humanoid.Health > 0
+			and root ~= nil
+			and root:IsA("BasePart")
+	end
 	local function restoreCamera(): ()
-		if not cameraPending or player:GetAttribute("ProfileStatus") ~= "Ready" then
+		if
+			not cameraPending
+			or player:GetAttribute("ProfileStatus") ~= "Ready"
+			or not characterReady()
+		then
 			return
 		end
 		local character = player.Character
@@ -74,29 +96,48 @@ function Controller.start(
 		return Strings.text(language(), key)
 	end
 	local function render(): ()
+		if disposed then
+			return
+		end
 		local status = player:GetAttribute("ProfileStatus")
+		local avatarLoading = status == "Ready" and not characterReady()
+		local wasVisible = panel.Visible
 		lang.Text = if language() == "ru" then "EN" else "RU"
 		if status == "Error" then
 			seenError = true
 		end
-		local visible = status == "Error" or (seenError and status == "Loading")
+		local visible = status == nil or status == "Loading" or status == "Error" or avatarLoading
 		if visible and not panel.Visible then
 			suspend()
 		end
 		panel.Visible = visible
 		if not visible then
-			if seenError and status == "Ready" then
+			if wasVisible and status == "Ready" then
 				cameraPending = true
 			end
 			seenError, awaiting, exiting = false, false, false
 		end
 		restoreCamera()
-		local loading = status == "Loading" or awaiting
+		local loading = status == nil or status == "Loading" or awaiting or avatarLoading
+		local recovering = awaiting or (seenError and status == "Loading")
 		local allowed = player:GetAttribute("ProfileRecoveryAllowed") == true
-		heading.Text = t(if loading then "profileRecoveringTitle" else "profileErrorTitle")
+		heading.Text = t(
+			if avatarLoading
+				then "characterLoadingTitle"
+				elseif recovering then "profileRecoveringTitle"
+				elseif loading then "profileLoadingTitle"
+				else "profileErrorTitle"
+		)
 		local rawCode = player:GetAttribute("ProfileErrorCode")
 		local code = if type(rawCode) == "string" then rawCode else "Unavailable"
-		message.Text = t(if loading then "profileRecovering" else "profileReason" .. code)
+		message.Text = t(
+			if avatarLoading
+				then "characterLoading"
+				elseif recovering then "profileRecovering"
+				elseif loading then "profileLoading"
+				else "profileReason" .. code
+		)
+		retry.Visible, exit.Visible = not avatarLoading, not avatarLoading
 		retry.Text = t(
 			if loading
 				then "profileRetrying"
@@ -110,10 +151,13 @@ function Controller.start(
 			and player:GetAttribute("ProfileCanRetry") == true
 		retry.AutoButtonColor, retry.BackgroundTransparency =
 			retry.Active, if retry.Active then 0 else 0.6
-		exit.Text, exit.Active = t("profileExit"), not exiting
+		exit.Text = t("profileExit")
+		exit.Active = not exiting and (status == "Error" or status == "Loading")
+		exit.AutoButtonColor, exit.BackgroundTransparency =
+			exit.Active, if exit.Active then 0 else 0.6
 	end
 	retry.Activated:Connect(function()
-		if not retry.Active then
+		if disposed or not panel.Visible or not retry.Active then
 			return
 		end
 		awaiting, epoch = true, epoch + 1
@@ -121,36 +165,85 @@ function Controller.start(
 		render()
 		command:FireServer("retry")
 		task.delay(10, function()
-			if epoch == attempt and screen.Parent ~= nil then
+			if not disposed and epoch == attempt and screen.Parent ~= nil then
 				awaiting = false
 				render()
 			end
 		end)
 	end)
 	exit.Activated:Connect(function()
-		if exiting then
+		if disposed or not panel.Visible or not exit.Active then
 			return
 		end
 		exiting = true
 		render()
 		command:FireServer("exit")
 	end)
-	player:GetAttributeChangedSignal("ProfileStatus"):Connect(function()
-		if player:GetAttribute("ProfileStatus") ~= "Loading" then
-			awaiting = false
+	local function refreshCharacter(): ()
+		local character = observedCharacter
+		local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
+		if humanoid ~= observedHumanoid then
+			if healthConnection then
+				healthConnection:Disconnect()
+				healthConnection = nil
+			end
+			observedHumanoid = humanoid
+			if humanoid then
+				healthConnection = humanoid.HealthChanged:Connect(render)
+			end
 		end
 		render()
-	end)
-	player.CharacterAdded:Connect(function(character: Model)
-		character:WaitForChild("Humanoid", 15)
-		if player.Character == character and screen.Parent ~= nil then
-			restoreCamera()
-		end
-	end)
-	for _, name in { "ProfileErrorCode", "ProfileRecoveryAllowed", "ProfileCanRetry" } do
-		player:GetAttributeChangedSignal(name):Connect(render)
 	end
-	render()
-	return { render = render }
+	local function bindCharacter(character: Model?): ()
+		for _, connection in characterConnections do
+			connection:Disconnect()
+		end
+		table.clear(characterConnections)
+		observedCharacter = character
+		if character then
+			table.insert(characterConnections, character.ChildAdded:Connect(refreshCharacter))
+			table.insert(characterConnections, character.ChildRemoved:Connect(refreshCharacter))
+			table.insert(characterConnections, character.AncestryChanged:Connect(refreshCharacter))
+		end
+		refreshCharacter()
+	end
+	table.insert(
+		connections,
+		player:GetAttributeChangedSignal("ProfileStatus"):Connect(function()
+			if player:GetAttribute("ProfileStatus") ~= "Loading" then
+				awaiting = false
+			end
+			render()
+		end)
+	)
+	table.insert(connections, player.CharacterAdded:Connect(bindCharacter))
+	table.insert(
+		connections,
+		player.CharacterRemoving:Connect(function(character: Model)
+			if observedCharacter == character then
+				bindCharacter(nil)
+			end
+		end)
+	)
+	for _, name in { "ProfileErrorCode", "ProfileRecoveryAllowed", "ProfileCanRetry" } do
+		table.insert(connections, player:GetAttributeChangedSignal(name):Connect(render))
+	end
+	screen.Destroying:Once(function()
+		disposed, cameraPending = true, false
+		epoch += 1
+		bindCharacter(nil)
+		for _, connection in connections do
+			connection:Disconnect()
+		end
+		table.clear(connections)
+		panel.Visible = false
+	end)
+	bindCharacter(player.Character)
+	return {
+		render = render,
+		isBlocking = function(): boolean
+			return disposed or panel.Visible
+		end,
+	}
 end
 return Controller

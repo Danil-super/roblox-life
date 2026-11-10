@@ -931,3 +931,26 @@ CoreGui Chat выключен, Leave возвращает исходное со�
 скрывает чат и сохраняет mask/job/work. Menu/Enabled/Destroy и исходное
 отключение чата покрывают четыре новые регрессии ModalControls. Это не
 изменяет фильтрацию gameProcessedEvent и не отключает чат во всей игре.
+
+## ENTRY-READY-22: первый вход и возрождение
+
+`ProfileRecoveryUI.test.py`: шесть настоящих render/callback-сценариев — первый
+Loading, Ready без аватара, приоритет ошибки, повторный render, Retry/Exit.
+`CharacterReadyUI.test.py`: шесть lifecycle-сценариев поздних Humanoid/root,
+неверного класса, модели вне Workspace, смерти/старой модели, начального
+живого аватара и полного Destroy. Проверяются API isBlocking/камера, cleanup
+и поздний retry. PhoneInput добавляет блокировку M/кнопки во время ожидания.
+
+В одном solo MemoryPreview: дождаться готового аватара, вызвать настоящую
+смерть, увидеть ожидание при сохранённых Ready/$0/0 XP; проверить EN/RU,
+portrait/landscape/desktop, TextFits и язык ≥44 px. M и закрытый UI не должны
+открывать телефон. После настоящего нового Character панель уходит, Custom/
+CameraSubject/Touch controls возвращаются. Затем пройти прежний первый цикл
+и проверить nine batches. Для длительной проверки макетов допустима явно
+обозначенная временная Players.RespawnTime; восстановить её и не объявлять
+эту длительность обычным временем игры.
+
+Отдельный свежий Play: M действительно открывает/закрывает телефон; Destroy
+HUD → реальный unprocessed M оставляет сохранённую старую панель закрытой,
+профиль Ready/$0/0 XP. Restore device в Play, Stop, Source/чистый Edit.
+Это отдельно от физических устройств и реальных облачных/сетевых сбоев.

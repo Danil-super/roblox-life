@@ -19,6 +19,7 @@ local screen={GetAttribute=function()return building end,FindFirstChild=function
 local Enum={CameraType={Custom="Custom"}}
 local camera={CameraType="Fixed"}
 local workspace={CurrentCamera=camera}
+local function characterReady()return player.Character~=nil and humanoid.Health>0 end
 '''
 cases = {
     "character_after_profile": '''

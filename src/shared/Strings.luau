@@ -460,6 +460,17 @@ ru["homeErrorOperationConflict"] =
 	"Запрос относится к другой покупке. Проверь склад."
 en["profileErrorTitle"] = "Progress is protected"
 ru["profileErrorTitle"] = "Прогресс защищён"
+en["profileLoadingTitle"] = "Preparing your room"
+ru["profileLoadingTitle"] = "Готовим твою комнату"
+en["profileLoading"] = "Loading your profile and room. You can start when your character is ready."
+ru["profileLoading"] =
+	"Загружаем профиль и комнату. Можно будет начать, когда появится персонаж."
+en["characterLoadingTitle"] = "Preparing your character"
+ru["characterLoadingTitle"] = "Готовим персонажа"
+en["characterLoading"] =
+	"Your profile is ready. Waiting for your character to appear. You can leave through the Roblox menu."
+ru["characterLoading"] =
+	"Профиль готов. Ждём появления персонажа. Выйти можно через меню Roblox."
 en["profileRecoveringTitle"] = "Restoring your session"
 ru["profileRecoveringTitle"] = "Восстанавливаем сессию"
 en["profileRecovering"] =

@@ -9,6 +9,8 @@ body=source[a:b]
 header='''
 local InputConfig=table.clone(require("../src/shared/InputConfig"))
 local status,building,working,focused="Ready",false,false,nil
+local loadingAvatar=false
+local recovery={isBlocking=function()return loadingAvatar end}
 local calls=0
 local player={GetAttribute=function()return status end}
 local screen={GetAttribute=function()return building end}
@@ -26,6 +28,7 @@ clicked();assert(not panel.Visible and calls==4,"Button did not share toggle")
 press("M",true);focused={};press("M");focused=nil
 working=true;press("M");working=false;building=true;press("M");building=false
 status="Error";press("M");status="Loading";clicked();status="Ready"
+loadingAvatar=true;press("M");clicked();loadingAvatar=false
 press("E");assert(not panel.Visible and calls==4,"Typing/processed/mode/profile guard failed")
 InputConfig.phoneKey="N";press("M");assert(not panel.Visible,"Old config key still active")
 press("N");assert(panel.Visible and calls==6,"Configured key ignored")
