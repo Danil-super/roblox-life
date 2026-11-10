@@ -36,8 +36,37 @@ function screen:SetAttribute(name,value) assert(name=="ModalOpen");modalOpen=val
 function screen:GetChildren() return {phone,jobs,paint,nav,results,profile,roomPlan,client,guide,abandon} end
 function screen:GetPropertyChangedSignal() return self.changed end
 local GuiService = {TouchControlsEnabled=true}
+local Enum={CoreGuiType={Chat="Chat"}}
+local chatEnabled,chatWrites=true,0
+local StarterGui={
+ GetCoreGuiEnabled=function(_,kind)assert(kind=="Chat");return chatEnabled end,
+ SetCoreGuiEnabled=function(_,kind,value)assert(kind=="Chat");chatEnabled=value;chatWrites+=1 end,
+}
 '''
 scenarios = {
+    "paint_hides_chat_and_restores_on_modal_transition": '''
+Controller.start(screen);phone:set(true);assert(chatEnabled and chatWrites==0)
+paint:set(true);assert(not chatEnabled,"Chat textbox still covers the paint surface")
+phone:set(false);jobs:set(true);assert(chatWrites==1,"Sync/other panels overwrote the saved chat state")
+paint:set(false);assert(chatEnabled and not GuiService.TouchControlsEnabled,"Paint exit did not restore chat during another modal")
+jobs:set(false);assert(chatWrites==2 and GuiService.TouchControlsEnabled)
+''',
+    "paint_preserves_previously_disabled_chat": '''
+chatEnabled=false;Controller.start(screen);paint:set(true);paint:set(false)
+assert(not chatEnabled,"Paint enabled a previously disabled chat")
+''',
+    "paint_chat_hud_disable_reenable_destroy": '''
+Controller.start(screen);paint:set(true);assert(not chatEnabled)
+screen.Enabled=false;screen.changed:Fire();assert(chatEnabled)
+screen.Enabled=true;screen.changed:Fire();assert(not chatEnabled)
+screen.Destroying:Fire();assert(chatEnabled)
+paint:set(false);paint:set(true);assert(chatEnabled,"Destroyed HUD changed chat")
+''',
+    "paint_chat_detected_when_other_panel_is_first": '''
+Controller.start(screen);phone:set(true);paint:set(true)
+assert(not chatEnabled,"Earlier visible panel hid the painting mode")
+paint:set(false);assert(chatEnabled and not GuiService.TouchControlsEnabled)
+''',
     "abandon_confirmation": '''
 Controller.start(screen);jobs:set(true);abandon:set(true);jobs:set(false)
 assert(modalOpen and not GuiService.TouchControlsEnabled,"Confirmation released movement")

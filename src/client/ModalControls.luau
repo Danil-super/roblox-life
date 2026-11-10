@@ -1,5 +1,6 @@
 --!strict
 local GuiService = game:GetService("GuiService")
+local StarterGui = game:GetService("StarterGui")
 local Controller = {}
 function Controller.start(screen: ScreenGui): ()
 	local names: { [string]: boolean } = {
@@ -19,8 +20,16 @@ function Controller.start(screen: ScreenGui): ()
 	}
 	local panels: { GuiObject } = {}
 	local previous: boolean? = nil
+	local previousChat: boolean? = nil
 	local stopped = false
+	local function restoreChat(): ()
+		if previousChat ~= nil then
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, previousChat)
+			previousChat = nil
+		end
+	end
 	local function restore(): ()
+		restoreChat()
 		screen:SetAttribute("ModalOpen", false)
 		if previous ~= nil then
 			GuiService.TouchControlsEnabled = previous
@@ -31,17 +40,30 @@ function Controller.start(screen: ScreenGui): ()
 		if stopped then
 			return
 		end
+		local modal, painting = false, false
 		for _, panel in panels do
 			if screen.Enabled and panel.Visible then
-				screen:SetAttribute("ModalOpen", true)
-				if previous == nil then
-					previous = GuiService.TouchControlsEnabled
-				end
-				GuiService.TouchControlsEnabled = false
-				return
+				modal = true
+				painting = painting or panel.Name == "PaintToolbar"
 			end
 		end
-		restore()
+		if painting then
+			if previousChat == nil then
+				previousChat = StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.Chat)
+				StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+			end
+		else
+			restoreChat()
+		end
+		if modal then
+			screen:SetAttribute("ModalOpen", true)
+			if previous == nil then
+				previous = GuiService.TouchControlsEnabled
+			end
+			GuiService.TouchControlsEnabled = false
+		else
+			restore()
+		end
 	end
 	for _, panel in screen:GetChildren() do
 		if names[panel.Name] and panel:IsA("GuiObject") then

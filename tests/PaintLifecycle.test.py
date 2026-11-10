@@ -17,6 +17,7 @@ local active,held,touch = true,true,{}
 local disposed=false
 local missing,manualGaps=true,true
 local queue,current,inflight,inspectPending = {{points={1}}},{},7,true
+local reviewSent=true
 local toolbar={Visible=true}
 local unbound,disconnected,destroyed,inkDestroyed=0,0,0,0
 local ink={destroy=function()inkDestroyed+=1 end}
@@ -38,6 +39,7 @@ local RunService={UnbindFromRenderStep=function()viewUnbound+=1 end}
 local beganConnection={Disconnect=function()inputDisconnected+=1 end}
 local changedConnection=beganConnection
 local endedConnection=beganConnection
+local focusConnection=beganConnection
 local effectsDisconnected=0
 local effectsConnection={Disconnect=function()effectsDisconnected+=1 end}
 local motionConnection=effectsConnection
@@ -51,7 +53,7 @@ cases = {
     "death_clears_input_and_effects": '''
 died()
 assert(not active and not held and touch==nil and #queue==0 and current==nil and inflight==nil)
-assert(not toolbar.Visible and not inspectPending and destroyed==2 and disconnected==1 and inkDestroyed==1 and ink==nil)
+assert(not toolbar.Visible and not inspectPending and not reviewSent and destroyed==2 and disconnected==1 and inkDestroyed==1 and ink==nil)
 assert(not missing and not manualGaps,"Gap guide leaked into another work session")
 ''',
     "camera_and_visibility_restored": '''
@@ -83,7 +85,7 @@ onDestroy()
 local entered=0
 '''+entry_guard+'''
 enter({},{});assert(entered==0 and disposed,"Late callback recreated destroyed painting view")
-assert(not active and inkDestroyed==1 and destroyed==2 and viewUnbound==1 and inputDisconnected==4,"Destroyed HUD retained paint graphics or service input")
+assert(not active and inkDestroyed==1 and destroyed==2 and viewUnbound==1 and inputDisconnected==5,"Destroyed HUD retained paint graphics or service input")
 assert(effectsDisconnected==2,"Destroyed HUD retained preference subscriptions")
 '''
 for name, checks in cases.items():

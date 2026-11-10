@@ -56,6 +56,7 @@ function Controller.start(
 	local lastSample = 0
 	local lastHit = 0
 	local inspectPending = false
+	local reviewSent = false
 	local missing = false
 	local manualGaps = false
 	local toolbar = Instance.new("Frame")
@@ -128,6 +129,7 @@ function Controller.start(
 		current = nil
 		inflight = nil
 		inspectPending = false
+		reviewSent = false
 		missing, manualGaps = false, false
 		toolbar.Visible = false
 		CAS:UnbindAction("PaintMovement")
@@ -200,8 +202,8 @@ function Controller.start(
 			if #segment.points == 0 and segment ~= current then
 				table.remove(queue, 1)
 			end
-		elseif inspectPending then
-			inspectPending = false
+		elseif inspectPending and not reviewSent then
+			reviewSent = true
 			send("review", nil)
 		end
 	end
@@ -391,6 +393,7 @@ function Controller.start(
 	end)
 	review.Activated:Connect(function()
 		held = false
+		touch = nil
 		current = nil
 		inspectPending = true
 		flush()
@@ -405,12 +408,16 @@ function Controller.start(
 			stop()
 			return
 		end
-		if processed then
+		if processed or inspectPending then
 			return
 		end
 		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or (input.UserInputType == Enum.UserInputType.Touch and touch == nil)
+			not held
+			and touch == nil
+			and (
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			)
 		then
 			if #queue >= 4 then
 				return
@@ -429,11 +436,23 @@ function Controller.start(
 		end
 	end)
 	local endedConnection = UIS.InputEnded:Connect(function(input: InputObject)
-		if input == touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if
+			input == touch
+			or (input.UserInputType == Enum.UserInputType.MouseButton1 and held and touch == nil)
+		then
 			held = false
 			touch = nil
 			current = nil
 			flush()
+		end
+	end)
+	local focusConnection = UIS.WindowFocusReleased:Connect(function()
+		held = false
+		touch = nil
+		current = nil
+		lastHit = 0
+		if sound then
+			sound.Playing = false
 		end
 	end)
 	RunService:BindToRenderStep("PaintingView", Enum.RenderPriority.Camera.Value + 1, function()
@@ -545,6 +564,7 @@ function Controller.start(
 		beganConnection:Disconnect()
 		changedConnection:Disconnect()
 		endedConnection:Disconnect()
+		focusConnection:Disconnect()
 		effectsConnection:Disconnect()
 		motionConnection:Disconnect()
 	end)
@@ -558,6 +578,9 @@ function Controller.start(
 		update = function(s: Types.Snapshot): ()
 			local previous = snapshot
 			snapshot = s
+			if reviewSent and (s.error ~= nil or s.phase ~= "Painting") then
+				inspectPending, reviewSent = false, false
+			end
 			if inflight and (s.sequence >= inflight or s.error ~= nil) then
 				inflight = nil
 				sequence = s.sequence

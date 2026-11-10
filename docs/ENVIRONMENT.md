@@ -3099,3 +3099,109 @@ FPS на нём, мультиклиент и удержание аудитори
 [порядок ScreenGui](https://create.roblox.com/docs/ui/on-screen-containers#display-order),
 [GetGuiObjectsAtPosition](https://create.roblox.com/docs/reference/engine/classes/BasePlayerGui#GetGuiObjectsAtPosition),
 [мобильные зоны](https://create.roblox.com/docs/ui/position-and-size#reserved-zones).
+
+
+## 10 ноября 2026 — PAINT-FOCUS-21 / DEV-MEMORY-21
+
+Исправлены настоящие обработчики PaintController: один владелец жеста
+Mouse/Touch; второй указатель не перехватывает удержание. WindowFocusReleased
+отпускает held/touch/current и контактный звук, не переписывая queue/inflight/
+sequence. Поздний up не вызывает flush. Review освобождает Touch, а reviewSent
+удерживает блокировку нового жеста после отправки: обычный sync не считается
+ответом, повторная команда не отправляется. Ошибка/смена фазы освобождает ввод;
+stop/Destroy очищают состояние и снимают новую подписку. Сервер, schema3,
+приёмка и размеры награды прежние.
+
+Шесть сценариев PaintFocus выполняют actual input/flush/update callbacks;
+регрессия отправленной проверки сначала упала с «Sending review released
+input before the answer», после исправления прошла. PaintPointer/Feedback/
+Lifecycle проверяют sampler, подсветку и cleanup отдельно. Полный
+`bash scripts/dev.sh check` прошёл после финального изменения: формат, Selene,
+standalone/адаптеры, strict-анализ и обе Rojo-сборки.
+
+Запуск новой Studio теперь требует MemAvailable ≥6144 MiB; существующий
+процесс/резервация проверяются раньше и не дублируются. Неизвестная метрика
+запрещает запуск. 14 StudioLaunch-тестов проверяют 0/6143/6144 MiB, Available
+вместо Free, malformed/нет файла, конкуренцию и сохранённые ограничения
+одного запуска. В предыдущей попытке реальный отказ при 5757 MiB не был
+обойдён. По просьбе пользователя 6 ноября выполнен один memory.reclaim
+512M swappiness=max в существующей cgroup: Available 6288→6676 MiB,
+SwapFree 2332→1819 MiB, 0.11 с. Это возврат холодных страниц через swap,
+не закрытие приложений и не постоянное изменение системных настроек.
+
+10 ноября повторная проверка началась при ~17 GiB доступной памяти
+(система сообщает ~31 GiB RAM), PSI full avg10=0. Studio была закрыта;
+guarded-команда запустила ровно один процесс. Повтор команды вернул existing
+с тем же PID без новой сцены. В тяжёлые локальные проверки Play не включался.
+Перед Play сверены 84 Source с канонической сборкой; небольшое финальное
+исправление review применено в Edit после точного сравнения исходника и
+повторно сверено со сборкой.
+
+Официальная документация вновь получена через восстановившийся Context7:
+[WindowFocusReleased и ограничения InputEnded](https://create.roblox.com/docs/reference/engine/classes/UserInputService).
+Нативные результаты и границы приёмки записаны ниже отдельно от unit/check.
+
+Нативная диагностика дополнительно нашла реальную причину недоступных
+участков: при 92/96 четыре левые клетки третьего ряда попадали в активный
+ChatBar стандартного PlayerGui.Chat (y≈200 в портретном 374×608). Hit-список
+и снимок подтвердили перехват ввода полем чата, не серверный отказ или
+несовпадение маски. gameProcessedEvent не обходился. ModalControls теперь
+скрывает CoreGui Chat только при PaintToolbar и возвращает сохранённый
+enabled при выходе/другом меню/Enabled/Destroy; false сохраняется. Используются
+прежние UI-подписки. Четыре новые регрессии сначала воспроизвели
+«Chat textbox still covers the paint surface», затем прошли вместе с прежними
+12 modal-сценариями. После этого full check и обе сборки пройдены снова.
+Официальные методы проверены через Context7:
+[StarterGui SetCoreGuiEnabled/GetCoreGuiEnabled](https://create.roblox.com/docs/reference/engine/classes/StarterGui).
+
+Финальная проверка после исправления ChatBar прошла в одиночном Play:
+
+- Портретный Touch 374×608 заполнил 96/96, включая четыре прежде
+  перекрытые клетки; Gaps отключён, до Review/сдачи баланс $0.
+- Leave восстановил CoreGui Chat; reentry скрыла его, сохранив mask/job/work
+  и все 96 клеток. Исходное false/Destroy/сочетания меню проверены адаптерами.
+- Настоящая приёмка/сдача дала $250/50 XP. Touch-покупка растения за $180
+  оставила $70; установка завершила обучение. Перенос с явным Grid подтвердил
+  ровно (9,6), store и повторная установка (8,6) сохранили один экземпляр.
+- Mint принят и осознанно отменён без новой оплаты. Actual Output подтвердил
+  девять уникальных ревизий: два accept, один completed/abandoned, одна покупка,
+  две установки, один move/store, один DONE. Итог $70/50 XP, одна модель.
+- Device default восстановлен ещё в Play, наблюдатели сняты, Stop вернул Edit.
+  После Stop все 84 Source совпали с канонической сборкой; Homes пуст,
+  FurnitureGuides/FurnitureGhost отсутствуют. Новых окон/сцен/клиентов нет.
+
+Отдельный более ранний Mouse-сценарий в том же PID реально получил
+WindowFocusReleased при сворачивании: контактный звук остановился, late up/
+hover сохранили count/sequence/mask/job/work; новый дальний мазок дал ровно
+две раздельные клетки без мостика. Его общий отчёт остался failed из-за
+последующей неполной покраски — успех узкого focus-сценария не переименовывает
+весь прогон. Финальный полный цикл выше — отдельный свежий MemoryPreview.
+
+Ранние попытки с недоступным MCP PlayServer, ещё загружаемым персонажем,
+ненаблюдённым фокусом/ранним чтением звука и 84/92 клетками не засчитаны как
+полный проход; исходные failed-отчёты сохранены. Диагностика на 92 клетках
+воспроизвела настоящий ChatBar, после его исправления нужен был полный
+96/96 и все девять пакетов; критерии не снижались. Нативный Mouse-drag
+полной стены после финального скрытия чата отдельно не повторялся: финальный
+полный проход использовал Touch, Mouse focus/ввод — отдельный случай и адаптеры.
+
+В 70 замерах финального прогона минимум MemAvailable=11096 MiB, максимум
+PSI full avg10=0.03%, swap used=0 MiB. Guard не прерывал этот прогон.
+Всё время использовался один PID Studio; нагрузка оценивалась до/во время
+проверок, лишние приложения не закрывались. После Stop Studio оставлена в Edit.
+
+CodeGraph в текущем корне: 213 файлов/3387 узлов/6146 связей, up to date.
+Graphify code-only перечитан MCP: 792 узла/1472 связи. AST-парсер предупредил
+о частичном извлечении PaintController и ModalControls (Luau); это ограничение
+индекса, полное AST-покрытие не утверждается. Изменённые исходники прочитаны
+напрямую, strict-анализаторы и сборка завершились без ошибок. Исключения
+.tools/build/данных сохранены, документы/медиа/секреты не индексировались.
+
+Доказательства (ignored): `.tools/paint-focus/check-chat-final.log`,
+`play.log`, `play-report.json`, `attempt-8-play-report.json`,
+`attempt-13-play-report.json`, `gaps-native.png`, `chat-red.log`,
+`chat-green.log`, `review-red.log`, `review-green.log`, `resources.jsonl`,
+`sources-before-chat-play.log`, `sources-final.log`, `clean-edit.log`,
+`graphify-final.log`, `codegraph-final.log`, `memory-reclaim.json`.
+Cloud/rejoin, физический телефон/FPS и несколько клиентов остаются
+непроверенными и не входят в закрытые локальные этапы.
