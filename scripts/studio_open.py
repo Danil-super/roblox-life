@@ -52,6 +52,19 @@ def open_once(root, proc=Path("/proc")):
                 return "starting"
         if not shutil.which("flatpak"):
             raise RuntimeError("Install Vinegar Flatpak as described in README.md.")
+        try:
+            line = next(line for line in (proc / "meminfo").read_text().splitlines()
+                        if line.startswith("MemAvailable:"))
+            _, value, unit = line.split()
+            if unit != "kB":
+                raise ValueError("Unknown memory unit")
+            available = int(value) // 1024
+        except (OSError, ValueError, StopIteration) as error:
+            raise RuntimeError("Cannot read Ubuntu available memory; Studio was not started.") from error
+        # Vinegar/Studio used about 4 GiB before Play on this PC; keep a 2 GiB reserve.
+        if available < 6144:
+            raise RuntimeError(f"Low memory: {available} MiB available; 6144 MiB required for a new Studio. "
+                               "Close unused apps and retry; no new window was opened.")
         command = ["flatpak", "run", "org.vinegarhq.Vinegar", "--task", "EditFile",
                    "--localPlaceFile", "Z:" + str(place).replace("/", "\\")]
         descriptor = os.open(tools / "studio-launch.log", os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)

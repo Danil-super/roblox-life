@@ -23,6 +23,7 @@ class StudioLaunchTests(unittest.TestCase):
         (self.root / "build/roblox-life.rbxlx").write_text("test place")
         self.proc = Path(self.temp.name) / "proc"
         self.proc.mkdir()
+        (self.proc / "meminfo").write_text("MemFree: 1 kB\nMemAvailable: 8388608 kB\n")
 
     def tearDown(self):
         self.temp.cleanup()
@@ -38,6 +39,44 @@ class StudioLaunchTests(unittest.TestCase):
         self.process(12, b"C:\\WebView\\msedgewebview2.exe")
         self.process(13, b"/usr/bin/robloxstudiobeta.exe")
         self.assertEqual(module.studio_processes(self.proc), [10, 13])
+
+    @patch.object(module.shutil, "which", return_value="/usr/bin/flatpak")
+    @patch.object(module.subprocess, "Popen")
+    def test_low_memory_never_starts_or_reserves_a_new_studio(self, spawn, _which):
+        spawn.return_value.pid = 99
+        for available in (0, 6143):
+            (self.proc / "meminfo").write_text(f"MemAvailable: {available * 1024} kB\n")
+            with self.assertRaisesRegex(RuntimeError, "memory"):
+                module.open_once(self.root, self.proc)
+            self.assertFalse((self.root / ".tools/studio-launch.json").exists())
+        spawn.assert_not_called()
+
+    @patch.object(module.shutil, "which", return_value="/usr/bin/flatpak")
+    @patch.object(module.subprocess, "Popen")
+    def test_memory_boundary_uses_available_not_free(self, spawn, _which):
+        (self.proc / "meminfo").write_text("MemFree: 1 kB\nMemAvailable: 6291456 kB\n")
+        spawn.return_value.pid = 99
+        self.assertEqual(module.open_once(self.root, self.proc), "started")
+        self.assertEqual(spawn.call_count, 1)
+
+    @patch.object(module.subprocess, "Popen")
+    def test_existing_studio_is_reused_even_with_low_memory(self, spawn):
+        self.process(10, b"C:\\Roblox\\RobloxStudioBeta.exe")
+        (self.proc / "meminfo").unlink()
+        self.assertEqual(module.open_once(self.root, self.proc), "existing")
+        spawn.assert_not_called()
+
+    @patch.object(module.shutil, "which", return_value="/usr/bin/flatpak")
+    @patch.object(module.subprocess, "Popen")
+    def test_unreadable_or_invalid_memory_metric_does_not_launch(self, spawn, _which):
+        spawn.return_value.pid = 99
+        for text in (None, "MemFree: 99999999 kB\n", "MemAvailable: bad kB\n", "MemAvailable: 99999999 MB\n"):
+            metric = self.proc / "meminfo"
+            if text is None:metric.unlink()
+            else:metric.write_text(text)
+            with self.assertRaisesRegex(RuntimeError, "memory"):
+                module.open_once(self.root, self.proc)
+        spawn.assert_not_called()
 
     @patch.object(module.shutil, "which", return_value="/usr/bin/flatpak")
     @patch.object(module.subprocess, "Popen")
