@@ -138,7 +138,7 @@ function Navigation.start(screen: ScreenGui, activate: () -> ())
 				if target then
 					marker.Adornee, marker.Enabled = target, true
 				end
-				badge.Text = t(nameKey) .. "\n" .. t("useActionBelow")
+				badge.Text = t(nameKey) .. "\n" .. t(s.actionKey or "useActionBelow")
 			elseif nextPoint then
 				waypoint.Position, waypoint.Transparency = nextPoint + Vector3.new(0, 0.15, 0), 0.1
 				marker.Adornee, marker.Enabled = waypoint, true

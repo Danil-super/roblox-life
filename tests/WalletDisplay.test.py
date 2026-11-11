@@ -86,6 +86,8 @@ jobs = (ROOT / "src/client/JobController.luau").read_text()
 start = jobs.index('\t\tlocal objective = screen:FindFirstChild("Objective")')
 finish = jobs.index('\n\tend\n\taction.Activated', start)
 objective_body = jobs[start:finish]
+helper_start=jobs.index("\tlocal function preparationPending():")
+phase_helpers=jobs[helper_start:jobs.index("\n\tlocal function activate()",helper_start)]
 for profile_status in ("Error", "Loading", "Ready"):
     objective_header = r'''
 local label = {Text="profile-status", IsA=function() return true end}
@@ -96,6 +98,7 @@ end}
 local screen = {FindFirstChild=function() return objective end}
 local player = {GetAttribute=function() return STATUS end}
 local s, nearWall, phase = nil, false, "Offer"
+local state=nil
 local phaseKeys = {Offer="jobOffer"}
 local function t(key) return key end
 local function stepHint() return "offerHint" end
@@ -104,7 +107,7 @@ local function stepHint() return "offerHint" end
                  if profile_status == "Ready" else
                  'assert(label.Text=="profile-status" and detail.Text=="profile-hint", "Job replaced profile status")')
     with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
-        script.write(objective_header.replace("STATUS", '"' + profile_status + '"') + objective_body + "\n" + assertion)
+        script.write(objective_header.replace("STATUS", '"' + profile_status + '"') + phase_helpers + "\n" + objective_body + "\n" + assertion)
         script.flush()
         subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
     print("PASS ObjectiveProfile:", profile_status)

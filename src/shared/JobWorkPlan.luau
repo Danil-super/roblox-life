@@ -11,6 +11,7 @@ export type Progress = {
 	surfaceTotal: number,
 	noteKey: string,
 	percent: number?,
+	preparationPending: boolean,
 }
 local phases: { [string]: number? } =
 	{ Inspect = 1, Prepare = 2, ChooseMaterial = 3, Painting = 4, SurfaceReady = 0, Ready = 5 }
@@ -47,13 +48,16 @@ function Plan.evaluate(s: Types.Snapshot?, ready: boolean): Progress?
 			else "Next"
 	end
 	local coverage = View.progress(s.count, Config.columns * Config.rows, Config.threshold)
+	local preparing = s.phase == "Prepare" and (s.preparedCount or 0) < (s.preparationRequired or 0)
 	return {
+		preparationPending = preparing,
 		current = current,
 		states = states,
 		surfaceIndex = index,
 		surfaceTotal = total,
-		noteKey = if s.phase == "Painting" and coverage.covered
-			then "workPlanReviewHint"
+		noteKey = if preparing
+			then "scrapePlanHint"
+			elseif s.phase == "Painting" and coverage.covered then "workPlanReviewHint"
 			else notes[s.phase],
 		percent = if s.phase == "Painting" then coverage.percent else nil,
 	}

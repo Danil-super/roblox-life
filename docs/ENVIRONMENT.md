@@ -3676,3 +3676,69 @@ sources-final.log,clean-edit.log,graphify.log,codegraph-status.json}.
 [Контракт](PERFECT_TIPS.md). Physical Touch, cloud/rejoin и несколько игроков
 не проверены; бонус Duo проверен доменными/адаптерными тестами без нового
 native Duo. Разовый timeout подхода остаётся наблюдением.
+
+
+## 11 ноября 2026: PREP-GUIDE-29 — подготовка с понятной целью
+
+PreparationGoal использует прежний JobNavigation/WalkingRoute/маркер/Map:
+выбирает ближайший свой OldFinish и удерживает выбор при движении до
+Cleared/удаления/нового work. После серверных 3/3 (сразу у starter) выбирает
+Protection. В точке участка beacon говорит о native E/кнопке; HUD/план
+показывают jobScrape вместо преждевременного jobPrepare. Home/Shop имеют
+прежний приоритет. Goal.actionKey — optional поле локальной проекции,
+preparationPending — поле чистого WorkPlan; профиль/remote/деньги прежние.
+Новых Parts/кадровых циклов нет, один Destroy hook закрывает resolver.
+
+Red WorkPlan/ContractText воспроизвёл преждевременную инструкцию укрытия.
+Реальный resolver проверен с повёрнутой стеной, nearest/latch/confirmed next/
+floor, чужими/недоступными/удалёнными моделями, фазой/work/root/Destroy и
+отсутствием записи мира. Настоящий bridge подтвердил одну цель в Map/route,
+Home/Shop reset/приоритет и прежний navigating guard; реальный beacon —
+EN/RU native hold и старый fallback для плёнки. Wallet/HomeObjective fixtures
+получили настоящую функцию phaseTitleKey вместо устаревшего окружения.
+Strict потребовал явный тип Goals.Goal для mutable записи available=true;
+никаких cast/any/отключения проверок. Финальный full check завершился кодом 0:
+StyLua/Selene, все pure/adapter/UI, оба strict-анализатора и две Rojo-сборки.
+Context7 сверил CFrame.PointToWorldSpace по официальной документации.
+
+Первый Play прошёл Tutorial/Mint и просмотр предложения Rose, но прежний
+QA walk снова дал timeout до осмотра/подготовки. Причина прежнего timeout
+не установлена. Во втором runner дополнительно дождался нового подтверждённого
+Inspect до ходьбы; план/описание EN/RU/TextFits и путь к первому участку прошли.
+Затем остановился только тестовый код: незакрытая строка из Python newline,
+позже валидатор поймал склейку числового литерала с and. Эти отчёты failed
+сохранены; каждый завершён Stop → Edit. Игра из-за этих синтаксических ошибок
+не менялась. Все 19 составляемых Lua-команд проверены loadstring до финального
+Play; тайм-ауты и игровые проверки не ослаблялись, обход/телепорт не добавлялись.
+
+Финальный свежий solo MemoryPreview в той же Studio PID42102: естественные
+Tutorial/Mint → $550/120 XP → Rose. Новый Inspect подтверждался до ходьбы.
+Описание и второй пункт плана правильно говорили об очистке на EN/RU,
+Description/Step2/Note TextFits. Затем Humanoid.MoveTo шёл только по прежнему
+WalkingRouteMarker до beacon конкретного OldFinish. Для каждого из трёх
+разных участков видимый PromptShown соответствовал выбранной цели; настоящий
+E hold подтверждал 1/3 → 2/3 → 3/3, без денег/XP. В точке HUD/маяк говорили
+об очистке/native hold, после 3/3 маршрут довёл к Protection и восстановил
+«Protect the floor». Ни локальный счётчик, ни прямой Triggered/FireServer
+не использовались. Потом прежние плёнка/материал/мышь дали mask96/count96
+без автооплаты; Review/сдача → $420=$350+$70, итог $970/210 XP/три заказа.
+Output подтвердил шесть уникальных пакетов и три job_completed.
+
+После Stop — Edit, все 89 Source совпали с канонической сборкой, Homes пуст,
+guides/ghost нет. Три попытки — в одном экземпляре Studio/одной сцене, без
+посторонних закрытий. 268 замеров: MemAvailable минимум 11885 MiB, full PSI
+avg10 максимум 0,49% (ниже guard), swap used 986–1802 MiB.
+Graphify code-only текущего root: 829 узлов/1559 связей, перечитан MCP с
+абсолютным project_path; Luau AST остаётся частичным, связи проверены по коду.
+CodeGraph: 229 файлов/3623 узла/6519 связей, pending changes/refs=0.
+Исключения .tools/build/данных сохранены, документы/медиа не индексировались.
+
+Ignored-доказательства: .tools/preparation-guide/{goal-red.log,plan-red.log,
+title-red.log,check-final.log,attempt1.log,attempt1-report.json,attempt2.log,
+attempt2-report.json,qa-lua-red.log,validate_runner.py,play-final.log,
+play-report.json,resources.jsonl,sync.log,sources-before.log,sources-final.log,
+clean-edit.log,graphify.log,codegraph-status.json}. [Контракт](PREPARATION.md).
+Физический Touch, cloud/rejoin, несколько клиентов и FPS не проверялись.
+Home/Shop/Destroy/нет модели проверены локальными callbacks; повторный
+отдельный native сценарий этих ветвей не запускался. Снимки X11 не применялись
+как визуальная приёмка. Прежний timeout подхода остаётся под наблюдением.

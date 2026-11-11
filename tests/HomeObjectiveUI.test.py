@@ -12,6 +12,8 @@ a = s.index('\tlocal function activateObjective(')
 activate = s[a:s.index('\tlocal navigation =', a)]
 a = s.index('\t\tscreen:SetAttribute("HomeObjectiveQuiet"')
 render = s[a:s.index('\n\tend\n\taction.Activated', a)]
+helper_start=s.index("\tlocal function preparationPending():")
+phase_helpers=s[helper_start:s.index("\n\tlocal function activate()",helper_start)]
 header = r'''
 local Strings=require("../src/shared/Strings")
 local attrs={};local labels={Title={IsA=function()return true end},Hint={IsA=function()return true end}}
@@ -79,7 +81,7 @@ travel=nil;cue=nil;state.phase="Inspect";redraw();assert(labels.Title.Text==t("j
 print("PASS HomeObjectiveUI: real selector, HUD-only callback, all guards, captions/EN/RU and error/route priority")
 '''
 with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT/'.tools') as f:
-    f.write(header+selector+activate+checks+render_checks);f.flush()
+    f.write(header+phase_helpers+selector+activate+checks+render_checks);f.flush()
     subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)
 
 # Idle exploration must refresh authoritative room presence using the existing throttle.

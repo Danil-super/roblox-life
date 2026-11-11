@@ -193,10 +193,16 @@ en["scrapeAction"] = "Scrape with spatula"
 ru["scrapeAction"] = "Очистить шпателем"
 en["oldFinish"] = "Old wall finish"
 ru["oldFinish"] = "Старая отделка"
-en["scrapeHint"] =
-	"Clear the three brown patches on the wall: approach each and hold E (or its touch prompt). Cleared %d/%d; then protect the floor."
+en["jobScrape"], ru["jobScrape"] = "Remove old finish", "Сними старую отделку"
+en["scrapeBeaconHint"], ru["scrapeBeaconHint"] =
+	"Hold E / prompt", "Удерживай E / кнопку"
+en["scrapePlanHint"] =
+	"Follow the marker to a brown patch. Face it and hold E (or its prompt). Clear all three, then protect the floor."
+ru["scrapePlanHint"] =
+	"Иди по указателю к коричневому участку. Посмотри на него и удерживай E (или кнопку). Очисти все три, затем укрой пол."
+en["scrapeHint"] = "Follow the patch marker. Hold E / its prompt. Cleared %d/%d."
 ru["scrapeHint"] =
-	"Очисти три коричневых участка на стене: подойди и удерживай E (или кнопку касания). Снято %d/%d; затем укрой пол."
+	"Иди к метке участка. Удерживай E / кнопку. Снято %d/%d."
 en["scrapeProgress"] = "Cleared %d / %d"
 en["jobErrorPreparation"] =
 	"Clear the three marked patches with the spatula before protecting the floor."

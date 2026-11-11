@@ -26,6 +26,19 @@ for current, phase in { "Inspect", "Prepare", "ChooseMaterial", "Painting", "Rea
 	end
 	assert(p.percent == (if phase == "Painting" then 0 else nil), "Coverage shown outside painting")
 end
+local prep = snapshot("Prepare")
+prep.preparationRequired, prep.preparedCount = 3, 1
+local projected = Plan.evaluate(prep, true)
+assert(
+	projected and projected.preparationPending and projected.noteKey == "scrapePlanHint",
+	"Plan told player to protect floor before clearing"
+)
+prep.preparedCount = 3
+projected = Plan.evaluate(prep, true)
+assert(
+	projected and not projected.preparationPending and projected.noteKey == "prepareHint",
+	"Plan kept clearing after confirmation"
+)
 local s = snapshot("Painting")
 for _, count in { 0, 76, 77, 96, math.huge, 0 / 0 } do
 	s.count = count

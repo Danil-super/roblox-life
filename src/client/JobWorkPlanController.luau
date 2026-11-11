@@ -71,7 +71,9 @@ function Controller.start(body: ScrollingFrame, language: () -> string)
 		local keys = { "jobInspect", "jobPrepare", "jobColor", "workPlanPaint", "handoverClient" }
 		for i, row in rows do
 			local status = p.states[i]
-			row.title.Text, row.state.Text = t(keys[i]), t("workPlan" .. status)
+			row.title.Text, row.state.Text =
+				t(if i == 2 and p.preparationPending then "jobScrape" else keys[i]),
+				t("workPlan" .. status)
 			row.title.Font = if status == "Current"
 				then Enum.Font.GothamBold
 				else Enum.Font.GothamMedium

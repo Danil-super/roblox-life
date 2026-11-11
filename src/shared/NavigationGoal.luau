@@ -5,6 +5,7 @@ export type Goal = {
 	roomName: string?,
 	destination: { number },
 	labelKey: string,
+	actionKey: string?,
 	areaKey: string,
 	available: boolean,
 	near: boolean,

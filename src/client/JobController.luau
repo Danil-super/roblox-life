@@ -30,6 +30,7 @@ function Controller.start(
 	getHomeObjective: () -> HomeObjective.Cue?
 )
 	local player = Players.LocalPlayer
+	local preparationGoal = require("./PreparationGoal").start(screen, player.UserId)
 	local command = ReplicatedStorage:WaitForChild("JobCommand")
 	local stateEvent = ReplicatedStorage:WaitForChild("JobState")
 	assert(command:IsA("RemoteEvent") and stateEvent:IsA("RemoteEvent"), "Job remotes missing")
@@ -293,6 +294,11 @@ function Controller.start(
 			and s.phase == "Prepare"
 			and (s.preparedCount or 0) < (s.preparationRequired or 0)
 	end
+	local function phaseTitleKey(phase: string): string
+		return if phase == "Prepare" and preparationPending()
+			then "jobScrape"
+			else phaseKeys[phase] or "jobOffer"
+	end
 	local function activate(): ()
 		if acceptancePending() then
 			hideHousing()
@@ -480,7 +486,7 @@ function Controller.start(
 		heading.Text = t("jobs")
 		back.Text = t("backHome")
 		local planCaption = workPlan.render(s, player:GetAttribute("ProfileStatus") == "Ready")
-		description.Text = t(phaseKeys[phase] or "jobOffer")
+		description.Text = t(phaseTitleKey(phase))
 		if phase == "ChooseMaterial" then
 			description.Text ..= "\n" .. stepHint(phase)
 		end
@@ -683,7 +689,7 @@ function Controller.start(
 								then (if travel.near then "arrivedHome" else "goToHome")
 								else (if travel.near then "arrivedShop" else "goToShop"))
 							elseif s and s.destination and not nearWall then "goToClient"
-							else phaseKeys[phase] or "jobOffer"
+							else phaseTitleKey(phase)
 					)
 			end
 			if detail and detail:IsA("TextLabel") then
@@ -861,6 +867,7 @@ function Controller.start(
 				target = torso
 			end
 		end
+		local preparation, preparationTarget = preparationGoal(if travel then nil else s, rootPart)
 		if travel then
 			local homes = workspace:FindFirstChild("Homes")
 			local room = if homes and travel.roomName
@@ -871,6 +878,8 @@ function Controller.start(
 				then (if room then room:FindFirstChild("HomeSpawn") else nil)
 				else (if shop then shop:FindFirstChild("Counter") else nil)
 			target = if destination and destination:IsA("BasePart") then destination else nil
+		elseif preparation then
+			goal, target = preparation, preparationTarget
 		else
 			goal = Goals.job(s, nearWall)
 		end

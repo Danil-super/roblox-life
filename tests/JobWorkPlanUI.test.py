@@ -57,6 +57,11 @@ for _,locale in {"en","ru"}do
    assert(row:FindFirstChild("Title").Font==(if i==step then Enum.Font.GothamBold else Enum.Font.GothamMedium),"Current step not highlighted")
   end
  end
+ local prep=snapshot("Prepare");prep.preparationRequired=3;prep.preparedCount=1;api.render(prep,true)
+ assert(root:FindFirstChild("Step2"):FindFirstChild("Title").Text==Strings.text(lang,"jobScrape"),"Visible plan skips wall cleaning")
+ assert(root:FindFirstChild("Note").Text==Strings.text(lang,"scrapePlanHint"),"Plan lost native instruction")
+ prep.preparedCount=3;api.render(prep,true)
+ assert(root:FindFirstChild("Step2"):FindFirstChild("Title").Text==Strings.text(lang,"jobPrepare"),"Confirmed cleaning did not restore protection")
  local s=snapshot("Painting");s.count=96
  api.render(s,true)
  assert(root:FindFirstChild("Step4"):FindFirstChild("State").Text==Strings.text(lang,"workPlanCurrent"),"Full mask accepted wall")

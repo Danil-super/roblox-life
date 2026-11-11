@@ -24,7 +24,7 @@ local nearWall,lastError,errorUntil=true,nil,10
 local os={clock=function()return 1 end}
 local player={GetAttribute=function()return "DONE"end}
 local phase="ChooseMaterial"
-local phaseKeys={ChooseMaterial="jobColor"}
+local phaseKeys={ChooseMaterial="jobColor",Prepare="jobPrepare"}
 local description={Text=""}
 '''
 checks = '''
@@ -47,7 +47,10 @@ end
 for _,locale in {"en","ru"}do
  lang=locale;state.phase="Prepare";state.preparationRequired=3;state.preparedCount=1;nearWall=true;lastError=nil
  assert(stepHint("Prepare")==string.format(t("scrapeHint"),1,3),"Confirmed preparation count lost its instruction")
+ phase="Prepare";describe();assert(description.Text:sub(1,#t("jobScrape"))==t("jobScrape"),"Work description prematurely asks to cover floor")
+
  state.preparedCount=3;assert(stepHint("Prepare")==t("prepareHint"),"Finished clearing did not restore protection step")
+ describe();assert(description.Text:sub(1,#t("jobPrepare"))==t("jobPrepare"),"Completed clearing kept wrong work title")
 end
 '''
 with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:

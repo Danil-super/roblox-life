@@ -217,6 +217,13 @@
   сдачи прежние, cap проверяет сумму с бонусом, replay возвращает квитанцию
   до расчёта. Result показывает фактические baseDollars/perfectBonus, старым
   квитанциям нет доплаты; schema3 прежняя. docs/PERFECT_TIPS.md.
+  PREP-GUIDE-29: PreparationGoal выбирает ближайший оставшийся свой участок,
+  удерживает цель до Cleared/смены work/удаления. После серверных 3/3 (сразу
+  у starter) ведёт к Protection. JobController передаёт один goal/target в
+  прежние navigation/Map; Home/Shop имеют приоритет и сбрасывают выбор.
+  Goal.actionKey optional меняет только подсказку beacon. HUD/план отличают
+  jobScrape от jobPrepare. Один Destroy hook, нет своего цикла/Parts/remotes/
+  профиля/денег; закрытый resolver не оживает. docs/PREPARATION.md.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
 - Profile/ProfileStore подключены к runtime. Jobs/Painting вызывают Economy
   при серверной приёмке; HomeService использует Economy для покупок и Furniture
