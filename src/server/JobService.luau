@@ -11,6 +11,7 @@ local EconomyConfig = require("./Domain/EconomyConfig")
 local World = require("./World")
 local ClientScene = require("./ClientScene")
 local PaintWorksite = require("./PaintWorksite")
+local PaintPreparation = require("./PaintPreparation")
 local Meeting = require("./Domain/ClientMeeting")
 local Dialogue = require(ReplicatedStorage.Shared.ClientDialogue)
 local FirstSteps = require(ReplicatedStorage.Shared.FirstSteps)
@@ -26,6 +27,7 @@ type Context = {
 	lastAt: number,
 	scene: ClientScene.API?,
 	site: PaintWorksite.API?,
+	preparation: PaintPreparation.API?,
 	lastTalk: number,
 }
 local Service = {}
@@ -35,6 +37,7 @@ function Service.start(profiles: ProfileService.API): ()
 	assert(command:IsA("RemoteEvent") and stateEvent:IsA("RemoteEvent"), "Job remotes missing")
 	local contexts: { [Player]: Context } = {}
 	local talk: (Player, Context) -> ()
+	local preparationChanged: (Player, Context) -> ()
 	local function contextFor(player: Player): Context
 		local ctx = contexts[player]
 		if ctx == nil then
@@ -110,6 +113,27 @@ function Service.start(profiles: ProfileService.API): ()
 					talk(player, ctx)
 				end
 			end)
+			ctx.preparation = PaintPreparation.attach(
+				room.model,
+				player,
+				function(): Painting.State?
+					local profile = profiles.read(player)
+					local activeJob = if profile then profile.jobs.active else nil
+					local work = ctx.work
+					return if not ctx.saving
+							and work
+							and activeJob
+							and activeJob.id == work.jobId
+							and activeJob.status ~= "Completed"
+							and activeJob.status ~= "Abandoned"
+							and eligible(player, ctx)
+						then work
+						else nil
+				end,
+				function(): ()
+					preparationChanged(player, ctx)
+				end
+			)
 		end
 		local contract = EconomyConfig.contracts[job.templateId]
 		local room = ctx.room
@@ -144,7 +168,7 @@ function Service.start(profiles: ProfileService.API): ()
 			ctx.work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), Config, {
 				primary = if contract then contract.colorId else Config.colorId,
 				secondary = if contract then contract.secondaryColorId else nil,
-			}, sizes)
+			}, sizes, contract ~= nil and (contract.minXP or 0) >= 120)
 			ctx.character = player.Character
 			for _, wall in walls do
 				wall.Color = Color3.fromRGB(145, 148, 140)
@@ -221,6 +245,9 @@ function Service.start(profiles: ProfileService.API): ()
 		local work, room, wall = ctx.work, ctx.room, ctx.wall
 		local phase = phaseOf(p, ctx)
 		local available = p ~= nil and not ctx.saving
+		if ctx.preparation then
+			ctx.preparation.update(work, phase, available)
+		end
 		local site = ctx.site
 		if site then
 			site.update(
@@ -258,6 +285,8 @@ function Service.start(profiles: ProfileService.API): ()
 			sequence = if work then work.seq else 0,
 			mask = if work then Painting.mask(work) else "",
 			count = if work then work.count else 0,
+			preparationRequired = if work then work.preparationRequired else 0,
+			preparedCount = if work then Painting.preparedCount(work) else 0,
 			reward = if job and job.receipt
 				then job.receipt.dollarsDelta
 				elseif reward then reward.dollars
@@ -302,6 +331,9 @@ function Service.start(profiles: ProfileService.API): ()
 				else nil),
 		}
 		stateEvent:FireClient(player, snapshot)
+	end
+	preparationChanged = function(player: Player, ctx: Context): ()
+		send(player, ctx, nil)
 	end
 	talk = function(player: Player, ctx: Context): ()
 		local now = os.clock()
@@ -571,6 +603,10 @@ function Service.start(profiles: ProfileService.API): ()
 				elseif action == "choose" then "Color"
 				elseif action == "review" then Painting.reviewError(work, now) or "Retry"
 				elseif action == "tool" then "ToolLocked"
+				elseif
+					action == "prepare"
+					and Painting.preparedCount(work) < work.preparationRequired
+				then "Preparation"
 				else "Retry"
 		)
 	end)

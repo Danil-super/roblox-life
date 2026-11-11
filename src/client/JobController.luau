@@ -287,6 +287,12 @@ function Controller.start(
 		local wall = if room then room:FindFirstChild(s.wallName or "PaintableWall") else nil
 		return if wall and wall:IsA("BasePart") then wall else nil
 	end
+	local function preparationPending(): boolean
+		local s = state
+		return s ~= nil
+			and s.phase == "Prepare"
+			and (s.preparedCount or 0) < (s.preparationRequired or 0)
+	end
 	local function activate(): ()
 		if acceptancePending() then
 			hideHousing()
@@ -337,7 +343,7 @@ function Controller.start(
 		elseif not nearWall then
 			jobs.Visible = false
 			map.show()
-		elseif s.phase == "ChooseMaterial" then
+		elseif s.phase == "ChooseMaterial" or preparationPending() then
 			homePanel.Visible, jobs.Visible = false, true
 			map.hide()
 		elseif s.phase == "Painting" then
@@ -445,6 +451,13 @@ function Controller.start(
 			local id = if state then state.requiredColorId or Config.colorId else Config.colorId
 			return string.format(t("contractMaterial"), t(Config.colorKeys[id] or "warmWhite"))
 		end
+		if preparationPending() then
+			return string.format(
+				t("scrapeHint"),
+				if state then state.preparedCount or 0 else 0,
+				if state then state.preparationRequired or 0 else 0
+			)
+		end
 		local hints = {
 			Inspect = "meetClientHint",
 			Prepare = "prepareHint",
@@ -524,7 +537,10 @@ function Controller.start(
 		colors.Visible = phase == "ChooseMaterial"
 		action.Visible = not colors.Visible
 		action.Text = t(actions[phase] or "acceptJob")
-		action.Active = s ~= nil and s.available and not (abandon and abandon.pending())
+		action.Active = s ~= nil
+			and s.available
+			and not (abandon and abandon.pending())
+			and not preparationPending()
 		action.AutoButtonColor = action.Active
 		for index, b in swatches do
 			b.Text = t(({ "rose", "warmWhite", "mint" })[index])
@@ -538,6 +554,7 @@ function Controller.start(
 		local nextKey = if phase == "Completed" and onboarding == "BUY"
 			then "shopTitle"
 			elseif phase == "Completed" and onboarding == "PLACE" then "furnitureApp"
+			elseif preparationPending() then "viewPreparation"
 			else actions[phase] or "openJobs"
 		navigation.render(
 			t(
@@ -553,6 +570,13 @@ function Controller.start(
 			if travel then travel.available else s ~= nil and s.available
 		)
 		action.Text = t(nextKey)
+		if preparationPending() then
+			action.Text = string.format(
+				t("scrapeProgress"),
+				if s then s.preparedCount or 0 else 0,
+				if s then s.preparationRequired or 0 else 0
+			)
+		end
 		resultHeading.Text = t("resultTitle")
 		before.Text, after.Text = t("resultBefore"), t("resultAfter")
 		local receipt = if s then s.result else nil

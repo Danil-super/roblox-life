@@ -193,6 +193,18 @@
   и подписки видимости. Нет циклов/remotes/новой схемы; docs/OFFER_PLAN.md.
   Прежняя раковина сохранена отдельно: `prototype.project.json`, `src/legacy`.
 - Пользователь поручил начать P0 по `Roblox_Neighborhood_Fixer_GDD_TZ_v0.7.md`.
+  С 11 ноября пользователь попросил ускорить игровые функции и отложить
+  отдельную матрицу устройств. Сохранять обязательный check/серверную защиту;
+  native проверять целевой игровой путь на ПК в одной Studio. Не тратить
+  каждый этап на повторную подгонку всех размеров без найденной регрессии.
+  PREP-GAME-26: контракт с minXP ≥120 требует три очищенных участка до
+  прежней плёнки. Painting хранит runtime preparationRequired/prepared и
+  один текущий hold (сервер 0,6–4 с); read JobService + actor/character/
+  distance/LOS проверяются на begin/finish. Три Parts/три native prompts,
+  cache по work pointer, cleanup при уходе из Prepare/недоступности/новом work.
+  PreparationPrompts скрывает чужое/меню/очищенное, локализует и снимает
+  подписки. Snapshot optional preparationRequired/preparedCount; нет новых
+  remotes/выплат/полей профиля, schema3 прежняя. docs/PREPARATION.md.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
 - Profile/ProfileStore подключены к runtime. Jobs/Painting вызывают Economy
   при серверной приёмке; HomeService использует Economy для покупок и Furniture

@@ -34,7 +34,7 @@ permitted=true;data=nil;now=14;talk(player,ctx);assert(sent[5].conversation==nil
 '''
 a=source.index('\t\tif action == "talk" then');b=source.index('\n\t\tif action == "submit"',a)
 boundary=source[a:b]
-pa=source.index('\t\t\tscene.prompt.Triggered:Connect(');pb=source.index('\n\t\tend',pa)
+pa=source.index('\t\t\tscene.prompt.Triggered:Connect(');pb=source.index('\n\t\t\tctx.preparation =',pa)
 prompt=source[pa:pb]
 prompt_checks='''
 local triggered,ensures,talks=nil,0,0

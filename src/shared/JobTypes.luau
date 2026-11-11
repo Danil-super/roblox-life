@@ -35,6 +35,8 @@ export type Snapshot = {
 	sequence: number,
 	mask: string,
 	count: number,
+	preparationRequired: number?,
+	preparedCount: number?,
 	reward: number,
 	result: Result?,
 	near: boolean,

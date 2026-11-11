@@ -189,6 +189,22 @@ ru["goToClient"] = "Дойди до комнаты клиента"
 en["inspectHint"] = "You’re here. Press Inspect wall below to start."
 ru["inspectHint"] = "Ты на месте. Нажми «Осмотреть стену» внизу."
 en["prepareHint"] = "Press Lay protective film to protect the floor."
+en["scrapeAction"] = "Scrape with spatula"
+ru["scrapeAction"] = "Очистить шпателем"
+en["oldFinish"] = "Old wall finish"
+ru["oldFinish"] = "Старая отделка"
+en["scrapeHint"] =
+	"Clear the three brown patches on the wall: approach each and hold E (or its touch prompt). Cleared %d/%d; then protect the floor."
+ru["scrapeHint"] =
+	"Очисти три коричневых участка на стене: подойди и удерживай E (или кнопку касания). Снято %d/%d; затем укрой пол."
+en["scrapeProgress"] = "Cleared %d / %d"
+en["jobErrorPreparation"] =
+	"Clear the three marked patches with the spatula before protecting the floor."
+ru["jobErrorPreparation"] =
+	"Сначала очисти шпателем три отмеченных участка, затем укрой пол."
+ru["scrapeProgress"] = "Снято %d / %d"
+en["viewPreparation"] = "Preparation plan"
+ru["viewPreparation"] = "План подготовки"
 ru["prepareHint"] =
 	"Нажми «Постелить плёнку», чтобы защитить пол."
 en["colorHint"] = "Choose the colour requested by this client."
@@ -533,9 +549,9 @@ en["briefMint"] =
 ru["briefMint"] =
 	"Обнови гостиную в спокойном мятном цвете. Выбери нужную краску и не оставляй больших пропусков."
 en["briefRose"] =
-	"The client wants a warm rose bedroom. Prepare the room and paint the wall in the requested shade."
+	"Scrape three worn patches, protect the floor, then paint the tall bedroom wall rose."
 ru["briefRose"] =
-	"Клиент хочет спальню в розовых тонах. Подготовь комнату и покрась стену в нужный оттенок."
+	"Сними три участка старой отделки, укрой пол и покрась высокую стену спальни розовым."
 en["contractAddress"] = "Client apartment · next building"
 ru["contractAddress"] = "Квартира клиента · соседний дом"
 en["paintSurfaceSizes"] = "Walls: %s"
@@ -724,9 +740,9 @@ ru["guidePlaceDetail"] =
 en["contractDuo"] = "Two-tone living room"
 ru["contractDuo"] = "Гостиная в двух цветах"
 en["briefDuo"] =
-	"Two walls, one contract: mint first, rose second. Review each wall. The client pays after both pass."
+	"Scrape three worn patches and protect the floor. Paint mint, then rose. One payment for both walls."
 ru["briefDuo"] =
-	"Две стены, один заказ: сначала мятная, затем розовая. Проверь каждую. Оплата — после сдачи обеих."
+	"Сними три участка старой отделки и укрой пол. Затем мятная и розовая стены. Одна выплата за обе."
 en["nextSurface"] = "Start the second wall"
 ru["nextSurface"] = "Ко второй стене"
 en["jobSurfaceReady"] = "First wall accepted · 1 / 2"

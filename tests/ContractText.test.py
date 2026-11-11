@@ -9,6 +9,8 @@ source = (ROOT / "src/client/JobController.luau").read_text()
 start = source.index("\tlocal function stepHint(")
 finish = source.index("\n\tlocal function render()", start)
 hint = source[start:finish]
+start = source.index("\tlocal function preparationPending():")
+helper = source[start:source.index("\n\tlocal function activate()", start)]
 start = source.index("\t\tdescription.Text =")
 finish = source.index("\n\t\tprogress.Text =", start)
 description = source[start:finish]
@@ -42,9 +44,14 @@ for _,locale in {"en","ru"}do
   assert(stepHint(phase):find(required,1,true),"Wrong-colour error advertises another material")
  end
 end
+for _,locale in {"en","ru"}do
+ lang=locale;state.phase="Prepare";state.preparationRequired=3;state.preparedCount=1;nearWall=true;lastError=nil
+ assert(stepHint("Prepare")==string.format(t("scrapeHint"),1,3),"Confirmed preparation count lost its instruction")
+ state.preparedCount=3;assert(stepHint("Prepare")==t("prepareHint"),"Finished clearing did not restore protection step")
+end
 '''
 with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
-    script.write(header + hint + "\nlocal function describe()\n" + description + "\nend\n" + checks)
+    script.write(header + helper + "\n" + hint + "\nlocal function describe()\n" + description + "\nend\n" + checks)
     script.flush()
     subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
 print("PASS ContractText: real descriptions and retry hints for three colours in EN/RU")

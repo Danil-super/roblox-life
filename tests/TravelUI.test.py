@@ -9,7 +9,7 @@ a = home.index('\trouteButton.Activated:Connect(function()')
 b = home.index('\n\tevent.OnClientEvent', a)
 shop_control = home[a:b]
 job = (ROOT/'src/client/JobController.luau').read_text()
-a = job.index('\tlocal function activate(): ()')
+a = job.index('\tlocal function preparationPending(): boolean')
 b = job.index('\n\tinteraction = ', a)
 objective = job[a:b]
 header = r'''
@@ -62,6 +62,9 @@ status="Ready";travel=nil;activate()
 assert(shown==3 and #sent==0,"Cancelling travel did not return to same job")
 assert(state.jobId=="same-job" and state.workId=="same-work","Travel changed job identity")
 nearWall=true;activate();assert(sent[1]=="talk","Job arrival stopped dispatching real action")
+state.phase="Prepare";state.preparationRequired=3;state.preparedCount=0;sent={};jobs.Visible=false
+activate();assert(jobs.Visible and #sent==0,"Preparation plan skipped remaining patches")
+state.preparedCount=3;activate();assert(sent[1]=="prepare","Confirmed patches did not allow protection")
 '''
 for name,body in [('shop',header+shop_control+shop_checks),('objective',header+objective_header+objective+objective_checks)]:
     with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools') as script:

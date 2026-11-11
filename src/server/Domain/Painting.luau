@@ -33,6 +33,10 @@ export type State = {
 	basicRadius: number,
 	completedMasks: { string },
 	sizes: { Size },
+	preparationRequired: number,
+	prepared: { [number]: boolean },
+	prepTarget: number?,
+	prepStartedAt: number,
 }
 export type Colors = { primary: string, secondary: string? }
 export type Finish = { columns: number, rows: number, masks: { string } }
@@ -92,7 +96,8 @@ function Painting.new(
 	now: number,
 	rawConfig: unknown,
 	colors: Colors?,
-	geometry: { Size }?
+	geometry: { Size }?,
+	needsCleaning: boolean?
 ): State
 	assert(finite(now), "Valid clock required")
 	local Config = settings(rawConfig, colors)
@@ -130,7 +135,58 @@ function Painting.new(
 		basicRadius = Config.rollerRadius,
 		completedMasks = {},
 		sizes = sizes,
+		preparationRequired = if needsCleaning then 3 else 0,
+		prepared = {},
+		prepTarget = nil,
+		prepStartedAt = now,
 	}
+end
+function Painting.preparedCount(s: State): number
+	local count = 0
+	for i = 1, s.preparationRequired do
+		if s.prepared[i] then
+			count += 1
+		end
+	end
+	return count
+end
+function Painting.beginPreparation(s: State, index: number, now: number, eligible: boolean): boolean
+	if
+		not eligible
+		or s.phase ~= "Prepare"
+		or not finite(index)
+		or index % 1 ~= 0
+		or index < 1
+		or index > s.preparationRequired
+		or s.prepared[index]
+		or not finite(now)
+		or now < s.lastAt
+	then
+		return false
+	end
+	s.prepTarget, s.prepStartedAt, s.lastAt = index, now, now
+	return true
+end
+function Painting.finishPreparation(
+	s: State,
+	index: number,
+	now: number,
+	eligible: boolean
+): boolean
+	if
+		not eligible
+		or s.phase ~= "Prepare"
+		or s.prepTarget ~= index
+		or s.prepared[index]
+		or not finite(now)
+		or now < s.lastAt
+		or now - s.prepStartedAt < 0.6
+		or now - s.prepStartedAt > 4
+	then
+		return false
+	end
+	s.prepared[index], s.prepTarget, s.lastAt = true, nil, now
+	return true
 end
 function Painting.surface(s: State): number
 	return #s.completedMasks + 1
@@ -139,7 +195,11 @@ function Painting.total(s: State): number
 	return if s.config.secondaryColorId then 2 else 1
 end
 function Painting.allReady(s: State): boolean
-	if s.phase ~= "Ready" or Painting.surface(s) ~= Painting.total(s) then
+	if
+		s.phase ~= "Ready"
+		or Painting.surface(s) ~= Painting.total(s)
+		or Painting.preparedCount(s) ~= s.preparationRequired
+	then
 		return false
 	end
 	for _, mask in s.completedMasks do
@@ -213,7 +273,11 @@ function Painting.step(
 	end
 	if action == "inspect" and s.phase == "Inspect" then
 		s.phase = "Prepare"
-	elseif action == "prepare" and s.phase == "Prepare" then
+	elseif
+		action == "prepare"
+		and s.phase == "Prepare"
+		and Painting.preparedCount(s) == s.preparationRequired
+	then
 		s.phase = "ChooseMaterial"
 	elseif action == "choose" and s.phase == "ChooseMaterial" and material == Config.colorId then
 		s.phase, s.startedAt, s.lastAt = "Painting", now, now

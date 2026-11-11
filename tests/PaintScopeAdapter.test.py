@@ -107,7 +107,7 @@ assert(Painting.step(ctx.work,"choose","rose",2,true))
 assert(Painting.batch(ctx.work,1,{{u=.5,v=.5}},true,3,true))
 local player={Character=newCharacter}
 local job={id="job"}
-local contract={colorId="mint",secondaryColorId="rose"}
+local contract={colorId="mint",secondaryColorId="rose",minXP=210}
 local cloth={Transparency=.35,IsA=function()return true end}
 local room={model={FindFirstChild=function()return cloth end}}
 local walls={{Color="mint",Size={X=16,Y=8}},{Color="partial rose",Size={X=8,Y=8}}}
@@ -118,6 +118,7 @@ local function ensure()
 '''
 checks='''
 ensure()
+assert(ctx.work.preparationRequired==3 and Painting.preparedCount(ctx.work)==0,"Advanced respawn skipped clearing")
 assert(ctx.character==newCharacter and ctx.wall==walls[1],"Respawn retained second active surface")
 assert(ctx.work.workId=="respawn" and ctx.work.phase=="Inspect" and ctx.work.count==0 and #ctx.work.completedMasks==0,"Respawn inherited first wall or partial paint")
 assert(walls[1].Color=="grey" and walls[2].Color=="grey" and cloth.Transparency==1,"Respawn retained misleading accepted wall")
