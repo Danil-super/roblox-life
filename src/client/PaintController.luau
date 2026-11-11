@@ -353,6 +353,7 @@ function Controller.start(
 		gui.Name = "LocalPaint"
 		gui.Adornee = target
 		gui.Face = Enum.NormalId.Back
+		gui.ZOffset = 1
 		gui.CanvasSize = Vector2.new(720, 480)
 		gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 		gui.ClipsDescendants = true

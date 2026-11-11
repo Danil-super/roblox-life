@@ -12,6 +12,7 @@ local World = require("./World")
 local ClientScene = require("./ClientScene")
 local PaintWorksite = require("./PaintWorksite")
 local PaintPreparation = require("./PaintPreparation")
+local PaintWallFinish = require("./PaintWallFinish")
 local Meeting = require("./Domain/ClientMeeting")
 local Dialogue = require(ReplicatedStorage.Shared.ClientDialogue)
 local FirstSteps = require(ReplicatedStorage.Shared.FirstSteps)
@@ -28,6 +29,7 @@ type Context = {
 	scene: ClientScene.API?,
 	site: PaintWorksite.API?,
 	preparation: PaintPreparation.API?,
+	wallFinish: PaintWallFinish.API?,
 	lastTalk: number,
 }
 local Service = {}
@@ -102,6 +104,7 @@ function Service.start(profiles: ProfileService.API): ()
 			local room = World.createWorkplace(player, home)
 			ctx.room = room
 			ctx.site = PaintWorksite.attach(room.model)
+			ctx.wallFinish = PaintWallFinish.attach(room.model)
 			local wall = room.model:FindFirstChild("PaintableWall")
 			assert(wall ~= nil and wall:IsA("BasePart"), "Work wall missing")
 			ctx.wall = wall
@@ -245,6 +248,9 @@ function Service.start(profiles: ProfileService.API): ()
 		local work, room, wall = ctx.work, ctx.room, ctx.wall
 		local phase = phaseOf(p, ctx)
 		local available = p ~= nil and not ctx.saving
+		if ctx.wallFinish then
+			ctx.wallFinish.update(work, job, available)
+		end
 		if ctx.preparation then
 			ctx.preparation.update(work, phase, available)
 		end

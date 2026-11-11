@@ -224,6 +224,12 @@
   Goal.actionKey optional меняет только подсказку beacon. HUD/план отличают
   jobScrape от jobPrepare. Один Destroy hook, нет своего цикла/Parts/remotes/
   профиля/денег; закрытый resolver не оживает. docs/PREPARATION.md.
+  WORLD-FINISH-30: PaintWallFinish проецирует inspected completedMasks/текущую
+  Ready, после оплаты — job.finish с Reward-квитанцией. Duo сохраняет первую
+  стену, legacy без finish сохраняет прежний цвет. PaintFinish.preview ≤12×8,
+  Part + ≤48 Frames/Gui на стену, perfect без Gui; cache/cleanup без новых
+  Parts/циклов/remotes/схемы/выплат. LocalPaint.ZOffset=1 выше мирового слоя=0.
+  docs/WORLD_FINISH.md.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
 - Profile/ProfileStore подключены к runtime. Jobs/Painting вызывают Economy
   при серверной приёмке; HomeService использует Economy для покупок и Furniture

@@ -19,7 +19,9 @@ local data=Profile.new(1);data.progression.paintingXP=210;assert(Jobs.accept(dat
 local p=data
 local profiles={read=function()return p end}
 local calls={};local ctx={saving=false,site={update=function(...)table.insert(calls,{...})end},work=Painting.new("job","work",0,Config,{primary="mint",secondary="rose"})}
+local finishes={};ctx.wallFinish={update=function(w,j,a)table.insert(finishes,{work=w,job=j,available=a})end}
 local snapshots={};local stateEvent={FireClient=function(_,actor,snapshot)
+ assert(#finishes==#snapshots+1 and finishes[#finishes].work==ctx.work and finishes[#finishes].job==(if p then p.jobs.active else nil) and finishes[#finishes].available==(p~=nil and not ctx.saving),"Wall finish did not receive authoritative snapshot context")
  assert(actor==player and #calls==#snapshots+1,"Scene projection did not precede confirmed snapshot")
  table.insert(snapshots,snapshot)
 end}

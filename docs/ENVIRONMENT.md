@@ -3742,3 +3742,46 @@ clean-edit.log,graphify.log,codegraph-status.json}. [Контракт](PREPARATI
 Home/Shop/Destroy/нет модели проверены локальными callbacks; повторный
 отдельный native сценарий этих ветвей не запускался. Снимки X11 не применялись
 как визуальная приёмка. Прежний timeout подхода остаётся под наблюдением.
+
+### 11 ноября: WORLD-FINISH-30 — пропуски остаются на стене
+
+PaintWallFinish использует подтверждённые Ready/completedMasks, затем
+сохранённый finish с соответствующей Reward-квитанцией. ≤48 Frames/одна
+SurfaceGui на стену, ≤98 объектов на две, без новых физических Parts/циклов.
+Perfect — только цвет Part. LocalPaint.ZOffset=1 выше мирового слоя=0.
+Схема3/покрытие/оплата/XP/серверная проверка прежние. Legacy без finish
+сохраняет прежний цвет; unavailable/abandon/новый заказ очищают оформление.
+
+Full check прошёл: StyLua/Selene/strict, доменные и адаптерные тесты, обе
+сборки Rojo. Renderer исполняется с настоящими Finish/Domain/Profile.decode:
+две стены/nextSurface, reload, receipt/legacy/invalid, cache/лимит/cleanup,
+отсутствие записи денег/масок. Исполняется также настоящий блок LocalPaint.
+Мутации Ready-условия и ZOffset отдельно обнаружены тестом, файлы восстановлены
+до финального check. Первый strict-прогон обнаружил nullable layer/cell;
+исправлены типизированными значениями без any/cast/отключения проверок.
+
+Один существующий Studio PID 42102, canonical scene, solo MemoryPreview.
+Без выдачи XP/денег или подмены маски: Tutorial/Mint открыли Rose, native
+три E-hold и плёнка/материал, мышью семь рядов → mask84/count84. Все 12
+пропусков на клиентской мировой стене совпали с маской после Review, после
+сдачи и обычного sync; saved finish совпал, Gui переиспользована. Rose дал
+$350/90 XP, perfectBonus=0; итог $900/210 XP/три job_completed/шесть уникальных
+пакетов. До сдачи автооплаты не было. EN/RU подготовка/предложение TextFits.
+MCP screen_capture вернул только фон/CoreGui без 3D, поэтому визуальный вид
+по снимку не принят; функциональные проверки свойств/маски от него независимы.
+
+После Stop — Edit, 90 Source совпали с канонической сборкой, Homes пуст,
+guides/ghost нет. Дополнительных Studio/клиентов не было, сторонние процессы
+не закрывались. 120 замеров: MemAvailable минимум 11066 MiB, full PSI avg10
+максимум 0,32%, swap used 3817–4095 MiB. Это замеры ресурсов, не FPS-профиль.
+Graphify code-only текущего root: 833 узла/1571 связь, MCP перечитал его;
+Luau AST частичный, связи проверены по коду. CodeGraph: 231 файл/3655 узлов/
+6562 связи, pending changes/refs=0. Исключения данных/build/.tools сохранены.
+
+Ignored-доказательства: .tools/world-finish/{renderer-red.log,mutation-phase.log,
+mutation-layer.log,validate_runner.py,play-final.log,play-report.json,
+resources.jsonl,native-world-0.png,check-final.log,sync.log,sources-before.log,
+sources-final.log,clean-edit.log,graphify.log,codegraph-status.json}.
+[Контракт](WORLD_FINISH.md). Duo/reload проверены локально, не отдельным
+native Play. Cloud/rejoin, несколько клиентов, физический Touch и окончательная
+визуальная приёмка остаются отдельно.
