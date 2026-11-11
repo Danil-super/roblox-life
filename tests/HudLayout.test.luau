@@ -124,3 +124,27 @@ do
 	end
 end
 print("HudLayout: quiet home cards, controls, error priority, hints and rotation passed")
+for _, size in { { 625, 230 }, { 568, 224 }, { 320, 224 }, { 280, 224 }, { 1024, 359 } } do
+	local w, h = size[1], size[2]
+	for _, quiet in { false, true } do
+		local hud = Layout.compute(w, h, false, true, true, quiet)
+		assert(
+			hud.compact and not hud.minimal and not hud.hintVisible,
+			"Low desktop did not compact"
+		)
+		local cards = { hud.wallet, hud.home, hud.language, hud.objective, hud.navigation }
+		for i, rect in cards do
+			inside(rect, w, h)
+			for j = i + 1, #cards do
+				assert(not overlaps(rect, cards[j]), "Low desktop HUD cards overlap")
+			end
+		end
+		assert(
+			hud.home.h >= 44 and hud.language.h >= 44 and hud.objective.h == 100,
+			"Low desktop lost its targets or objective"
+		)
+	end
+end
+assert(not Layout.compute(625, 360, false, true).compact, "Desktop breakpoint did not restore")
+assert(Layout.compute(625, 230, false, false).objective.h == 156, "Profile error lost its priority")
+print("HudLayout: low desktop bounds/overlap/quiet and breakpoint/profile priority passed")

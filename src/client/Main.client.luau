@@ -222,7 +222,11 @@ end
 
 local function phoneCaption(): string
 	return Strings.text(language, "home")
-		.. (if UIS.TouchEnabled then "" else " [" .. InputConfig.phoneKey .. "]")
+		.. (
+			if UIS.TouchEnabled or screen.AbsoluteSize.Y < 360
+				then ""
+				else " [" .. InputConfig.phoneKey .. "]"
+		)
 end
 local function render(): ()
 	local state = player:GetAttribute("ProfileStatus")
@@ -313,7 +317,8 @@ local function place(gui: GuiObject, rect: Layout.Rect): ()
 end
 local function resize(): ()
 	local size = screen.AbsoluteSize
-	if size.X < 280 or size.Y < 240 then
+	-- shortcut: layouts require 280x224 safe pixels; extend them before supporting smaller viewports.
+	if size.X < 280 or size.Y < 224 then
 		return
 	end
 	local touch = UIS.TouchEnabled
@@ -335,15 +340,25 @@ local function resize(): ()
 	place(homeButton, layout.home)
 	objectiveLimit.MaxSize = Vector2.new(layout.objective.w, layout.objective.h)
 	place(objective, layout.objective)
-	title.Visible = not touch
-	balance.Position = UDim2.fromOffset(14, if touch then 8 else 28)
-	balance.Size = if touch then UDim2.new(1, -28, 1, -16) else UDim2.new(1, -28, 0, 36)
-	balance.TextSize = if touch then 24 else 28
-	objectiveTitle.Visible = not layout.minimal
+	local compactWallet = layout.wallet.h <= 64
+	title.Visible = not compactWallet
+	balance.Position = UDim2.fromOffset(14, if compactWallet then 8 else 28)
+	balance.Size = if compactWallet then UDim2.new(1, -28, 1, -16) else UDim2.new(1, -28, 0, 36)
+	balance.TextSize = if compactWallet then 24 else 28
+	local compactError = layout.compact
+		and not layout.minimal
+		and screen:GetAttribute("JobHintError") == true
+	objectiveTitle.Visible = not layout.minimal and not compactError
 	objectiveTitle.TextSize = if layout.compact then 14 else 16
 	objectiveTitle.Size =
 		UDim2.new(1, -28, 0, if not ready then 100 elseif layout.compact then 36 else 25)
-	objectiveHint.Visible = layout.hintVisible
+	objectiveHint.Visible = layout.hintVisible or compactError
+	objectiveHint.Position = UDim2.fromOffset(14, if compactError then 8 else 35)
+	objectiveHint.Size = UDim2.new(1, -28, 0, if compactError then 36 else 48)
+	local shortPhone = size.Y < 252
+	private.Visible = not shortPhone
+	apps.Position = UDim2.fromOffset(0, if shortPhone then 64 else 104)
+	apps.Size = UDim2.new(1, 0, 1, if shortPhone then -144 else -184)
 	local action = objective:FindFirstChild("NextAction")
 	if action and action:IsA("GuiObject") then
 		action.Visible = ready

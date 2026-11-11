@@ -21,6 +21,18 @@ function Layout.compute(
 	homeQuiet: boolean?
 ): Layout
 	local quiet = homeQuiet == true and ready ~= false
+	if not touch and height < 360 and ready ~= false then
+		return {
+			compact = true,
+			minimal = false,
+			hintVisible = false,
+			wallet = { x = 12, y = 12, w = 116, h = 44 },
+			language = { x = width - 56, y = 12, w = 44, h = 44 },
+			home = { x = width - 128, y = 12, w = 64, h = 44 },
+			objective = { x = 12, y = height - 104, w = math.min(520, width - 24), h = 100 },
+			navigation = { x = (width - 242) / 2, y = 56, w = 242, h = 64 },
+		}
+	end
 	if not touch and quiet then
 		return {
 			compact = true,

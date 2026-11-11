@@ -79,6 +79,12 @@
   Tween. До финального fit нет жестов/Review/Gaps; ранний down не переносится
   на готовую камеру. Light/ReducedMotion завершают переход без перезапуска.
   Stop/смерть/Destroy немедленно возвращают прежний ракурс; docs/PAINT_CAMERA.md.
+  Main.resize обрабатывает safe viewport ≥280×224; Ready desktop ниже 360
+  использует компактный HudLayout с отдельными маршрутной/рабочей карточками.
+  Кошелёк без заголовка, подпись M скрыта без смены binding. В карточке 100 px
+  ошибка заменяет подпись цели и не перекрывает действие. Ниже 252 телефон
+  скрывает только Private, Apps вмещает ≥44 px. Resize не сбрасывает scroll/
+  intent/состояние; новых подписок нет. docs/HUD_RESIZE.md.
   NeighborhoodScenery создаёт улицу при Play и входные накладки при cloneRoom;
   StreetLayout проверяет проходы для 16 слотов. StreetDetails — до 300 деталей,
   start идемпотентен, SurfaceGui переводит WorldSignsController по событиям.

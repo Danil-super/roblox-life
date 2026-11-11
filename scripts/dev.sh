@@ -86,6 +86,7 @@ case "${1:-check}" in
     python3 tests/FirstPurchase.test.py
     python3 tests/PurchaseUI.test.py
     python3 tests/HintsUI.test.py
+    python3 tests/HudResizeUI.test.py
     python3 tests/StorageAdapter.test.py
     python3 tests/CloudBuild.test.py
     ;;
