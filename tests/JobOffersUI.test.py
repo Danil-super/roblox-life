@@ -53,7 +53,8 @@ local requests={}
 local function accept(offer,job,request)table.insert(requests,{offerId=offer,jobId=job,requestId=request})end
 local profileReady=true
 local function ready()return profileReady end
-local function language()return "en"end
+local lang="en"
+local function language()return lang end
 local screenGui=Instance.new("ScreenGui");screenGui.Enabled=true
 local panel=Instance.new("Frame");panel.Parent=screenGui
 local workBody=Instance.new("ScrollingFrame")
@@ -66,7 +67,14 @@ end
 checks = r'''
 local api=Controller.start(panel,workBody,back,language,accept,ready)
 assert(#previews==1,"Offer details have no bounded plan renderer")
-local s=snapshot();api.render(s);api.show("paint-mint-v1")
+local s=snapshot();api.render(s)
+for _,locale in {"en","ru"}do
+ lang=locale;api.render(s);api.show(nil);find("paint-rose-v1").clicked()
+ assert(find("PerfectTip").Visible and find("PerfectTip").Text==string.format(Strings.text(lang,"perfectTipOffer"),70),"Advanced offer lost potential tip")
+ assert(#requests==0,"Viewing tip accepted a job")
+ assert(api.back());find("paint-tutorial-v1").clicked();assert(not find("PerfectTip").Visible,"Starter advertised tip")
+end
+lang="en";api.render(s);api.show("paint-mint-v1")
 assert(not find("AcceptOffer").Visible,"Locked recommendation opened as ready")
 find("paint-mint-v1").clicked();assert(previews[1].offer.id=="paint-mint-v1","Locked detail has no planned room")
 screenGui.Enabled=false;assert(screenGui.enabledChanged,"Preview does not observe disabled HUD");screenGui.enabledChanged();assert(previews[1].offer==nil and #requests==0,"Disabled HUD retained preview")

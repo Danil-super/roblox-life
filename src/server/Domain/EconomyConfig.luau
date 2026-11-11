@@ -130,6 +130,7 @@ for _, item in catalog do
 	table.freeze(item)
 end
 return table.freeze({
+	perfectTipPercent = 20,
 	maxDollars = 1000000000,
 	maxItems = 256,
 	maxRecentOperations = 64,

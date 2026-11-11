@@ -3616,3 +3616,63 @@ attempt1-tool.png,play-final.log,play-report.json,resources.jsonl,sync.log,
 sources-before.log,sources-final.log,clean-edit.log,graphify.log,
 codegraph-status.json}. [Контракт](PREPARATION.md).
 Физический Touch, cloud/rejoin, несколько клиентов и FPS не проверены.
+
+
+## 11 ноября 2026: PERFECT-TIP-28 — чаевые за 100%
+
+Rose+ (серверный minXP контракта ≥120) за все стены без пропусков получает
+20% долларов сверх базы в том же Reward. Tutorial/Mint, обычная базовая
+оплата/XP/порог сдачи/цены прежние. Jobs.submit выводит perfect из finish
+авторитетной работы; поля бонуса из remote нет. Economy проверяет cap всей
+суммы и возвращает старую квитанцию до расчёта. Profile schema3 прежняя.
+Offers показывает возможные чаевые, Result — фактические baseDollars/
+perfectBonus из подтверждённой квитанции; неизвестная разбивка скрыта.
+Это выбранные для P0 тестовые коэффициенты §5.7/§17.4, не финальный баланс.
+
+Red: настоящему Result не хватало разбивки. PerfectTip проверяет обычную
+маску/95%/один пропуск/идеальную, две стены, starter, replay, reload/legacy
+без доплаты, cap без частичного платежа. PaintScope исполнил unknown-write/
+retry/release/reload Duo с одной оплатой $660 и сохранённым бонусом $110.
+RoomProgression: $1630 с чаевыми − $1120 мебели = $510/330 XP; шесть
+идеальных контрактов ExtendedContracts: $3130 − $2200 = $930/630 XP.
+Это естественные доменные сценарии без выдачи баланса. Базовые сценарии
+без чаевых остаются $330/$500. Реальные UI callbacks проверены EN/RU.
+Full check завершился с кодом 0: StyLua/Selene, все pure/adapter/UI тесты,
+два strict-анализатора и обе Rojo-сборки. Selene потребовал сообщения двух
+assert fixture: они добавлены, проверки не отключались. Context7 сверил
+TextLabel.TextWrapped/TextFits: перенос не гарантирует отсутствие отсечения.
+
+Первый свежий native solo MemoryPreview прошёл Tutorial/Mint и EN/RU
+предложения Rose, затем прежний QA walk не достиг canTalk за 28 с. Отчёт
+failed сохранён, Stop → Edit; это не приёмка чаевых. В следующем runner
+добавлены запись состояния при повторном отказе и ограниченный физический
+подход к серверной цели при близком расстоянии, без телепорта/ослабления
+guards. Они НЕ использовались: второй свежий прогон прошёл обычным маршрутом.
+Причина единичного тайм-аута пока не установлена, навигационный код не менялся.
+
+Финальный native Play в той же Studio PID42102: Tutorial/Mint естественно
+заработали $550/120 XP. Подробности Rose показали +$70/необязательные 100%,
+EN/RU TextFits. Три настоящих E очистили участки; плёнка/широкий валик/Rose,
+настоящая мышь дали подтверждённые mask=96 единиц/count96. До сдачи баланс
+остался $550. Review/разговор/сдача → квитанция $420, base350/bonus70/XP90;
+итог $970/210 XP/три завершённых заказа. EN/RU Hint TextFits и разбивка
+подтверждены. Output: шесть уникальных пакетов профиля, сумма $970/210 XP,
+три job_completed; дополнительной операции чаевых нет. Test XP/баланс,
+FireServer/Triggered и подмена маски в native прогоне не применялись.
+Stop дал Edit; все 88 Source совпали с канонической сборкой, Homes пуст,
+guides/ghost нет. Изображения X11 не использовались как визуальное доказательство.
+
+185 замеров двух попыток: MemAvailable минимум 12663 MiB, full PSI avg10
+максимум 0%, swap used 783–784 MiB. Одна Studio/одна сцена; чужие процессы
+не закрывались. Индексы текущего root обновлены вне Play: Graphify code-only
+822 узла/1546 связей, MCP перечитал абсолютный project_path; частичный Luau
+AST остаётся ограничением графа. CodeGraph 226 файлов/3578 узлов/6464 связи,
+pending changes/refs=0. Документы/.tools/build/runtime не индексировались.
+
+Ignored-доказательства: .tools/perfect-tip/{domain-red.log,domain-suite.log,
+ui-red.log,check-final.log,attempt1.log,attempt1-report.json,play-final.log,
+play-report.json,console.txt,resources.jsonl,sync.log,sources-before.log,
+sources-final.log,clean-edit.log,graphify.log,codegraph-status.json}.
+[Контракт](PERFECT_TIPS.md). Physical Touch, cloud/rejoin и несколько игроков
+не проверены; бонус Duo проверен доменными/адаптерными тестами без нового
+native Duo. Разовый timeout подхода остаётся наблюдением.

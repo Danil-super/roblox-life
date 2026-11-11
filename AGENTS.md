@@ -211,6 +211,12 @@
   Hidden, меню/профиль/Enabled, фокус, смерть/CharacterRemoving/камера/Destroy
   очищают инструмент. Это локальная модель у стены, не скелетная анимация.
   Серверные подготовка/время/оплата и схема профиля не меняются.
+  PERFECT-TIP-28: Rose+ (minXP ≥120) за все маски без нулей получает +20%
+  долларов в той же квитанции. Jobs.submit выводит perfect из серверного
+  finish; Economy.completeJob не принимает его из remote. База/XP/порог
+  сдачи прежние, cap проверяет сумму с бонусом, replay возвращает квитанцию
+  до расчёта. Result показывает фактические baseDollars/perfectBonus, старым
+  квитанциям нет доплаты; schema3 прежняя. docs/PERFECT_TIPS.md.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
 - Profile/ProfileStore подключены к runtime. Jobs/Painting вызывают Economy
   при серверной приёмке; HomeService использует Economy для покупок и Furniture
@@ -239,8 +245,8 @@
   Language.ZIndex=20: кнопка выше phone/RoomPlan (Sibling, panel=10), в том
   числе 666×316. Covered/Clipped не обходить — исправить слой/прокрутить.
   RoomProgression проверяет $0 → четыре
-  контракта/пять стен → пять предметов/$330/330 XP с memory reload, без выдачи
-  баланса. Это не cloud gate. docs/NATURAL_PROGRESSION.md.
+  контракта/пять стен → пять предметов/$510/330 XP с чаевыми и memory reload,
+  без выдачи баланса. Это не cloud gate. docs/NATURAL_PROGRESSION.md.
   HomeLights включает E/Touch только у подтверждённо установленного торшера;
   сервер проверяет владельца/модель/профиль/персонажа/комнату/distance/LOS.
   Выключатель — косметика runtime-модели: сохраняется при move/reconcile/respawn,

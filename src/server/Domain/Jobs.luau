@@ -12,6 +12,7 @@ export type Offer = {
 	unlocked: boolean,
 	reward: number,
 	xp: number,
+	perfectBonus: number,
 	clientKey: string,
 	secondaryColorId: string?,
 }
@@ -30,6 +31,7 @@ function Jobs.offers(p: Profile.Profile?): { Offer }
 				unlocked = p ~= nil and p.progression.paintingXP >= contract.minXP,
 				reward = reward.dollars,
 				xp = reward.xp,
+				perfectBonus = Economy.perfectTip(id),
 				clientKey = contract.clientKey,
 				secondaryColorId = contract.secondaryColorId,
 			})
@@ -105,7 +107,11 @@ function Jobs.submit(
 	end
 	local old = job.status
 	job.status = "ReadyForInspection"
-	if Economy.completeJob(p, job.id, now) == nil then
+	local perfect = true
+	for _, mask in finish.masks do
+		perfect = perfect and string.find(mask, "0", 1, true) == nil
+	end
+	if Economy.completeJob(p, job.id, now, perfect) == nil then
 		job.status = old
 		return false
 	end

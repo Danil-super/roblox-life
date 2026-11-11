@@ -69,11 +69,11 @@ paint(s, 52, "rose")
 assert(Painting.allReady(s), "Two verified walls not complete")
 assert(not Painting.nextSurface(s, "third", 102), "Unconfigured third wall created")
 assert(
-	Jobs.submit(p, s, 100, true) and p.wallet.dollars == 550 and p.progression.paintingXP == 330,
+	Jobs.submit(p, s, 100, true) and p.wallet.dollars == 660 and p.progression.paintingXP == 330,
 	"Whole project reward missing"
 )
 assert(
-	Jobs.submit(p, s, 101, true) and p.wallet.dollars == 550 and p.jobs.completedCount == 1,
+	Jobs.submit(p, s, 101, true) and p.wallet.dollars == 660 and p.jobs.completedCount == 1,
 	"Repeat paid twice"
 )
 assert(Profile.decode(p, 1), "Profile schema changed")
@@ -84,7 +84,7 @@ local fake = Painting.new("fresh", "fake", 0, Config)
 fake.phase = "Ready"
 assert(Jobs.accept(p, "fresh", "paint-duo-v1"))
 assert(not Jobs.submit(p, fake, 102, true), "Single-wall state paid two-wall template")
-assert(Jobs.cancel(p, "fresh") and p.wallet.dollars == 550, "Cancel charged or paid")
+assert(Jobs.cancel(p, "fresh") and p.wallet.dollars == 660, "Cancel charged or paid")
 print(
 	"PaintScope: early submit, XP, next/nonce/color/reset, isolation, complete payout/repeat and template guard passed"
 )
@@ -136,9 +136,10 @@ local loaded = rejoin.read()
 assert(loaded, "Reload did not expose a confirmed profile")
 local receipt = Result.read(loaded)
 assert(
-	loaded.wallet.dollars == 550
+	loaded.wallet.dollars == 660
 		and loaded.progression.paintingXP == 330
 		and receipt
+		and receipt.perfectBonus == 110
 		and receipt.primaryColorId == "mint"
 		and receipt.secondaryColorId == "rose",
 	"Reload lost whole project result"
@@ -148,7 +149,7 @@ assert(rejoin.transact(function(c: Profile.Profile): boolean
 end))
 local repeated = rejoin.read()
 assert(
-	repeated and repeated.wallet.dollars == 550 and repeated.jobs.completedCount == 1,
+	repeated and repeated.wallet.dollars == 660 and repeated.jobs.completedCount == 1,
 	"Reload replay paid twice"
 )
 print(

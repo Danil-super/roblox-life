@@ -162,3 +162,26 @@ with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as script:
     script.write(header+quality+'\nend\n'+checks);script.flush()
     subprocess.run([str(ROOT/'.tools/bin/luau'),script.name],cwd=ROOT,check=True)
 print('PASS JobResultUI: confirmed grades, worst wall, legacy and closed/unavailable geometry guards')
+
+start=source.index('\t\tif receipt and receipt.baseDollars')
+finish=source.index('\n\t\tlocal required =',start)
+tip=source[start:finish]
+header='''local Strings=require("../src/shared/Strings")
+local lang="en";local function t(k)return Strings.text(lang,k)end
+local resultHint={Text="Next"}
+local function renderTip(receipt)
+resultHint.Text="Next"
+'''
+checks='''
+for _,locale in {"en","ru"}do
+ lang=locale;renderTip({baseDollars=350,perfectBonus=70})
+ assert(resultHint.Text==string.format(t("perfectTipPaid"),350,70).."\\nNext","Paid breakdown lost bonus/base or next action")
+ for _,r in {{},{baseDollars=350,perfectBonus=0},{perfectBonus=70}}do
+  renderTip(r);assert(resultHint.Text=="Next","Legacy/no-tip receipt invented payment")
+ end
+ renderTip(nil);assert(resultHint.Text=="Next")
+end
+print("PASS PerfectTip UI: actual receipt hint, EN/RU, base+tip and legacy/no bonus")
+'''
+with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
+ f.write(header+tip+'\nend\n'+checks);f.flush();subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)

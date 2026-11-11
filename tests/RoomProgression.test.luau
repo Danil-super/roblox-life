@@ -87,9 +87,9 @@ local stages: { Stage } = {
 	{
 		id = "paint-rose-v1",
 		color = "rose",
-		reward = 350,
+		reward = 420,
 		xp = 210,
-		remaining = 60,
+		remaining = 130,
 		placed = 4,
 		buys = {
 			{ catalog = "side-table-v1", x = 9, z = 3, rotation = 0 },
@@ -100,9 +100,9 @@ local stages: { Stage } = {
 		id = "paint-duo-v1",
 		color = "mint",
 		secondary = "rose",
-		reward = 550,
+		reward = 660,
 		xp = 330,
-		remaining = 330,
+		remaining = 510,
 		placed = 5,
 		buys = { { catalog = "bookcase-v1", x = 7, z = -2, rotation = 90 } },
 	},
@@ -199,7 +199,7 @@ end
 local final = read()
 assert(
 	Plan.isComplete(plan(final))
-		and final.wallet.dollars == 330
+		and final.wallet.dollars == 510
 		and final.progression.paintingXP == 330
 		and final.jobs.completedCount == 4,
 	"Full natural room loop incomplete"
@@ -217,7 +217,7 @@ assert(
 	"Completed room could not store item"
 )
 assert(
-	not Plan.isComplete(plan(read())) and read().wallet.dollars == 330,
+	not Plan.isComplete(plan(read())) and read().wallet.dollars == 510,
 	"Storage preserved false completion or changed balance"
 )
 assert(
@@ -233,10 +233,10 @@ assert(
 	"Owned bookcase could not be restored"
 )
 assert(
-	Plan.isComplete(plan(read())) and read().wallet.dollars == 330,
+	Plan.isComplete(plan(read())) and read().wallet.dollars == 510,
 	"Restoring room charged or failed"
 )
 assert(session.close(), "Final natural session close failed")
 print(
-	"RoomProgression: $0, four real contracts/five walls, $1450 rewards/$1120 furniture, $330/330 XP, five placements and memory reloads passed"
+	"RoomProgression: $0, four real contracts/five walls, $1630 including tips/$1120 furniture, $510/330 XP, five placements and memory reloads passed"
 )

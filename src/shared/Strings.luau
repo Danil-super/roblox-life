@@ -420,6 +420,11 @@ en["finishWalls"], ru["finishWalls"] =
 en["finishPaid"], ru["finishPaid"] =
 	"Inspection passed. Payment confirmed.",
 	"Проверка пройдена. Оплата подтверждена."
+en["perfectTipOffer"] = "100%% on every wall: +$%d tip. Optional."
+ru["perfectTipOffer"] =
+	"100%% каждой стены: +$%d чаевых. Необязательно."
+en["perfectTipPaid"] = "Base $%d + perfect tip $%d"
+ru["perfectTipPaid"] = "Заказ $%d + чаевые $%d"
 en["finishLegacy"] = "This older receipt has no saved wall preview. Its payment is confirmed."
 ru["finishLegacy"] =
 	"У старой квитанции нет схемы стен. Её оплата подтверждена."

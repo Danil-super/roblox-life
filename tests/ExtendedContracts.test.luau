@@ -106,7 +106,7 @@ for index, id in order do
 	end
 end
 assert(
-	p.wallet.dollars == 2700 and p.progression.paintingXP == 630 and p.jobs.completedCount == 6,
+	p.wallet.dollars == 3130 and p.progression.paintingXP == 630 and p.jobs.completedCount == 6,
 	"Six-contract campaign totals changed"
 )
 assert(not Jobs.offers(Profile.new(3))[5].unlocked, "New unlock crossed players")
@@ -156,12 +156,12 @@ for i, entry in layout do
 end
 local base = HomePlan.evaluate(furnishings)
 assert(
-	p.wallet.dollars == 500
+	p.wallet.dollars == 930
 		and p.progression.paintingXP == 630
 		and HomePlan.isComplete(base)
 		and HomePlan.displayGoals(base, furnishings)[4].complete,
-	"Natural basic+creative room did not finish at $500 / 630 XP"
+	"Natural basic+creative room did not finish at $930 / 630 XP"
 )
 print(
-	"ExtendedContracts: earned $2700 -> eight real purchases/placements/reloads -> $500, basic5 and optional3 complete"
+	"ExtendedContracts: earned $3130 -> eight real purchases/placements/reloads -> $930, basic5 and optional3 complete"
 )

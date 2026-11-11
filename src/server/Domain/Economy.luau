@@ -17,7 +17,21 @@ local function record(profile: ProfileData, receipt: Receipt): Receipt
 	return table.clone(receipt)
 end
 
-function Economy.completeJob(profile: ProfileData, jobId: string, now: number): (Receipt?, string?)
+function Economy.perfectTip(templateId: string): number
+	local contract, reward = Config.contracts[templateId], Config.rewards[templateId]
+	return if contract
+			and reward
+			and contract.minXP >= 120
+		then math.floor(reward.dollars * Config.perfectTipPercent / 100)
+		else 0
+end
+
+function Economy.completeJob(
+	profile: ProfileData,
+	jobId: string,
+	now: number,
+	perfect: boolean?
+): (Receipt?, string?)
 	if
 		not Profile.identifier(jobId)
 		or #jobId > 80
@@ -39,9 +53,11 @@ function Economy.completeJob(profile: ProfileData, jobId: string, now: number): 
 	if reward == nil then
 		return nil, "UnknownTemplate"
 	end
+	local dollars = reward.dollars
+		+ (if perfect == true then Economy.perfectTip(job.templateId) else 0)
 	if
 		profile.revision >= 9007199254740991
-		or profile.wallet.dollars + reward.dollars > Config.maxDollars
+		or profile.wallet.dollars + dollars > Config.maxDollars
 		or profile.progression.xp + reward.xp > LIMIT
 		or profile.progression.paintingXP + reward.xp > LIMIT
 		or profile.progression.reputation + reward.reputation > LIMIT
@@ -52,12 +68,12 @@ function Economy.completeJob(profile: ProfileData, jobId: string, now: number): 
 		operationId = "job:" .. jobId,
 		kind = "Reward",
 		subjectId = jobId,
-		dollarsDelta = reward.dollars,
+		dollarsDelta = dollars,
 		xpDelta = reward.xp,
 		at = now,
 	}
 	-- No yielding between checks, money and permanent completion proof.
-	profile.wallet.dollars += reward.dollars
+	profile.wallet.dollars += dollars
 	profile.progression.xp += reward.xp
 	profile.progression.paintingXP += reward.xp
 	profile.progression.reputation += reward.reputation

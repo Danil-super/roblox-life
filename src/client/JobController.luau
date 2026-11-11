@@ -604,6 +604,13 @@ function Controller.start(
 		if mastery.wideJustUnlocked then
 			resultHint.Text = t("wideUnlockedResult") .. "\n" .. resultHint.Text
 		end
+		if receipt and receipt.baseDollars and (receipt.perfectBonus or 0) > 0 then
+			resultHint.Text = string.format(
+				t("perfectTipPaid"),
+				receipt.baseDollars,
+				receipt.perfectBonus
+			) .. "\n" .. resultHint.Text
+		end
 		local required = if receipt and receipt.primaryColorId
 			then receipt.primaryColorId
 			elseif s then s.requiredColorId or Config.colorId

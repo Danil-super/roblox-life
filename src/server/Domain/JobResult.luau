@@ -1,6 +1,7 @@
 --!strict
 local Profile = require("./Profile")
 local Config = require("./EconomyConfig")
+local Economy = require("./Economy")
 type Size = { width: number, height: number }
 type Summary = {
 	sizes: { Size }?,
@@ -8,6 +9,8 @@ type Summary = {
 	operationId: string,
 	dollars: number,
 	xp: number,
+	baseDollars: number?,
+	perfectBonus: number?,
 	primaryColorId: string?,
 	secondaryColorId: string?,
 	finish: Profile.PaintFinish?,
@@ -46,7 +49,13 @@ function Result.read(profile: Profile.Profile, geometry: { Size }?): Summary?
 		end
 	end
 	local contract = Config.contracts[job.templateId]
+	local base = Config.rewards[job.templateId]
+	local difference = if base then receipt.dollarsDelta - base.dollars else -1
+	local breakdown = base ~= nil
+		and (difference == 0 or difference == Economy.perfectTip(job.templateId))
 	return {
+		baseDollars = if breakdown and base then base.dollars else nil,
+		perfectBonus = if breakdown then difference else nil,
 		sizes = sizes,
 		finish = if job.finish
 			then {

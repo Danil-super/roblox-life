@@ -80,6 +80,7 @@ function Controller.start(
 	local brief = label(details, "Brief", 322, 72, 14)
 	local shape = label(details, "SurfaceSize", 402, 44, 14)
 	local locked = label(details, "Availability", 454, 44, 14)
+	local tip = label(details, "PerfectTip", 506, 50, 14)
 	local confirm = Instance.new("TextButton")
 	confirm.Name, confirm.Position, confirm.Size =
 		"AcceptOffer", UDim2.new(0.5, 8, 1, -56), UDim2.new(0.5, -24, 0, 44)
@@ -160,6 +161,10 @@ function Controller.start(
 		progressTrack.Visible = mastery.ready
 		progressFill.Size = UDim2.fromScale(mastery.fraction, 1)
 		if offer then
+			local bonus = offer.perfectBonus or 0
+			tip.Visible = bonus > 0
+			tip.Text = if bonus > 0 then string.format(t("perfectTipOffer"), bonus) else ""
+			details.CanvasSize = UDim2.fromOffset(0, if bonus > 0 then 564 else 506)
 			title.Text, brief.Text = t(offer.titleKey), t(offer.briefKey)
 			if target then
 				brief.Text = t("acceptPendingHint")

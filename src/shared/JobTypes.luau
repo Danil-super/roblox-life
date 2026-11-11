@@ -9,11 +9,14 @@ export type Result = {
 	operationId: string,
 	dollars: number,
 	xp: number,
+	baseDollars: number?,
+	perfectBonus: number?,
 	primaryColorId: string?,
 	secondaryColorId: string?,
 	finish: PaintFinish.Data?,
 }
 export type Offer = {
+	perfectBonus: number?,
 	clientKey: string?,
 	id: string,
 	titleKey: string,
