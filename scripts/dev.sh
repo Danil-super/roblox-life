@@ -56,6 +56,7 @@ case "${1:-check}" in
     python3 tests/PaintWorksiteAdapter.test.py
     python3 tests/PaintPreparationScene.test.py
     python3 tests/PreparationPrompts.test.py
+    python3 tests/PreparationTool.test.py
     python3 tests/PaintRoller.test.py
     python3 tests/PaintPointer.test.py
     python3 tests/PaintCamera.test.py

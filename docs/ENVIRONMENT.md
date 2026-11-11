@@ -3551,3 +3551,68 @@ cleared.png,resources.jsonl,graphify.log,codegraph-status.json}, ранние
 attempt1/attempt2 и face-wall.log. Контракт: [PREPARATION.md](PREPARATION.md).
 Физический Touch/широкая матрица устройств/FPS не проверялись; cloud/rejoin
 и несколько игроков остаются открыты. Отдельной модели шпателя пока нет.
+
+
+## 11 ноября 2026: SCRAPE-TOOL-27 — шпатель во время очистки
+
+PreparationTool создаёт пять локальных Parts/одну Model под камерой только
+на native hold своего участка. Пять конечных tween без render binding,
+звука/частиц/коллизий/query/touch/shadow. Light/ReducedMotion — статичный
+инструмент, переключение отменяет движение. Release/Triggered/Hidden, меню/
+Enabled/профиль, фокус, смерть/CharacterRemoving/камера/Destroy очищают его.
+Это локальное представление у стены, не привязка к руке/скелетная анимация.
+Серверная подготовка, профиль schema3 и оплата не менялись.
+
+Red настоящего контроллера: native hold не показывал инструмент. Реальный
+renderer проверен с повёрнутым patch, бюджетом частей/конечных tween, quiet/
+freeze/isolation/повторным Destroy. Callbacks проверяют чужой/повторный hold,
+раннее/чужое отпускание, Light/ReducedMotion, все выходы и поздний hold после
+Destroy. Strict выявил non-optional вывод значения dict: локальный patch
+явно BasePart?; проверки не отключались. Финальный полный check — код 0,
+StyLua/Selene, все domain/adapter/UI, два strict-анализатора, две Rojo-сборки.
+Context7 сверил ProximityPromptService hold/end/trigger/hidden и TweenInfo.
+
+Первый native Play естественно прошёл Tutorial/Mint; четыре жеста очистки
+(early release/full/Light/full) подтвердили движение/cleanup и 0→1→2→3 без
+оплаты. До сдачи Rose не дошёл: проверка реального ввода/покрытия отказала
+после внешней активации окна QA. Этот прогон сохранён как failed, Edit.
+X11-захват также использовал устаревающий window ID. Снимок первого hold
+показал частично закрытый головой инструмент; рабочая точка поднята и
+ограничена высотой patch (visibility red/green). Серверные guards неизменны.
+
+Финальный свежий solo MemoryPreview в том же PID42102: Tutorial → Mint →
+Rose естественно заработали $900/210 XP, три завершённых заказа, шесть
+уникальных пакетов профиля. Раннее E (220 мс) не очистило участок и удалило
+инструмент. Следующие три native E hold очистили по одному, без оплаты.
+Readonly RenderStepped-observer видел четыре разных модели по пять Parts,
+изменение CFrame в полном режиме, отсутствие движения в Light и удаление
+каждой модели. Он не менял игровой renderer/маску/ввод/награду.
+Light переключался настоящей кнопкой Home; ReducedMotion/прочие выходы —
+локальные callback-тесты. Перед покраской QA ждал прежний переход камеры
+0,3 с; внешние активации не выполнялись. Проверка покрытия ≥77/96 осталась
+прежней, отдельные ровно 96 не заявляются. Stop вернул Edit.
+
+X11-захват финального прогона снял Edit-окно, а не временный Play-view: этот
+снимок не принимается как визуальное доказательство нового положения.
+Нативные модели/движение подтверждены наблюдением в Play; изображения
+первого и второго прогона сохранены с правильными ограничениями.
+Отдельный Edit preview вызвал настоящий Tool.new, затем удалил модель и
+временную стену, восстановил CFrame/FOV. X11 снова вернул прежний вид, так
+что preview.log подтверждает исполнение/cleanup, а edit-tool.png не доказывает
+внешний вид. Отдельная визуальная приёмка финального положения не закрыта.
+
+Все 88 Source после Stop совпали с канонической сборкой; Homes пуст, guides/
+ghost нет. Одна Studio/одна сцена, посторонние процессы не закрывались.
+231 замер двух попыток: минимум MemAvailable 7623 MiB, максимум full PSI
+avg10 0%, swap used 684–842 MiB. Graphify code-only: 819 узлов/1529 связей;
+MCP перечитал текущий абсолютный root. Два новых/изменённых Luau-файла
+частично извлечены AST; strict-анализаторы прошли, связи проверены по коду.
+CodeGraph: 225 файлов/3536 узлов/6397 связей, pending changes/refs=0.
+Исключения документов/.tools/build/данных сохранены.
+
+Ignored-доказательства: .tools/scrape-tool/{controller-red.log,tool-red.log,
+visibility-red.log,check-final.log,attempt1.log,attempt1-report.json,
+attempt1-tool.png,play-final.log,play-report.json,resources.jsonl,sync.log,
+sources-before.log,sources-final.log,clean-edit.log,graphify.log,
+codegraph-status.json}. [Контракт](PREPARATION.md).
+Физический Touch, cloud/rejoin, несколько клиентов и FPS не проверены.

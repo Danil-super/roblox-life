@@ -205,6 +205,12 @@
   PreparationPrompts скрывает чужое/меню/очищенное, локализует и снимает
   подписки. Snapshot optional preparationRequired/preparedCount; нет новых
   remotes/выплат/полей профиля, schema3 прежняя. docs/PREPARATION.md.
+  SCRAPE-TOOL-27: PreparationTool показывает локальный шпатель из пяти Parts
+  только при native hold своего участка. Пять конечных tween без своего
+  render binding; Light/ReducedMotion отменяют движение. Release/Triggered/
+  Hidden, меню/профиль/Enabled, фокус, смерть/CharacterRemoving/камера/Destroy
+  очищают инструмент. Это локальная модель у стены, не скелетная анимация.
+  Серверные подготовка/время/оплата и схема профиля не меняются.
   Последовательность и факты: `tasks/plan.md`, `tasks/todo.md`, `docs/GDD_REVIEW.md`.
 - Profile/ProfileStore подключены к runtime. Jobs/Painting вызывают Economy
   при серверной приёмке; HomeService использует Economy для покупок и Furniture
