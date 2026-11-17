@@ -129,6 +129,12 @@ end
 for _, item in catalog do
 	table.freeze(item)
 end
+catalog["floor-plant-coral-v1"] = catalog["floor-plant-v1"]
+catalog["floor-plant-lagoon-v1"] = catalog["floor-plant-v1"]
+catalog["reading-chair-coral-v1"] = catalog["reading-chair-v1"]
+catalog["reading-chair-lagoon-v1"] = catalog["reading-chair-v1"]
+catalog["cozy-sofa-coral-v1"] = catalog["cozy-sofa-v1"]
+catalog["cozy-sofa-lagoon-v1"] = catalog["cozy-sofa-v1"]
 return table.freeze({
 	perfectTipPercent = 20,
 	maxDollars = 1000000000,

@@ -41,9 +41,10 @@ local function button(parent,name)
  local b=text(parent,name);b.Activated={Connect=function(_,fn)b.fire=fn end};return b
 end
 local rows=0
-local function row(parent,name,index,_,height)
- rows+=1;local n=text(parent,name);n.Position=UDim2.fromOffset(4,(index-1)*(height+8));return n
+local function row(parent,name,offset,catalogId)
+ rows+=1;local n=text(parent,name);n.Position=UDim2.fromOffset(4,offset);n.previewId=catalogId;return n
 end
+local function renderShop()end
 local shop,inventory=node("shop"),node("inventory")
 local shopTitle,shopInfo,shopBody,shopBack=node("title"),node("info"),node("body"),button(shop,"back")
 local inventoryTitle,inventoryInfo,inventoryBody,inventoryBack=node("title"),node("info"),node("body"),button(inventory,"back")
@@ -61,7 +62,7 @@ local inventoryFilter="All"
 local state={available=true,nearHome=true,nearShop=false,dollars=70,revision=1,
  catalog={},items={
  {id="plant1",catalogId="floor-plant-v1",purchaseOperationId="buy1"},
- {id="plant2",catalogId="floor-plant-v1",purchaseOperationId="buy2",placed={x=8,z=6,rotationY=345}},
+ {id="plant2",catalogId="floor-plant-lagoon-v1",purchaseOperationId="buy2",placed={x=8,z=6,rotationY=345}},
  {id="lamp",catalogId="floor-lamp-v1",purchaseOperationId="buy3"}}}
 local function language()return lang end
 local function t(key)return Strings.text(lang,key)end
@@ -82,6 +83,8 @@ end
 render()
 assert(filterButtons.All.Text=="✓ 3 · All"and filterButtons.Stored.Text=="2 · Stored"and filterButtons.Placed.Text=="1 · In room")
 assert(inventoryBody.children.plant1 and inventoryBody.children.plant2 and inventoryBody.children.lamp)
+local styled=inventoryBody.children.plant2
+assert(styled.previewId=="floor-plant-lagoon-v1" and styled.children.Name.Text:find("Lagoon",1,true),"Inventory lost the owned finish")
 inventoryBody.CanvasPosition=Vector2.new(0,100)
 local before=rows;render();assert(rows==before and inventoryBody.CanvasPosition.Y==100,"Ordinary sync rebuilt/reset the list")
 filterButtons.Stored.fire()

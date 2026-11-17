@@ -1,7 +1,10 @@
 --!strict
 local Decor = require(script.Parent.ClientDecorModels)
+local Finishes = require(game:GetService("ReplicatedStorage").Shared.FurnitureFinishes)
 local Models = {}
 function Models.create(id: string): Model?
+	local variant = Finishes.variants[id]
+	local baseId = if variant then variant.baseId else id
 	if id == "floor-easel-v1" or id == "floor-planter-v1" then
 		local model = Decor.create(if id == "floor-easel-v1" then "easel" else "planter")
 		assert(model, "Missing creative furniture model")
@@ -9,12 +12,12 @@ function Models.create(id: string): Model?
 		return model
 	end
 	if
-		id ~= "floor-plant-v1"
-		and id ~= "side-table-v1"
-		and id ~= "floor-lamp-v1"
-		and id ~= "reading-chair-v1"
-		and id ~= "bookcase-v1"
-		and id ~= "cozy-sofa-v1"
+		baseId ~= "floor-plant-v1"
+		and baseId ~= "side-table-v1"
+		and baseId ~= "floor-lamp-v1"
+		and baseId ~= "reading-chair-v1"
+		and baseId ~= "bookcase-v1"
+		and baseId ~= "cozy-sofa-v1"
 	then
 		return nil
 	end
@@ -41,10 +44,13 @@ function Models.create(id: string): Model?
 	local pivot = part("Pivot", Vector3.new(0.1, 0.1, 0.1), Vector3.zero, Color3.new())
 	pivot.Transparency, pivot.CanCollide, pivot.CanQuery = 1, false, false
 	model.PrimaryPart = pivot
+	local accent = if variant
+		then Color3.fromRGB(table.unpack(Finishes.colors[variant.accent]))
+		else nil
 	local wood, green, cream =
 		Color3.fromRGB(154, 110, 77), Color3.fromRGB(62, 126, 83), Color3.fromRGB(226, 216, 188)
-	if id == "floor-plant-v1" then
-		part("Pot", Vector3.new(1.3, 1.1, 1.3), Vector3.new(0, 0.55, 0), wood)
+	if baseId == "floor-plant-v1" then
+		part("Pot", Vector3.new(1.3, 1.1, 1.3), Vector3.new(0, 0.55, 0), accent or wood)
 		part("Soil", Vector3.new(1.1, 0.1, 1.1), Vector3.new(0, 1.1, 0), Color3.fromRGB(69, 52, 39))
 		part("Stem", Vector3.new(0.16, 2.3, 0.16), Vector3.new(0, 2.15, 0), green)
 		for index = 1, 3 do
@@ -57,15 +63,15 @@ function Models.create(id: string): Model?
 			)
 			leaf.CanCollide = false
 		end
-	elseif id == "side-table-v1" then
+	elseif baseId == "side-table-v1" then
 		part("Top", Vector3.new(3, 0.25, 2), Vector3.new(0, 2.375, 0), wood)
 		for _, x in { -1.2, 1.2 } do
 			for _, z in { -0.7, 0.7 } do
 				part("Leg", Vector3.new(0.25, 2.25, 0.25), Vector3.new(x, 1.125, z), wood)
 			end
 		end
-	elseif id == "reading-chair-v1" then
-		local fabric = Color3.fromRGB(70, 115, 115)
+	elseif baseId == "reading-chair-v1" then
+		local fabric = accent or Color3.fromRGB(70, 115, 115)
 		for _, x in { -1.4, 1.4 } do
 			for _, z in { -1.4, 1.4 } do
 				part("Foot", Vector3.new(0.35, 0.4, 0.35), Vector3.new(x, 0.2, z), wood)
@@ -83,8 +89,8 @@ function Models.create(id: string): Model?
 			true, true, fabric, Enum.Material.Fabric
 		seat.TopSurface, seat.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 		seat.Parent = model
-	elseif id == "cozy-sofa-v1" then
-		local fabric = Color3.fromRGB(70, 115, 115)
+	elseif baseId == "cozy-sofa-v1" then
+		local fabric = accent or Color3.fromRGB(70, 115, 115)
 		for _, x in { -2.5, 2.5 } do
 			for _, z in { -1.35, 1.35 } do
 				part("Foot", Vector3.new(0.35, 0.4, 0.35), Vector3.new(x, 0.2, z), wood)
@@ -106,7 +112,7 @@ function Models.create(id: string): Model?
 		seat.CFrame = CFrame.new(0, 1.4, 0.15) * CFrame.Angles(0, math.pi, 0)
 		seat.Anchored, seat.Disabled, seat.Transparency = true, true, 1
 		seat.CastShadow, seat.Parent = false, model
-	elseif id == "bookcase-v1" then
+	elseif baseId == "bookcase-v1" then
 		part("Back", Vector3.new(4, 6, 0.15), Vector3.new(0, 3, -0.675), wood)
 		for _, x in { -1.85, 1.85 } do
 			part("Side", Vector3.new(0.3, 6, 1.5), Vector3.new(x, 3, 0), wood)

@@ -1,4 +1,5 @@
 --!strict
+local Finishes = require("./FurnitureFinishes")
 export type Item = {
 	id: string,
 	catalogId: string,
@@ -20,13 +21,14 @@ local Plan = {}
 local function evaluate(items: { Item }, goals: { { id: string, products: { string } } }): Progress
 	local selected: { [string]: Item } = {}
 	for _, item in items do
-		local old = selected[item.catalogId]
+		local baseId = Finishes.baseId(item.catalogId)
+		local old = selected[baseId]
 		if
 			old == nil
 			or (item.placed ~= nil and old.placed == nil)
 			or ((item.placed ~= nil) == (old.placed ~= nil) and item.id < old.id)
 		then
-			selected[item.catalogId] = item
+			selected[baseId] = item
 		end
 	end
 	local result: Progress = { placed = 0, total = 0, goals = {} }

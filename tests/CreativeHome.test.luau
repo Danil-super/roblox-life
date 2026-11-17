@@ -6,6 +6,7 @@ local Profile = require("../src/server/Domain/Profile")
 local Economy = require("../src/server/Domain/Economy")
 local Furniture = require("../src/server/Domain/Furniture")
 local Types = require("../src/shared/HomeTypes")
+local Finishes = require("../src/shared/FurnitureFinishes")
 local ids = { "cozy-sofa-v1", "floor-easel-v1", "floor-planter-v1" }
 local catalog: { Types.Product } = {}
 for id, spec in Config.catalog do
@@ -18,7 +19,19 @@ for id, spec in Config.catalog do
 		height = spec.height,
 	})
 end
-assert(#catalog == 8, "Creative furnishings missing from catalog")
+local baseCount, finishCount = 0, 0
+for _, product in catalog do
+	if Finishes.variants[product.id] then
+		finishCount += 1
+		assert(
+			Config.catalog[product.id] == Config.catalog[Finishes.baseId(product.id)],
+			"Finish changed base economics or placement rules"
+		)
+	else
+		baseCount += 1
+	end
+end
+assert(baseCount == 8 and finishCount == 6, "Missing furniture or finishes")
 local items: { Plan.Item } = {}
 for i, id in
 	{ "floor-plant-v1", "reading-chair-v1", "side-table-v1", "floor-lamp-v1", "bookcase-v1" }

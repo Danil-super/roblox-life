@@ -3,6 +3,8 @@ local Store = require("../src/server/Domain/ProfileStore")
 local Economy = require("../src/server/Domain/Economy")
 local Furniture = require("../src/server/Domain/Furniture")
 local Profile = require("../src/server/Domain/Profile")
+local Plan = require("../src/shared/HomePlan")
+local variant = "floor-plant-lagoon-v1"
 local data: { [string]: unknown } = {}
 local failAfter = false
 local adapter: Store.Adapter = {
@@ -37,7 +39,7 @@ assert(
 )
 assert(
 	first.transact(function(p: Profile.Profile): boolean
-		return Economy.purchase(p, "buy-1", "floor-plant-v1", "plant-1", 2) ~= nil
+		return Economy.purchase(p, "buy-1", variant, "plant-1", 2) ~= nil
 	end),
 	"Buy"
 )
@@ -60,15 +62,27 @@ assert(second.load(), "Reacquire")
 local restored = second.read()
 assert(restored, "Read restored profile")
 assert(
-	restored.wallet.dollars == 70 and restored.inventory["plant-1"] ~= nil,
-	"Money or ownership lost"
+	restored.wallet.dollars == 70 and restored.inventory["plant-1"].catalogItemId == variant,
+	"Money, finish or ownership lost"
+)
+local plan = Plan.evaluate({
+	{
+		id = "plant-1",
+		catalogId = variant,
+		purchaseOperationId = "buy-1",
+		placed = restored.housing.placements["plant-1"],
+	},
+})
+assert(
+	plan.placed == 1 and plan.goals[1].requirements[1].itemId == "plant-1",
+	"Finish did not satisfy the plant goal"
 )
 local pose = restored.housing.placements["plant-1"]
 assert(pose and pose.x == 5 and pose.z == 3 and pose.rotationY == 45, "Pose did not restore")
 assert(restored.onboarding.completed, "Onboarding did not persist")
 assert(
 	second.transact(function(p: Profile.Profile): boolean
-		return Economy.purchase(p, "buy-1", "floor-plant-v1", "unused-new-id", 3) ~= nil
+		return Economy.purchase(p, "buy-1", variant, "unused-new-id", 3) ~= nil
 	end),
 	"Duplicate purchase must acknowledge existing item"
 )
@@ -77,6 +91,9 @@ assert(
 	duplicate and duplicate.wallet.dollars == 70 and duplicate.inventory["unused-new-id"] == nil,
 	"Replay debited money"
 )
+assert(not second.transact(function(p: Profile.Profile): boolean
+	return Economy.purchase(p, "buy-1", "floor-plant-coral-v1", "unused-new-id", 3) ~= nil
+end), "Replay ticket changed the finish")
 print(
 	"FurniturePersistence: unknown placement commit, reload and purchase replay passed (memory adapter, not cloud)"
 )
@@ -107,7 +124,7 @@ local warehouse = third.read()
 assert(
 	warehouse
 		and warehouse.wallet.dollars == 70
-		and warehouse.inventory["plant-1"] ~= nil
+		and warehouse.inventory["plant-1"].catalogItemId == variant
 		and warehouse.housing.placements["plant-1"] == nil,
 	"Reload lost stored furniture"
 )

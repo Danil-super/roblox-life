@@ -1,4 +1,5 @@
 --!strict
+local Finishes = require("./FurnitureFinishes")
 local en: { [string]: string } = {
 	title = "NEIGHBORHOOD FIXER",
 	home = "HOME",
@@ -880,5 +881,17 @@ en["roomBudgetEarn"] = "Find work for this goal"
 ru["roomBudgetEarn"] = "Найти работу для этой цели"
 function Strings.text(language: string, key: string): string
 	return (if language == "ru" then ru[key] else en[key]) or en[key] or key
+end
+en["finishOriginal"], ru["finishOriginal"] = "Original", "Классика"
+en["finishCoral"], ru["finishCoral"] = "Coral", "Коралл"
+en["finishLagoon"], ru["finishLagoon"] = "Lagoon", "Лагуна"
+function Strings.furnitureName(language: string, catalogId: string): string
+	local variant = Finishes.variants[catalogId]
+	if variant then
+		return Strings.text(language, variant.baseId)
+			.. " · "
+			.. Strings.text(language, "finish" .. variant.accent)
+	end
+	return Strings.text(language, catalogId)
 end
 return table.freeze(Strings)

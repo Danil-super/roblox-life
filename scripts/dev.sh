@@ -28,6 +28,7 @@ case "${1:-check}" in
     python3 tests/SeatReturn.test.py
     python3 tests/HomePlannerUI.test.py
     python3 tests/InventoryUI.test.py
+    python3 tests/ShopFinishesUI.test.py
     python3 tests/HomeLights.test.py
     python3 tests/HomeLightsUI.test.py
     python3 tests/WorldSignsUI.test.py

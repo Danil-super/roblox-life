@@ -9,6 +9,7 @@ local Types = require(RS.Shared.HomeTypes)
 local PurchaseFlow = require(RS.Shared.PurchaseFlow)
 local StoreFlow = require(RS.Shared.StoreFlow)
 local Inventory = require(RS.Shared.FurnitureInventory)
+local Finishes = require(RS.Shared.FurnitureFinishes)
 local Goals = require(RS.Shared.NavigationGoal)
 local Build = require("./BuildController")
 local RoomPlanner = require("./HomePlannerController")
@@ -40,11 +41,12 @@ function Controller.start(
 	local listKey = ""
 	local focus: { tab: string, id: string }? = nil
 	local inventoryFilter: Inventory.Filter = "All"
+	local shopSelection: { [string]: string } = {}
 	local planner: RoomPlanner.API
 	local function firstProduct(s: Types.Snapshot): string?
 		local best: Types.Product? = nil
 		for _, product in s.catalog do
-			if product.dollars <= s.dollars then
+			if Finishes.variants[product.id] == nil and product.dollars <= s.dollars then
 				if product.id == "floor-plant-v1" then
 					return product.id
 				end
@@ -217,7 +219,7 @@ function Controller.start(
 	local function homeObjective(): Objective.Cue?
 		return Objective.evaluate(state, planBlocked() or routeTarget ~= nil)
 	end
-	local function thumbnail(parent: Instance, catalogId: string): ()
+	local function thumbnail(parent: Instance): (string) -> ()
 		local viewport = Instance.new("ViewportFrame")
 		viewport.Name = "Preview"
 		viewport.Position = UDim2.fromOffset(6, 8)
@@ -226,38 +228,49 @@ function Controller.start(
 		viewport.Ambient = Color3.fromRGB(190, 190, 190)
 		viewport.LightColor = Color3.new(1, 1, 1)
 		viewport.Parent = parent
-		local model = Models.create(catalogId)
-		if model then
-			model.Parent = viewport
-			local camera = Instance.new("Camera")
+		local camera = Instance.new("Camera")
+		camera.FieldOfView, camera.Parent = 35, viewport
+		viewport.CurrentCamera = camera
+		local currentModel: Model? = nil
+		return function(catalogId: string): ()
+			if currentModel and currentModel.Name == catalogId then
+				return
+			end
+			if currentModel then
+				currentModel:Destroy()
+			end
+			local model = Models.create(catalogId)
+			currentModel = model
+			if model == nil then
+				return
+			end
 			local bounds, size = model:GetBoundingBox()
-			camera.FieldOfView = 35
 			local distance = size.Magnitude * 0.55 / math.sin(math.rad(camera.FieldOfView / 2))
 			camera.CFrame = CFrame.lookAt(
 				bounds.Position + Vector3.new(1, 0.7, 1).Unit * distance,
 				bounds.Position
 			)
-			camera.Parent = viewport
-			viewport.CurrentCamera = camera
+			model.Parent = viewport
 		end
 	end
 	local function row(
 		parent: ScrollingFrame,
 		name: string,
-		index: number,
+		offsetY: number,
 		catalogId: string,
 		height: number
-	): Frame
+	): (Frame, (string) -> ())
 		local f = Instance.new("Frame")
 		f.Name = name
 		f.Size = UDim2.new(1, -8, 0, height)
-		f.Position = UDim2.fromOffset(4, (index - 1) * (height + 8))
+		f.Position = UDim2.fromOffset(4, offsetY)
 		f.BackgroundColor3 = Color3.fromRGB(41, 62, 60)
 		f.BorderSizePixel = 0
 		f.Parent = parent
 		round(f)
-		thumbnail(f, catalogId)
-		return f
+		local preview = thumbnail(f)
+		preview(catalogId)
+		return f, preview
 	end
 	local function buy(product: Types.Product): ()
 		if storing then
@@ -283,6 +296,121 @@ function Controller.start(
 		local packet: { [string]: unknown } =
 			{ catalogId = product.id, requestId = nextPurchase.requestId }
 		send("buy", packet)
+	end
+	local function renderShop(s: Types.Snapshot, refresh: () -> ()): ()
+		shopBody:ClearAllChildren()
+		local products: { [string]: Types.Product } = {}
+		for _, product in s.catalog do
+			products[product.id] = product
+		end
+		local offset = 0
+		for _, base in s.catalog do
+			if Finishes.variants[base.id] then
+				continue
+			end
+			local pending = purchase
+			local selected = if pending and Finishes.baseId(pending.catalogId) == base.id
+				then pending.catalogId
+				else shopSelection[base.id]
+			local product = products[selected or base.id] or base
+			local variants = Finishes.options[base.id]
+			local coral = if variants then products[variants.Coral] else nil
+			local lagoon = if variants then products[variants.Lagoon] else nil
+			local extra = if coral and lagoon then 52 else 0
+			local card, preview = row(shopBody, base.id, offset, product.id, 156 + extra)
+			offset += 164 + extra
+			local title = text(card, "Name", 4, 46, 15)
+			title.Position, title.Size = UDim2.fromOffset(84, 4), UDim2.new(1, -92, 0, 32)
+			title.Text = t(base.id)
+			local description = text(card, "Description", 38, 42, 12)
+			description.Position, description.Size =
+				UDim2.fromOffset(84, 38), UDim2.new(1, -92, 0, 42)
+			description.Text = t(base.id .. "Description")
+			local dimensions = text(card, "Dimensions", 80, 24, 12)
+			dimensions.Position, dimensions.Size =
+				UDim2.fromOffset(84, 80), UDim2.new(1, -92, 0, 24)
+			dimensions.Text = string.format(t("productSize"), base.width, base.depth)
+			local price = text(card, "Price", 108 + extra, 36, 16)
+			price.Position, price.Size = UDim2.fromOffset(12, 108 + extra), UDim2.fromOffset(72, 36)
+			local buyButton = button(card, "Buy")
+			buyButton.Position, buyButton.Size =
+				UDim2.new(1, -132, 0, 104 + extra), UDim2.fromOffset(124, 44)
+			local choices: { { id: string, label: string, control: TextButton } } = {}
+			local function updateChoice(): ()
+				preview(product.id)
+				price.Text = "$" .. product.dollars
+				local retry = pending ~= nil and PurchaseFlow.canRetry(pending, os.clock())
+				buyButton.Text = t(
+					if pending and pending.catalogId == product.id
+						then (if retry then "retryPurchase" else "purchaseBusy")
+						else "buyItem"
+				)
+				buyButton.Active = storing == nil
+					and s.available
+					and s.nearShop
+					and (
+						if pending
+							then pending.catalogId == product.id and retry
+							else s.dollars >= product.dollars
+					)
+				buyButton.AutoButtonColor = buyButton.Active
+				buyButton.BackgroundTransparency = if buyButton.Active then 0 else 0.6
+				for _, choice in choices do
+					local checked = choice.id == product.id
+					choice.control.Text = (if checked then "✓ " else "") .. t(choice.label)
+					choice.control.BackgroundTransparency = if checked then 0 else 0.22
+				end
+			end
+			if coral and lagoon then
+				for index, option in
+					{
+						{ product = base, key = "Original", color = Color3.fromRGB(226, 216, 188) },
+						{
+							product = coral,
+							key = "Coral",
+							color = Color3.fromRGB(table.unpack(Finishes.colors.Coral)),
+						},
+						{
+							product = lagoon,
+							key = "Lagoon",
+							color = Color3.fromRGB(table.unpack(Finishes.colors.Lagoon)),
+						},
+					}
+				do
+					local swatch = button(card, "Finish" .. option.key)
+					swatch.Position, swatch.Size =
+						UDim2.new((index - 1) / 3, 6, 0, 108), UDim2.new(1 / 3, -12, 0, 44)
+					swatch.BackgroundColor3 = option.color
+					swatch.TextColor3, swatch.TextSize = Color3.fromRGB(15, 30, 30), 12
+					swatch.Active = pending == nil and storing == nil and s.available
+					swatch.AutoButtonColor = swatch.Active
+					table.insert(
+						choices,
+						{ id = option.product.id, label = "finish" .. option.key, control = swatch }
+					)
+					swatch.Activated:Connect(function()
+						if
+							shop.Visible
+							and swatch.Active
+							and purchase == nil
+							and storing == nil
+						then
+							product = option.product
+							shopSelection[base.id] = product.id
+							updateChoice()
+						end
+					end)
+				end
+			end
+			updateChoice()
+			buyButton.Activated:Connect(function()
+				if shop.Visible and buyButton.Active then
+					buy(product)
+					refresh()
+				end
+			end)
+		end
+		shopBody.CanvasSize = UDim2.fromOffset(0, offset)
 	end
 	local function storeItem(owned: Types.Owned): ()
 		local s = state
@@ -419,63 +547,14 @@ function Controller.start(
 			return
 		end
 		listKey = key
-		shopBody:ClearAllChildren()
 		inventoryBody:ClearAllChildren()
-		for index, product in s.catalog do
-			local card = row(shopBody, product.id, index, product.id, 156)
-			local title = text(card, "Name", 4, 46, 15)
-			title.Position = UDim2.fromOffset(84, 4)
-			title.Size = UDim2.new(1, -92, 0, 32)
-			title.Text = t(product.id)
-			local description = text(card, "Description", 38, 42, 12)
-			description.Position, description.Size =
-				UDim2.fromOffset(84, 38), UDim2.new(1, -92, 0, 42)
-			description.Text = t(product.id .. "Description")
-			local dimensions = text(card, "Dimensions", 80, 24, 12)
-			dimensions.Position, dimensions.Size =
-				UDim2.fromOffset(84, 80), UDim2.new(1, -92, 0, 24)
-			dimensions.Text = string.format(t("productSize"), product.width, product.depth)
-			local price = text(card, "Price", 108, 36, 16)
-			price.Position = UDim2.fromOffset(12, 108)
-			price.Size = UDim2.fromOffset(72, 36)
-			price.Text = "$" .. product.dollars
-			local b = button(card, "Buy")
-			b.Position = UDim2.new(1, -132, 0, 104)
-			b.Size = UDim2.fromOffset(124, 44)
-			b.Text = t(
-				if purchase and purchase.catalogId == product.id
-					then (if PurchaseFlow.canRetry(purchase, os.clock())
-						then "retryPurchase"
-						else "purchaseBusy")
-					else "buyItem"
-			)
-			b.Active = storing == nil
-				and s.available
-				and s.nearShop
-				and (
-					if purchase
-						then purchase.catalogId == product.id and PurchaseFlow.canRetry(
-							purchase,
-							os.clock()
-						)
-						else s.dollars >= product.dollars
-				)
-			b.AutoButtonColor = b.Active
-			b.BackgroundTransparency = if b.Active then 0 else 0.6
-			b.Activated:Connect(function()
-				if b.Active then
-					buy(product)
-					render()
-				end
-			end)
-		end
-		shopBody.CanvasSize = UDim2.fromOffset(0, #s.catalog * 164)
+		renderShop(s, render)
 		for index, owned in inventoryView.items do
-			local card = row(inventoryBody, owned.id, index, owned.catalogId, 100)
+			local card = row(inventoryBody, owned.id, (index - 1) * 108, owned.catalogId, 100)
 			local title = text(card, "Name", 4, 40, 15)
 			title.Position = UDim2.fromOffset(84, 4)
 			title.Size = UDim2.new(1, -92, 0, 40)
-			title.Text = t(owned.catalogId)
+			title.Text = Strings.furnitureName(language(), owned.catalogId)
 				.. " · "
 				.. t(if owned.placed then "itemPlaced" else "itemStored")
 			local b = button(card, "Place")

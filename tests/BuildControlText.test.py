@@ -24,7 +24,8 @@ local os={clock=function()return now end}
 local UIS={TouchEnabled=false}
 local lang="en"
 local function t(key)return Strings.text(lang,key)end
-local item={catalogId="floor-plant-v1"}
+local function language()return lang end
+local item={catalogId="floor-plant-coral-v1"}
 local x,z,rotation,mode=8,6,105,"Free"
 local active,valid,pinned,waiting=true,true,false,false
 local confirmedAt,reason,pending=0,"Valid",nil
@@ -47,7 +48,7 @@ for _,locale in {"en","ru"}do
  for _,deviceTouch in {false,true}do
   UIS.TouchEnabled=deviceTouch;waiting=false;pending=nil;valid=true;pinned=false;now=0
   render()
-  assert(title.Text==string.format(t("buildAngle"),t(item.catalogId),105),"Current item/angle missing")
+  assert(title.Text==string.format(t("buildAngle"),t("floor-plant-v1").." · "..t("finishCoral"),105),"Current item/finish/angle missing")
   assert(status.Text==t(if deviceTouch then "touchFloor"else "clickFloor"),"Wrong input instruction")
   assert(buttons.Rotate.Text:find("+15°",1,true)and buttons.RotateLeft.Text:find("-15°",1,true),"Free rotation step missing")
   assert(not buttons.Confirm.Active,"Unpinned preview enabled save")

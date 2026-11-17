@@ -101,7 +101,11 @@ function Controller.start(
 	local function render(): ()
 		local compact = UIS.TouchEnabled
 		title.Text = if item
-			then string.format(t("buildAngle"), t(item.catalogId), rotation)
+			then string.format(
+				t("buildAngle"),
+				Strings.furnitureName(language(), item.catalogId),
+				rotation
+			)
 			else t("buildHint")
 		local retry = pending ~= nil and PlacementFlow.canRetry(pending, os.clock())
 		status.Text = t(
