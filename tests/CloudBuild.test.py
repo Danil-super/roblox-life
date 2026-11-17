@@ -25,6 +25,21 @@ class CloudBuildTests(unittest.TestCase):
         self.assertEqual((ROOT / "default.project.json").read_text(), before)
         original = json.loads(before)["tree"]["ServerStorage"]["DevelopmentSettings"]
         self.assertFalse(original["StudioDataStoreTest"]["$properties"]["Value"])
+        self.assertNotIn("TestRunId", original)
+        self.assertNotIn("TestRunId", settings)
+        self.assertNotIn("CloudQASnapshot", result["tree"]["ServerStorage"])
+
+    def test_named_run_adds_only_server_evidence(self):
+        result = module.make_project(ROOT, 123, 456, "save-01-try-2")
+        server_storage = result["tree"]["ServerStorage"]
+        self.assertEqual(server_storage["DevelopmentSettings"]["TestRunId"]["$properties"]["Value"], "save-01-try-2")
+        self.assertEqual(Path(server_storage["CloudQASnapshot"]["$path"]), ROOT / "scripts/cloud_qa_snapshot.luau")
+        original = json.loads((ROOT / "default.project.json").read_text())
+        self.assertNotIn("CloudQASnapshot", original["tree"]["ServerStorage"])
+        for run_id in ("", "-first", "With-Spaces", "two words", "a" * 21, "qa/other", "test\n", True):
+            with self.subTest(run_id=run_id):
+                with self.assertRaises(ValueError):
+                    module.make_project(ROOT, 123, 456, run_id)
 
     def test_paths_still_resolve_when_project_is_generated_under_build(self):
         result = module.make_project(ROOT, 123, 456)

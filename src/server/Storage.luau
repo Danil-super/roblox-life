@@ -11,15 +11,22 @@ local settings = ServerStorage:WaitForChild("DevelopmentSettings")
 local enabled = settings:WaitForChild("StudioDataStoreTest")
 local universe = settings:WaitForChild("TestUniverseId")
 local place = settings:WaitForChild("TestPlaceId")
+local run = settings:FindFirstChild("TestRunId")
 assert(
 	enabled:IsA("BoolValue") and universe:IsA("IntValue") and place:IsA("IntValue"),
 	"Invalid development settings"
 )
-local config: Policy.Config =
-	{ enabled = enabled.Value, universeId = universe.Value, placeId = place.Value }
+assert(run == nil or run:IsA("StringValue"), "Invalid cloud run setting")
+local config: Policy.Config = {
+	enabled = enabled.Value,
+	universeId = universe.Value,
+	placeId = place.Value,
+	runId = if run then run.Value else nil,
+}
 local plan = Policy.select(RunService:IsStudio(), game.GameId, game.PlaceId, config)
 Storage.preview = plan.preview
 Storage.name = plan.name
+Storage.scope = plan.scope
 Storage.blocked = plan.blocked
 
 function Storage.create(): Store.Adapter
@@ -47,7 +54,7 @@ function Storage.create(): Store.Adapter
 	return {
 		update = function(key: string, transform: (unknown) -> unknown): (boolean, unknown)
 			local ok, result = pcall(function(): unknown
-				local active = store or DataStoreService:GetDataStore(Storage.name)
+				local active = store or DataStoreService:GetDataStore(Storage.name, Storage.scope)
 				store = active
 				return active:UpdateAsync(
 					key,

@@ -29,9 +29,31 @@ assert(
 )
 local cloud = Policy.select(true, 123, 456, config)
 assert(
-	not cloud.preview and cloud.blocked == nil and cloud.name ~= live.name,
+	not cloud.preview
+		and cloud.blocked == nil
+		and cloud.name ~= live.name
+		and cloud.scope == "global",
 	"Studio QA must use an isolated namespace"
 )
+config.runId = "save-01-try-2"
+assert(
+	Policy.select(true, 123, 456, config).scope == "qa-save-01-try-2",
+	"Named run did not isolate QA"
+)
+config.runId = "save-01-try-3"
+assert(
+	Policy.select(true, 123, 456, config).scope == "qa-save-01-try-3",
+	"Another run reused the scope"
+)
+for _, runId in { "-bad", "bad/path", "UPPER", "line\nbreak", string.rep("a", 21) } do
+	config.runId = runId
+	local plan = Policy.select(true, 123, 456, config)
+	assert(
+		plan.blocked == "CloudTestNotConfigured" and plan.scope == "global",
+		"Invalid scope accepted"
+	)
+end
+config.runId = "valid"
 config.universeId = 0 / 0
 assert(
 	Policy.select(true, 123, 456, config).blocked == "CloudTestNotConfigured",
@@ -45,7 +67,12 @@ assert(
 )
 local stillLive = Policy.select(false, 123, 456, config)
 assert(
-	stillLive.name == live.name and not stillLive.preview and stillLive.blocked == nil,
+	stillLive.name == live.name
+		and not stillLive.preview
+		and stillLive.blocked == nil
+		and stillLive.scope == "global",
 	"Studio settings must not alter production"
 )
-print("StoragePolicy: 10 preview/cloud-isolation scenarios passed")
+print(
+	"StoragePolicy: preview, published QA scope, invalid settings and production isolation passed"
+)

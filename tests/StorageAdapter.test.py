@@ -34,10 +34,11 @@ local backend = {UpdateAsync=function(_self,key,transform)
     if loseReply then loseReply=false;error("Reply lost after commit") end
     return nextValue
 end}
-local DataStoreService = {GetDataStore=function(_self,name)
+local DataStoreService = {GetDataStore=function(_self,name,scope)
     calls += 1
     local expected = if studio then "NeighborhoodFixer_P0_StudioQA_v1" else "NeighborhoodFixer_P0_v1"
     assert(name==expected,"Wrong DataStore namespace")
+    assert(scope==(if SCENARIO=="named" then "qa-roundtrip-1" else "global"),"Wrong DataStore scope")
     if failLookup then error("Initial DataStore lookup failed") end
     return backend
 end}
@@ -47,7 +48,14 @@ local values = {
     TestUniverseId={Value=123,IsA=function(_self,name) return name=="IntValue" end},
     TestPlaceId={Value=456,IsA=function(_self,name) return name=="IntValue" end},
 }
-local settings = {WaitForChild=function(_self,name) return values[name] end}
+local settings = {WaitForChild=function(_self,name) return values[name] end,
+    FindFirstChild=function(_self,name)
+        assert(name=="TestRunId")
+        if SCENARIO=="named" or SCENARIO=="production" then
+            return {Value="roundtrip-1",IsA=function(_,class) return class=="StringValue" end}
+        end
+        return nil
+    end}
 local ServerStorage = {WaitForChild=function(_self,name)
     assert(name=="DevelopmentSettings","Unexpected settings lookup")
     return settings
@@ -85,6 +93,11 @@ for _=1,2 do
     assert(not ok,"Transport error became success")
 end
 assert(calls==1 and writes==2 and transforms==0 and not Storage.preview,"Cloud failure fell back to preview")
+''',
+    "named": r'''
+assert(not Storage.preview and Storage.scope=="qa-roundtrip-1","Named run picked the default scope")
+assert(Storage.create().update("player:123",function()return {value=3} end),"Named run did not reach the scoped store")
+assert(calls==1 and writes==1,"Unexpected named run lookup or write count")
 ''',
     "lookup": r'''
 local adapter=Storage.create()
@@ -158,7 +171,7 @@ assert(replayed.wallet.dollars==70 and replayed.jobs.completedCount==1 and repla
 assert(third.close(),"Final leave did not release the lease")
 ''',
     "production": r'''
-assert(not Storage.preview and Storage.name=="NeighborhoodFixer_P0_v1","Studio settings changed production")
+assert(not Storage.preview and Storage.name=="NeighborhoodFixer_P0_v1" and Storage.scope=="global","Studio settings changed production")
 local adapter=Storage.create()
 assert(adapter.update("player:123",function()return {value=3} end),"Production adapter failed")
 assert(calls==1 and writes==1,"Production did not use cloud adapter")

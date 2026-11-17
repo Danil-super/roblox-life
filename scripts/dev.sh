@@ -96,6 +96,7 @@ case "${1:-check}" in
     python3 tests/HudResizeUI.test.py
     python3 tests/StorageAdapter.test.py
     python3 tests/CloudBuild.test.py
+    python3 tests/CloudEvidence.test.py
     ;;
   sourcemap)
     require_tool rojo
