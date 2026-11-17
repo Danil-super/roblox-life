@@ -48,7 +48,10 @@ assert(
 local legacy = Profile.copy(p)
 legacy.schemaVersion = 3
 local fromV3 = Profile.decode(legacy, 1)
-assert(fromV3 and fromV3.schemaVersion == 4 and fromV3.jobs.active and fromV3.jobs.active.finish)
+assert(
+	fromV3 and fromV3.schemaVersion == 4 and fromV3.jobs.active and fromV3.jobs.active.finish,
+	"Migrating v3 lost a completed wall finish"
+)
 legacy.schemaVersion = 2
 assert(legacy.jobs.active, "Missing job")
 assert(Profile.decode(legacy, 1) == nil, "V2 unexpectedly carried new-schema finish fields")
