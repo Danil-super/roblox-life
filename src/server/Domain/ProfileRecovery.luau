@@ -19,14 +19,15 @@ end
 function Recovery.attempt(
 	session: Store.Session,
 	reason: string?,
-	blocked: string?
+	blocked: string?,
+	guard: (() -> boolean)?
 ): (boolean, string?)
 	local action = Recovery.action(session.status(), reason, blocked)
 	if action == "retry" then
 		return session.retry()
 	end
 	if action == "load" then
-		return session.load()
+		return session.load(guard)
 	end
 	if action == "finalize" then
 		return session.read() ~= nil, nil

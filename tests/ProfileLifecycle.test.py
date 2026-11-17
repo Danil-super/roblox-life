@@ -14,6 +14,7 @@ assert source.startswith('--!strict'), 'Runtime source must remain strict'
 
 header = r'''
 local scenario = SCENARIO
+local RealStore = require("../src/server/Domain/ProfileStore")
 local queue, time = {}, 0
 local function schedule(fn, at) table.insert(queue, {co=coroutine.create(fn), at=at}) end
 local task = {}
@@ -27,7 +28,8 @@ math.random=function() return 0 end
 local signal = {Connect=function() end}
 local attrs = {}
 local Players = {PlayerAdded=signal,PlayerRemoving=signal,RespawnTime=5}
-local added
+local added, removing, shutdown
+Players.PlayerRemoving={Connect=function(_,fn) removing=fn end}
 local player = {UserId=1,Parent=Players,CharacterAdded={Connect=function(_,fn) added=fn end}}
 function player:SetAttribute(key,value) attrs[key]=value end
 function player:GetAttribute(key) return attrs[key] end
@@ -54,7 +56,7 @@ local remote={OnServerEvent=signal,IsA=function() return true end}
 local ReplicatedStorage={WaitForChild=function() return remote end}
 local HttpService={GenerateGUID=function() return "token" end}
 local phase, storeBusy, attempts="Loading",false,0
-local observed=0
+local observed, destroyed, releases=0,0,0
 local wallet={onboarding={step="INTRO"},wallet={dollars=0},progression={paintingXP=0},housing={roomTemplateId="StarterDormTemplate_v1",roomTemplateVersion=1}}
 local session={
     load=function() phase=if scenario=="late_load" then "Uncertain" else "Ready";return phase=="Ready" end,
@@ -63,23 +65,43 @@ local session={
     renew=function() storeBusy=true;task.wait(10);storeBusy=false;return true end,
     read=function() return if phase=="Ready" and not storeBusy then wallet else nil end,
 }
-local Store={new=function() return session end}
+local joining = scenario=="leave_before_commit" or scenario=="leave_after_commit"
+local exiting = joining or scenario=="shutdown_during_save"
+local stored, writes=nil,0
+local blockNext=false
+local adapter={update=function(_,transform)
+    writes+=1
+    if writes==1 and scenario=="leave_before_commit" then task.wait(24) end
+    local nextValue=transform(stored)
+    if nextValue then stored=nextValue end
+    if (writes==1 and scenario=="leave_after_commit") or blockNext then
+        blockNext=false
+        task.wait(24)
+    end
+    return true,nextValue
+end}
+local Store=if exiting then RealStore else {new=function() return session end}
 local Profile={integer=function() return true end}
 local RoomRules={SLOTS=16}
-local Storage={create=function() return {} end,preview=true}
+local Storage={create=function() return adapter end,preview=not exiting,name="CloudStub"}
 local World={
-    createHome=function() homeCount+=1;return {model={Destroy=function() end},ownerId=1,spawn={}} end,
+    createHome=function() homeCount+=1;return {model={Destroy=function() destroyed+=1 end},ownerId=1,spawn={}} end,
     isIntruding=function() return false end,
     returnHome=function() return true end,
 }
 local Instance={new=function(_,class) return {Event=signal,Fire=function() end} end}
 local services={Players=Players,HttpService=HttpService,ReplicatedStorage=ReplicatedStorage}
-local game={BindToClose=function() end,GetService=function(_,name) assert(services[name],name);return services[name] end}
+local game={BindToClose=function(_,fn) shutdown=fn end,GetService=function(_,name) assert(services[name],name);return services[name] end}
 local dependencies={
  ["./Domain/ProfileStore"]=Store,["./Domain/Profile"]=Profile,["./Domain/RoomRules"]=RoomRules,
  ["./Storage"]=Storage,["./World"]=World,
- ["./Diagnostics"]={emit=function()end,observe=function(_,_,profile)
-  assert(phase=="Ready" and not storeBusy and profile==wallet,"Diagnostics received unconfirmed state")
+ ["./Diagnostics"]={emit=function(event,_,entry,ok)
+  if event=="profile_release" then
+   assert(entry=="close" and ok and stored.leaseOwner=="","Reported an unconfirmed release")
+   releases+=1
+  end
+ end,observe=function(_,_,profile)
+  if not exiting then assert(phase=="Ready" and not storeBusy and profile==wallet,"Diagnostics received unconfirmed state") end
   observed+=1;return nil
  end},
  ["./Domain/ProfileRecovery"]={action=function(status)return if status=="Uncertain" then "retry" else nil end,code=function()return "Unavailable" end},
@@ -88,7 +110,22 @@ local function require(path) assert(dependencies[path],path);return dependencies
 local warn=print
 '''
 footer = r'''
-serviceModule.start()
+local api=serviceModule.start()
+local finishedClose=false
+if joining then
+    schedule(function()player.Parent=nil;removing(player)end,1)
+elseif exiting then
+    schedule(function()
+        blockNext=true
+        assert(api.change(player,function(p)p.wallet.dollars=250;return true end),"Saved mutation was lost")
+    end,2)
+    schedule(function()shutdown();finishedClose=true end,3)
+    schedule(function()
+        assert(api.read(player)==nil and api.home(player)==nil,"Shutdown exposed the departing profile")
+        assert(not api.change(player,function()error("Shutdown ran a new mutation")end),"Shutdown accepted a new write")
+        assert(destroyed==1,"Shutdown kept a room until the network reply")
+    end,4)
+end
 while #queue>0 do
     table.sort(queue,function(a,b) return a.at<b.at end)
     local item=table.remove(queue,1)
@@ -97,6 +134,24 @@ while #queue>0 do
     local ok,duration=coroutine.resume(item.co)
     assert(ok,tostring(duration))
     if coroutine.status(item.co)~="dead" then table.insert(queue,{co=item.co,at=time+duration}) end
+end
+if exiting then
+    if joining then
+        assert(homeCount==0 and spawnCount==0 and observed==0,"Departed join published game state")
+    end
+    if scenario=="leave_before_commit" then
+        assert(stored==nil and writes==1 and releases==0,"Departed join acquired a new lease")
+    else
+        assert(stored.leaseOwner=="" and releases==1,"Long in-flight operation stranded a lease")
+    end
+    if scenario=="shutdown_during_save" then
+        assert(finishedClose and destroyed==1 and writes==3,"Shutdown did not wait for one release")
+    end
+    local rejoined=RealStore.new(adapter,1,"rejoined",os.time,120)
+    assert(rejoined.load(),"A new server could not load without waiting for lease expiry")
+    assert(rejoined.read().wallet.dollars==(if joining then 0 else 250),"Rejoin loaded the wrong wallet")
+    print("PASS lifecycle",scenario,"immediate rejoin")
+    return
 end
 assert(phase=="Ready" and not storeBusy,"Scenario did not finish in confirmed Ready state")
 assert(attrs.ProfileStatus=="Ready","Ready state was not published")
@@ -107,9 +162,9 @@ assert(spawnCount==expectedSpawns,"Character must eventually spawn; expected="..
 print("PASS lifecycle",scenario,"homes",homeCount,"character loads",spawnCount)
 '''
 failed = False
-for scenario in ('late_load', 'respawn'):
+for scenario in ('late_load', 'respawn', 'leave_before_commit', 'leave_after_commit', 'shutdown_during_save'):
     script = '--!strict\n' + header.replace('SCENARIO', '"'+scenario+'"') + '\nlocal serviceModule=(function()\n' + source + '\nend)()\n' + footer
-    with tempfile.NamedTemporaryFile('w', suffix='.luau') as f:
+    with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / ".tools") as f:
         f.write(script)
         f.flush()
         print(f'Running {scenario} using {args.source}', flush=True)

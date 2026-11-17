@@ -85,6 +85,40 @@ test("ambiguous acquisition is recovered with the original token", function()
 	assert(not f.new("server-b").load(), "Recovered lock must still be exclusive")
 end)
 
+test("a postponed load stops acquiring once its player leaves", function()
+	local f = fixture()
+	local a = f.new("leaving")
+	local present = true
+	f.before(true)
+	assert(not a.load(function(): boolean
+		return present
+	end), "Fixture did not interrupt the acquisition")
+	present = false
+	f.before(false)
+	local loaded, reason = a.retry()
+	assert(
+		not loaded and reason == "Cancelled" and a.status() == "Closed",
+		"Departed load acquired a lease"
+	)
+	assert(a.read() == nil and f.data["player:1"] == nil, "Departed load created a profile")
+	assert(f.new("rejoin").load(), "A fresh session was blocked by the departed player")
+end)
+
+test("a departed load can confirm and release its already acquired lease", function()
+	local f = fixture()
+	local a = f.new("leaving")
+	local present = true
+	f.after(true)
+	assert(not a.load(function(): boolean
+		return present
+	end), "Fixture did not lose the acquisition reply")
+	present = false
+	f.after(false)
+	assert(a.retry(), "Departed load could not recover the committed lease")
+	assert(a.close(), "Recovered lease could not be released")
+	assert(f.new("rejoin").load(), "Rejoin should not wait for lease expiry")
+end)
+
 test("expired owners cannot write even after the new owner releases", function()
 	local f = fixture()
 	local first, second = f.new("server-a"), f.new("server-b")

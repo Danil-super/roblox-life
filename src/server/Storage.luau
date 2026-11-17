@@ -43,11 +43,13 @@ function Storage.create(): Store.Adapter
 			end,
 		}
 	end
-	local store = DataStoreService:GetDataStore(Storage.name)
+	local store: GlobalDataStore? = nil
 	return {
 		update = function(key: string, transform: (unknown) -> unknown): (boolean, unknown)
 			local ok, result = pcall(function(): unknown
-				return store:UpdateAsync(
+				local active = store or DataStoreService:GetDataStore(Storage.name)
+				store = active
+				return active:UpdateAsync(
 					key,
 					function(current: unknown, info: DataStoreKeyInfo?): ...unknown
 						local nextValue = transform(current)

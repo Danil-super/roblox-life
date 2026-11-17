@@ -26,6 +26,8 @@ local p=player()
 local context={busy=false,closing=false,lastRetry=-math.huge,failure="StorageUnavailable",trace="safe-trace",session={status=function()return "Uncertain"end}}
 local contexts={[p]=context}
 local shuttingDown,Storage,RETRY_SECONDS=false,{},10
+local function present(who,c)return not shuttingDown and not c.closing and who.Parent==Players end
+local function settled(who,c)c.busy=false;return present(who,c)end
 local shouldYield,success=false,true
 local Recovery={
  action=function(_,reason)return if reason=="StorageUnavailable" then "retry" else nil end,

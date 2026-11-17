@@ -30,7 +30,8 @@ Output. Зависимостей, HTTP-запросов и внешней ана
 События: `job_accepted`, `job_completed`, `job_abandoned`, `onboarding_step`,
 `onboarding_completed`, `furniture_purchased`, `furniture_placed`,
 `furniture_moved`, `furniture_stored`. Прежние `profile_load`,
-`profile_recovery`, `profile_failure` сохранены; к ним добавлена версия схемы.
+`profile_recovery`, `profile_failure` сохранены. `profile_release` с записью
+`entry:"close"` фиксирует исход освобождения lease после попытки записи.
 
 На пакет выводятся максимум восемь изменений; `omitted` показывает количество
 остальных. Инвентарь ограничен прежними 256 экземплярами. Не создаются записи

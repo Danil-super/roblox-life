@@ -46,6 +46,9 @@ function Service.start(): API
 	local profileRemote = ReplicatedStorage:WaitForChild("ProfileCommand")
 	assert(profileRemote:IsA("RemoteEvent"), "ProfileCommand must be a RemoteEvent")
 	local RETRY_SECONDS = 10
+	local function present(player: Player, context: Context): boolean
+		return not shuttingDown and not context.closing and player.Parent == Players
+	end
 	local function refreshRecovery(player: Player, context: Context): ()
 		if contexts[player] ~= context or context.closing or player.Parent ~= Players then
 			return
@@ -124,31 +127,42 @@ function Service.start(): API
 		return false, reason
 	end
 
+	local function release(player: Player, context: Context): ()
+		context.busy = true
+		recover(context.session)
+		if context.session.status() == "Ready" then
+			local ok, reason = context.session.close()
+			if not ok and context.session.status() == "Uncertain" then
+				ok, reason = recover(context.session)
+			end
+			Diagnostics.emit("profile_release", context.trace, "close", ok, reason)
+		end
+		contexts[player] = nil
+	end
+
+	local function settled(player: Player, context: Context): boolean
+		context.busy = false
+		if context.closing then
+			release(player, context)
+			return false
+		end
+		return present(player, context)
+	end
+
 	local function close(player: Player, context: Context): ()
 		if context.closing then
 			return
 		end
 		context.closing = true
-		local deadline = os.clock() + 20
-		while context.busy and os.clock() < deadline do
-			task.wait(0.1)
-		end
-		if not context.busy then
-			context.busy = true
-			recover(context.session)
-			if context.session.status() == "Ready" then
-				if not context.session.close() then
-					recover(context.session)
-				end
-			end
-			context.busy = false
-		end
 		local home = context.home
+		context.home = nil
 		if home ~= nil then
 			home.model:Destroy()
 		end
 		slots[context.slot] = nil
-		contexts[player] = nil
+		if not context.busy then
+			release(player, context)
+		end
 	end
 
 	local function spawnCharacter(player: Player, context: Context): ()
@@ -264,12 +278,13 @@ function Service.start(): API
 				end)
 			end)
 		end)
-		local loaded, loadReason = context.session.load()
-		if not loaded and context.session.status() == "Uncertain" then
+		local loaded, loadReason = context.session.load(function(): boolean
+			return present(player, context)
+		end)
+		if not loaded and present(player, context) and context.session.status() == "Uncertain" then
 			loaded, loadReason = recover(context.session)
 		end
-		context.busy = false
-		if context.closing or player.Parent ~= Players then
+		if not settled(player, context) then
 			return
 		end
 		if not loaded then
@@ -324,9 +339,15 @@ function Service.start(): API
 		player:SetAttribute("ProfileCanRetry", false)
 		player:SetAttribute("ProfileStatus", "Loading")
 		Diagnostics.emit("profile_recovery", context.trace, "manual", true, "Requested")
-		local ok, reason = Recovery.attempt(context.session, context.failure, Storage.blocked)
-		context.busy = false
-		if context.closing or player.Parent ~= Players then
+		local ok, reason = Recovery.attempt(
+			context.session,
+			context.failure,
+			Storage.blocked,
+			function(): boolean
+				return present(player, context)
+			end
+		)
+		if not settled(player, context) then
 			return
 		end
 		Diagnostics.emit("profile_recovery", context.trace, "manual", ok, reason)
@@ -339,7 +360,12 @@ function Service.start(): API
 
 	remote.OnServerEvent:Connect(function(player: Player)
 		local context = contexts[player]
-		if context == nil or context.closing or context.busy or context.session.read() == nil then
+		if
+			context == nil
+			or not present(player, context)
+			or context.busy
+			or context.session.read() == nil
+		then
 			return
 		end
 		local now = os.clock()
@@ -356,6 +382,9 @@ function Service.start(): API
 	task.spawn(function()
 		while not shuttingDown do
 			task.wait(HEARTBEAT_SECONDS)
+			if shuttingDown then
+				break
+			end
 			for player, context in contexts do
 				if context.closing or context.busy or context.session.status() == "Blocked" then
 					continue
@@ -368,12 +397,11 @@ function Service.start(): API
 						saved, reason = recover(context.session)
 					else
 						saved, reason = context.session.renew()
+						if not saved and context.session.status() == "Uncertain" then
+							saved, reason = recover(context.session)
+						end
 					end
-					if not saved then
-						saved, reason = recover(context.session)
-					end
-					context.busy = false
-					if not context.closing and player.Parent == Players then
+					if settled(player, context) then
 						if saved then
 							finalizeReady(player, context)
 						else
@@ -428,11 +456,13 @@ function Service.start(): API
 		changed = changed.Event,
 		read = function(player: Player): Profile.Profile?
 			local context = contexts[player]
-			return if context ~= nil and not context.closing then context.session.read() else nil
+			return if context ~= nil and present(player, context)
+				then context.session.read()
+				else nil
 		end,
 		home = function(player: Player): World.Home?
 			local context = contexts[player]
-			return if context ~= nil and not context.closing then context.home else nil
+			return if context ~= nil and present(player, context) then context.home else nil
 		end,
 		change = function(
 			player: Player,
@@ -440,18 +470,15 @@ function Service.start(): API
 			guard: (() -> boolean)?
 		): (boolean, string?)
 			local context = contexts[player]
-			if context == nil or context.busy or context.closing or player.Parent ~= Players then
+			if context == nil or context.busy or not present(player, context) then
 				return false, "NotReady"
 			end
 			context.busy = true
 			player:SetAttribute("ProfileStatus", "Saving")
 			local ok, reason = context.session.transact(mutate, function(): boolean
-				return not context.closing
-					and player.Parent == Players
-					and (guard == nil or guard())
+				return present(player, context) and (guard == nil or guard())
 			end)
-			context.busy = false
-			if not context.closing and player.Parent == Players then
+			if settled(player, context) then
 				if context.session.status() == "Ready" then
 					publish(player, context)
 				else

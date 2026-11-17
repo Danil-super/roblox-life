@@ -4,7 +4,7 @@ local Profile = require("./Profile")
 type Data = Profile.Profile
 export type Adapter = { update: (string, (unknown) -> unknown) -> (boolean, unknown) }
 export type Session = {
-	load: () -> (boolean, string?),
+	load: ((() -> boolean)?) -> (boolean, string?),
 	transact: ((Data) -> boolean, (() -> boolean)?) -> (boolean, string?),
 	renew: () -> (boolean, string?),
 	retry: () -> (boolean, string?),
@@ -132,6 +132,17 @@ function Store.new(
 				return nil
 			end
 			if intent.kind == "load" then
+				if current and current.leaseOwner == token then
+					if current.leaseUntil <= time then
+						denial = "LeaseLost"
+						return nil
+					end
+					return current -- An acquisition may have committed before its response failed.
+				end
+				if intent.guard and not intent.guard() then
+					denial = "Cancelled"
+					return nil
+				end
 				if current == nil then
 					return {
 						recordVersion = 1,
@@ -141,13 +152,6 @@ function Store.new(
 						leaseUntil = time + ttl,
 						commitId = intent.writeId,
 					}
-				end
-				if current.leaseOwner == token then
-					if current.leaseUntil <= time then
-						denial = "LeaseLost"
-						return nil
-					end
-					return current -- An acquisition may have committed before its response failed.
 				end
 				if current.leaseOwner ~= "" and current.leaseUntil > time then
 					denial = "Locked"
@@ -205,9 +209,9 @@ function Store.new(
 		end
 		if result == nil then
 			pending = nil
-			state = if denial == "Cancelled"
-				then "Ready"
-				elseif intent.kind == "load" then "Blocked"
+			state = if intent.kind == "load"
+				then (if denial == "Cancelled" then "Closed" else "Blocked")
+				elseif denial == "Cancelled" then "Ready"
 				else "Lost"
 			return false, denial
 		end
@@ -247,7 +251,7 @@ function Store.new(
 		return resolve()
 	end
 	return {
-		load = function(): (boolean, string?)
+		load = function(guard: (() -> boolean)?): (boolean, string?)
 			if
 				busy
 				or pending ~= nil
@@ -257,7 +261,7 @@ function Store.new(
 			then
 				return false, "NotLoadable"
 			end
-			return prepare("load", nil)
+			return prepare("load", nil, guard)
 		end,
 		transact = function(change: (Data) -> boolean, guard: (() -> boolean)?): (boolean, string?)
 			local current = confirmed
