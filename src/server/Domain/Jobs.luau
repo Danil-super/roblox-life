@@ -78,8 +78,49 @@ function Jobs.cancel(p: Profile.Profile, id: string): boolean
 	if job == nil or job.id ~= id or job.status == "Completed" then
 		return false
 	end
-	job.status = "Abandoned"
+	job.status, job.checkpoint = "Abandoned", nil
 	p.jobs.settledSequence = job.sequence
+	p.revision += 1
+	return true
+end
+function Jobs.checkpoint(p: Profile.Profile, work: Painting.State, now: number): boolean
+	local job = p.jobs.active
+	if
+		job == nil
+		or job.id ~= work.jobId
+		or job.status == "Completed"
+		or job.status == "Abandoned"
+	then
+		return false
+	end
+	local contract = Config.contracts[job.templateId]
+	if contract == nil or Painting.total(work) ~= (if contract.secondaryColorId then 2 else 1) then
+		return false
+	end
+	local color = if Painting.surface(work) == 2
+		then contract.secondaryColorId
+		else contract.colorId
+	if work.config.colorId ~= color then
+		return false
+	end
+	local saved = Painting.checkpoint(work, now)
+	if saved == nil then
+		return false
+	end
+	local previous = job.checkpoint
+	if previous and Painting.validCheckpoint(work, previous) then
+		if #previous.masks + 1 ~= #saved.masks then
+			return false
+		end
+		for i, mask in previous.masks do
+			if saved.masks[i] ~= mask then
+				return false
+			end
+		end
+	elseif #saved.masks ~= 1 then
+		return false
+	end
+	job.checkpoint = saved
 	p.revision += 1
 	return true
 end

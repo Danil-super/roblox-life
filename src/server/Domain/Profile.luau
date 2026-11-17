@@ -32,6 +32,7 @@ export type Job = {
 	status: string,
 	receipt: Receipt?,
 	finish: PaintFinish?,
+	checkpoint: PaintFinish?,
 }
 export type Profile = {
 	schemaVersion: number,
@@ -190,7 +191,7 @@ end
 function Profile.new(userId: number): Profile
 	assert(Profile.integer(userId, 1, 9007199254740991), "A positive Roblox UserId is required")
 	return {
-		schemaVersion = 3,
+		schemaVersion = 4,
 		userId = userId,
 		revision = 0,
 		wallet = { dollars = 0 },
@@ -227,7 +228,7 @@ function Profile.decode(raw: unknown, userId: number): (Profile?, string?)
 	if root == nil then
 		return nil, "Corrupt"
 	end
-	if root.schemaVersion ~= 1 and root.schemaVersion ~= 2 and root.schemaVersion ~= 3 then
+	if not Profile.integer(root.schemaVersion, 1, 4) then
 		return nil, "UnsupportedVersion"
 	end
 	if
@@ -345,8 +346,10 @@ function Profile.decode(raw: unknown, userId: number): (Profile?, string?)
 		return nil, "Corrupt"
 	end
 	if jobs.active ~= nil then
-		local job =
-			asMap(jobs.active, { "id", "sequence", "templateId", "status", "receipt", "finish" })
+		local job = asMap(
+			jobs.active,
+			{ "id", "sequence", "templateId", "status", "receipt", "finish", "checkpoint" }
+		)
 		local statuses = {
 			Accepted = true,
 			Travelling = true,
@@ -380,17 +383,33 @@ function Profile.decode(raw: unknown, userId: number): (Profile?, string?)
 		elseif job.receipt ~= nil then
 			return nil, "Corrupt"
 		end
+		local contract = Config.contracts[job.templateId :: string]
+		local total = if contract and contract.secondaryColorId then 2 else 1
 		local finish = if job.finish ~= nil then paintFinish(job.finish) else nil
 		if job.finish ~= nil then
-			local contract = Config.contracts[job.templateId :: string]
 			if
-				root.schemaVersion ~= 3
+				(root.schemaVersion ~= 3 and root.schemaVersion ~= 4)
 				or job.status ~= "Completed"
 				or finish == nil
-				or (contract and #finish.masks ~= (if contract.secondaryColorId then 2 else 1))
+				or (contract and #finish.masks ~= total)
 			then
 				return nil, "Corrupt"
 			end
+		end
+		local checkpoint = if job.checkpoint ~= nil then paintFinish(job.checkpoint) else nil
+		if
+			job.checkpoint ~= nil
+			and (
+				root.schemaVersion ~= 4
+				or job.status == "Completed"
+				or job.status == "Abandoned"
+				or profile.jobs.settledSequence >= (job.sequence :: number)
+				or checkpoint == nil
+				or contract == nil
+				or #checkpoint.masks > total
+			)
+		then
+			return nil, "Corrupt"
 		end
 		profile.jobs.active = {
 			id = job.id :: string,
@@ -399,6 +418,7 @@ function Profile.decode(raw: unknown, userId: number): (Profile?, string?)
 			status = job.status :: string,
 			receipt = jobReceipt,
 			finish = finish,
+			checkpoint = checkpoint,
 		}
 	end
 	local onboarding = asMap(

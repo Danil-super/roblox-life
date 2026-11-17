@@ -13,6 +13,8 @@ local View=require("../src/shared/PaintView")
 local Config=require("../src/shared/PaintConfig")
 local snapshot={count=0,mask=string.rep("0",96),error=nil,phase="Painting"}
 local function language()return "en"end
+local profileStatus="Ready"
+local player={GetAttribute=function()return profileStatus end}
 local Strings={text=function(_,key)
     return if key=="paintProgress" then "%s · %d%% / %d%%" elseif key=="paintOptional"then "optional %d%%"elseif key=="paintExcellent"then "excellent %d%%"elseif key=="paintPerfect"then "perfect %d%%"elseif key=="surfaceProgress" then "Wall %d / %d" elseif key=="paintGapsShow"then "show %d"elseif key=="paintGapsHide"then "hide %d"else key
 end}
@@ -65,8 +67,14 @@ snapshot.surfaceIndex=2;snapshot.surfaceTotal=2;render()
 assert(title.Text=="Wall 2 / 2 · perfect 100%","Two-wall toolbar lost current surface")
 inspectPending=true;render()
 assert(not review.Active and review.Text=="paintChecking","Review wait has no visible state")
+profileStatus="Saving";render()
+assert(not review.Active and review.Text=="paintSavingWall","Storage wait has no visible state")
+profileStatus="Ready"
 inspectPending=false;reviewTimedOut=true;render()
 assert(review.Active and review.Text=="paintCheckAgain","Timed-out review cannot be retried")
+snapshot.error="ReviewSave";render()
+assert(title.Text:find("jobErrorReviewSave",1,true) and review.Active,"Definite save failure removed retry guidance")
+snapshot.error=nil
 '''
 start = source.index("\tgaps.Activated:Connect(")
 toggle_body = source[start:source.index("\n\treview.Activated:Connect(", start)]

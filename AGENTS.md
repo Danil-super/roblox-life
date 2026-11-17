@@ -20,9 +20,10 @@
   общей палитрой и серверным открытием широкого валика; docs/CONTRACTS.md.
   Четвёртый paint-duo-v1: 210 XP, mint → rose, две сетки/одна выплата;
   SurfaceReady не даёт оплату, nextSurface меняет workId/wallId и сбрасывает сетку.
-  Jobs.submit проверяет все стены и число из шаблона. Маски runtime, смерть/новая
-  сессия начинают с Inspect; завершённая квитанция восстанавливает оба цвета.
-  Схема профиля прежняя; docs/PAINT_SCOPE.md.
+  Jobs.submit проверяет все стены и число из шаблона. Профиль v4 сохраняет
+  маску после проверки каждой стены. Возрождение/перезаход восстанавливают
+  проверенные стены с новым workId; мазки открытой стены остаются в runtime.
+  Завершённая квитанция восстанавливает оба цвета; docs/PAINT_SCOPE.md.
   После Duo доступны sunroom (330 XP, белый→mint, $600/+140 XP) и atelier
   (470 XP, rose→белый, $650/+160 XP). ClientDecorModels: planter/easel/books,
   16/27 дополнительных Parts на комнату, без collision/query/touch/shadow;
@@ -48,8 +49,9 @@
   Paint focus: WindowFocusReleased отпускает held/touch/current и звук,
   сохраняя очередь/inflight/sequence/inspectPending. Поздний up не flush;
   мышь и один Touch не перехватывают друг друга. Review очищает Touch и
-  блокирует новый жест до ответа. reviewSent не повторяет отправленную
-  проверку; обычный sync не снимает ожидание. Focus-подписка снимается при Destroy HUD.
+  блокирует новый жест до ответа. Сверка после задержки сохраняет идентификатор
+  проверки. Подтверждение профиля удерживает ожидание до завершения записи.
+  Focus-подписка снимается при Destroy HUD.
   ModalControls временно скрывает CoreGui Chat только при PaintToolbar,
   возвращая прежнее enabled при выходе/другом меню/Enabled/Destroy;
   gameProcessedEvent сохраняется. Сервер/схема/выплата прежние; docs/PAINTING.md.

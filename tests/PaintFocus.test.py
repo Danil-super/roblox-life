@@ -101,6 +101,8 @@ update = source[start:source.index("\n\t\tend,", start) + len("\n\t\tend")].repl
 setup = header.replace("local function flush()flushed+=1 end", "") + """
 local now=0
 local os={clock=function()return now end}
+local profileStatus="Ready"
+local player={GetAttribute=function()return profileStatus end}
 local syncAfter,retryAfter=2,5
 local reviewRequestId,syncSent=nil,false
 local Config={maxPoints=12,wallId="a"}
@@ -175,6 +177,16 @@ for name, code in {
     "review_recovery": review_cases,
     "stroke_recovery": stroke,
     "review_waits_for_final_stroke": drain,
+    "review_remains_pending_during_save": """
+inflight=nil;callbacks.review()
+profileStatus="Saving";now=9;waitForConfirmation(snapshot,now)
+assert(inspectPending and #requests==1,"Long server write unlocked painting")
+callbacks.begin(finger,false);assert(not held)
+profileStatus="Ready";now=11;waitForConfirmation(snapshot,now)
+assert(requests[2].action=="sync" and inspectPending,"No resync after saving")
+update({phase="SurfaceReady",workId="work",sequence=7})
+assert(not active,"Confirmed save left the paint view active")
+""",
 }.items():
     with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
         script.write(setup + code)

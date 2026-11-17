@@ -451,7 +451,9 @@ function Controller.start(
 			)
 		end
 		if not nearWall then
-			return t("jobRouteHint")
+			return t(
+				if state and state.checkpointSaved then "jobCheckpointRoute" else "jobRouteHint"
+			)
 		end
 		if phase == "ChooseMaterial" then
 			local id = if state then state.requiredColorId or Config.colorId else Config.colorId

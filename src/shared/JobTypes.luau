@@ -32,6 +32,7 @@ export type AcceptAck = { requestId: string, jobId: string, offerId: string, err
 export type Snapshot = {
 	acceptAck: AcceptAck?,
 	reviewAck: string?,
+	checkpointSaved: boolean?,
 	available: boolean,
 	phase: string,
 	jobId: string,

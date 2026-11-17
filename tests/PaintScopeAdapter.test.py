@@ -57,24 +57,43 @@ with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
 print('PASS PaintScopeAdapter: actual stale/phase/distance guards, next dedup and per-wall stroke identity')
 
 # Execute the review command's validation, state transition and acknowledgement.
-a = source.index('\t\tlocal reviewAck: string?')
+a = source.index('\t\tif action == "review" then', source.index('\t\tif action == "cancel"'))
 b = source.index('\n\tend)\nend\nreturn Service', a)
 review_handler = source[a:b]
+a = source.index('\tlocal function commitGuard(')
+b = source.index('\n\tlocal function ensure(', a)
+guard = source[a:b]
 header = '''
 local Painting=require("../src/server/Domain/Painting")
+local Profile=require("../src/server/Domain/Profile")
+local Jobs=require("../src/server/Domain/Jobs")
 local Config=require("../src/shared/PaintConfig")
 local work=Painting.new("job","wall-work",0,Config,{primary="mint",secondary="rose"})
 work.phase="Painting"
-local job={status="Accepted"}
-local player,ctx={},{}
+local p=Profile.new(1);p.progression.paintingXP=210
+assert(Jobs.accept(p,"job","paint-duo-v1"))
+local job=p.jobs.active
+local actor={}
+local player,ctx={Character=actor},{work=work}
+local contexts={[player]=ctx}
 local near,now=true,30
+local denyCommit=false
+local changes=0
 local function eligible()return near end
+local function ensure()
+    if job.checkpoint and work.phase=="Painting" then Painting.restore(work,job.checkpoint) end
+end
+local profiles={change=function(_,mutate,guard)
+    assert(ctx.reviewing and ctx.saving)
+    changes+=1
+    if denyCommit then player.Character={};assert(not guard());player.Character=actor;return false end
+    assert(guard())
+    return mutate(p)
+end}
 local replies={}
 local function send(_,_,reason,_,_,reviewAck)
     table.insert(replies,{reason=reason,id=reviewAck,phase=work.phase})
 end
-local function request(data)
-    local action="review"
 '''
 checks = '''
 local function review(id,workId)
@@ -90,14 +109,17 @@ work.count=96
 for i=1,96 do work.cells[i]=true end
 near=false;review("distance")
 assert(replies[3].id=="distance" and replies[3].reason=="TooFar" and work.phase=="Painting")
-near=true;review("accepted")
-assert(replies[4].id=="accepted" and replies[4].reason==nil and work.phase=="Ready")
+near=true;denyCommit=true;review("interrupted")
+assert(replies[4].id=="interrupted" and replies[4].reason=="ReviewSave" and work.phase=="Painting" and not job.checkpoint)
+denyCommit=false;review("accepted")
+assert(replies[5].id=="accepted" and replies[5].reason==nil and work.phase=="Ready" and job.checkpoint)
 near=false;review("retry-after-success")
-assert(replies[5].id=="retry-after-success" and replies[5].reason==nil and work.phase=="Ready")
-assert(Painting.surface(work)==1 and work.count==96 and work.seq==0,"Review replay changed the work")
+assert(replies[6].id=="retry-after-success" and replies[6].reason==nil and work.phase=="Ready")
+assert(Painting.surface(work)==1 and work.count==96 and work.seq==0 and changes==2 and p.wallet.dollars==0 and not ctx.reviewing,"Review replay changed the work")
 '''
 with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
-    f.write(header + identity + review_handler + '\nend\n' + checks)
+    f.write(header + guard + '\nlocal function request(data)\n local action="review"\n'
+            + identity + review_handler + '\nend\n' + checks)
     f.flush()
     subprocess.run([str(ROOT / '.tools/bin/luau'), f.name], cwd=ROOT, check=True)
 print('PASS PaintScopeAdapter: actual review validation, correlated refusals and idempotent replay')
@@ -137,7 +159,7 @@ with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT/'.tools')as f:
     subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)
 print('PASS PaintScopeAdapter: actual client wall selection, packet wall identity and inflight guard')
 
-# Existing ensure logic must reset both surfaces on character replacement, not just the active grid.
+# Respawning restores saved walls and discards unreviewed paint.
 a=source.index('\t\tlocal old = ctx.work')
 b=source.index('\n\tend\n\tlocal function phaseOf',a)
 recovery=source[a:b]
@@ -170,11 +192,25 @@ assert(ctx.work.workId=="respawn" and ctx.work.phase=="Inspect" and ctx.work.cou
 assert(walls[1].Color=="grey" and walls[2].Color=="grey" and cloth.Transparency==1,"Respawn retained misleading accepted wall")
 assert(ctx.work.sizes[1].width==16 and ctx.work.sizes[2].width==8,"Recovery lost actual surface geometry")
 local work=ctx.work;ensure();assert(ctx.work==work,"Sync reset live work")
+local checked=string.rep("1",84)..string.rep("0",12)
+job.checkpoint={columns=12,rows=8,masks={checked}}
+player.Character={}
+ensure()
+assert(ctx.work.phase=="Ready" and ctx.work.count==84 and Painting.mask(ctx.work)==checked and cloth.Transparency==.35)
+assert(Painting.preparedCount(ctx.work)==3 and ctx.wall==walls[1],"Saved wall restored at the wrong step")
+assert(Painting.nextSurface(ctx.work,"second-after-rejoin",101))
+assert(Painting.step(ctx.work,"choose","rose",102,true))
+local second=ctx.work
+ensure()
+assert(ctx.work==second and second.phase=="Painting" and second.count==0 and ctx.wall==walls[2],"Sync rewound unchecked wall")
+job.checkpoint.masks[2]=string.rep("1",96)
+ensure()
+assert(ctx.work==second and Painting.allReady(second) and second.count==96 and second.config.colorId=="rose","Confirmed delayed checkpoint did not reconcile onto the active wall")
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
     f.write(header+recovery+'\nend\n'+checks);f.flush()
     subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)
-print('PASS PaintScopeAdapter: actual ensure resets both walls, mask, work nonce and preparation on respawn')
+print('PASS PaintScopeAdapter: actual ensure resets unchecked work, restores saved walls and reconciles a delayed confirmation')
 
 # A player may finish A from its far end. Do not offer an unusable palette at B.
 a=client.index('\t\tif s.phase == "ChooseMaterial" and old and old.phase == "SurfaceReady" then')
@@ -197,3 +233,31 @@ with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
     f.write(header+transition+'\nend\n'+checks);f.flush()
     subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)
 print('PASS PaintScopeAdapter: actual second-wall transition routes distant actors and opens nearby palette')
+
+a = client.index('\tlocal function stepHint(')
+b = client.index('\n\tlocal function render()', a)
+hint = client[a:b]
+header = '''
+local Strings=require("../src/shared/Strings")
+local language="en"
+local function t(key)return Strings.text(language,key)end
+local nearWall,lastError,errorUntil=false,nil,0
+local state={checkpointSaved=true}
+local function preparationPending()return false end
+'''
+checks = '''
+for _,locale in {"en","ru"} do
+    language=locale;nearWall=false;state.checkpointSaved=true
+    assert(stepHint("SurfaceReady")==t("jobCheckpointRoute"))
+    assert(stepHint("Ready")==t("jobCheckpointRoute"))
+    nearWall=true
+    assert(stepHint("SurfaceReady")==t("nextSurfaceHint"))
+    assert(stepHint("Ready")==t("handoverClientHint"))
+    nearWall=false;state.checkpointSaved=false
+    assert(stepHint("Inspect")==t("jobRouteHint"))
+end
+'''
+with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
+    f.write(header + hint + '\n' + checks);f.flush()
+    subprocess.run([str(ROOT / '.tools/bin/luau'), f.name], cwd=ROOT, check=True)
+print('PASS PaintScopeAdapter: saved-wall routing and stage guidance in EN/RU')

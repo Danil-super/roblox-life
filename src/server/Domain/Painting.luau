@@ -423,22 +423,69 @@ function Painting.mask(s: State): string
 	end
 	return table.concat(result)
 end
-function Painting.finish(s: State): Finish?
-	if not Painting.allReady(s) then
-		return nil
+function Painting.validCheckpoint(s: State, saved: Finish): boolean
+	if
+		saved.columns ~= s.config.columns
+		or saved.rows ~= s.config.rows
+		or #saved.masks < 1
+		or #saved.masks > Painting.total(s)
+	then
+		return false
 	end
-	local masks = table.clone(s.completedMasks)
-	table.insert(masks, Painting.mask(s))
-	local total = s.config.columns * s.config.rows
-	for _, mask in masks do
+	local total = saved.columns * saved.rows
+	for _, mask in saved.masks do
 		if #mask ~= total or not string.match(mask, "^[01]+$") then
-			return nil
+			return false
 		end
 		local _, count = string.gsub(mask, "1", "")
 		if count / total < s.config.threshold then
-			return nil
+			return false
 		end
 	end
-	return { columns = s.config.columns, rows = s.config.rows, masks = masks }
+	return true
+end
+local function checkedMasks(s: State): Finish?
+	local masks = table.clone(s.completedMasks)
+	table.insert(masks, Painting.mask(s))
+	local saved = { columns = s.config.columns, rows = s.config.rows, masks = masks }
+	return if Painting.validCheckpoint(s, saved) then saved else nil
+end
+function Painting.finish(s: State): Finish?
+	return if Painting.allReady(s) then checkedMasks(s) else nil
+end
+function Painting.checkpoint(s: State, now: number): Finish?
+	if
+		Painting.reviewError(s, now) ~= nil
+		or Painting.preparedCount(s) ~= s.preparationRequired
+	then
+		return nil
+	end
+	return checkedMasks(s)
+end
+function Painting.restore(s: State, saved: Finish): boolean
+	if
+		(s.phase ~= "Inspect" and (s.phase ~= "Painting" or Painting.surface(s) ~= #saved.masks))
+		or not Painting.validCheckpoint(s, saved)
+	then
+		return false
+	end
+	local masks = table.clone(saved.masks)
+	local current = table.remove(masks)
+	assert(current, "Checked surface missing")
+	if #masks == 1 and s.config.secondaryColorId then
+		s.config.colorId = s.config.secondaryColorId
+	end
+	s.cells, s.count, s.lastPoint = {}, 0, nil
+	for i = 1, #current do
+		if current:sub(i, i) == "1" then
+			s.cells[i] = true
+			s.count += 1
+		end
+	end
+	s.completedMasks, s.phase, s.prepTarget = masks, "Ready", nil
+	for i = 1, s.preparationRequired do
+		s.prepared[i] = true
+	end
+	return true
 end
 return Painting

@@ -22,7 +22,7 @@ local function complete(count: number): (Profile.Profile, Painting.State)
 end
 local p, w = complete(77)
 local summary = Result.read(p)
-assert(p.schemaVersion == 3 and summary and summary.finish, "Confirmed finish was not recorded")
+assert(p.schemaVersion == 4 and summary and summary.finish, "Confirmed finish was not recorded")
 assert(
 	summary.finish.masks[1] == string.rep("1", 77) .. string.rep("0", 19),
 	"Wrong saved server mask"
@@ -46,13 +46,16 @@ assert(
 	"Result aliases profile masks"
 )
 local legacy = Profile.copy(p)
+legacy.schemaVersion = 3
+local fromV3 = Profile.decode(legacy, 1)
+assert(fromV3 and fromV3.schemaVersion == 4 and fromV3.jobs.active and fromV3.jobs.active.finish)
 legacy.schemaVersion = 2
 assert(legacy.jobs.active, "Missing job")
 assert(Profile.decode(legacy, 1) == nil, "V2 unexpectedly carried new-schema finish fields")
 legacy.jobs.active.finish = nil
 local migrated = Profile.decode(legacy, 1)
 assert(
-	migrated and migrated.schemaVersion == 3 and migrated.wallet.dollars == 250,
+	migrated and migrated.schemaVersion == 4 and migrated.wallet.dollars == 250,
 	"V2 migration lost money"
 )
 local oldResult = Result.read(migrated)
@@ -70,7 +73,7 @@ assert(
 local furnished = Profile.decode(legacy, 1)
 assert(
 	furnished
-		and furnished.schemaVersion == 3
+		and furnished.schemaVersion == 4
 		and furnished.wallet.dollars == 70
 		and furnished.progression.paintingXP == 50
 		and furnished.inventory["legacy-plant"]

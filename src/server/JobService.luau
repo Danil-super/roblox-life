@@ -24,6 +24,7 @@ type Context = {
 	wall: BasePart?,
 	character: Model?,
 	saving: boolean,
+	reviewing: boolean?,
 	tokens: number,
 	lastAt: number,
 	scene: ClientScene.API?,
@@ -86,6 +87,15 @@ function Service.start(profiles: ProfileService.API): ()
 		filter.FilterDescendantsInstances = { character }
 		local hit = workspace:Raycast(root.Position, direction, filter)
 		return hit == nil or hit.Instance == wall
+	end
+	local function commitGuard(player: Player, ctx: Context, work: Painting.State): () -> boolean
+		local character = player.Character
+		return function(): boolean
+			return contexts[player] == ctx
+				and ctx.work == work
+				and player.Character == character
+				and eligible(player, ctx)
+		end
 	end
 	local function ensure(player: Player, ctx: Context): ()
 		local p = profiles.read(player)
@@ -168,18 +178,27 @@ function Service.start(profiles: ProfileService.API): ()
 			for _, wall in walls do
 				table.insert(sizes, { width = wall.Size.X, height = wall.Size.Y })
 			end
-			ctx.work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), Config, {
+			local work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), Config, {
 				primary = if contract then contract.colorId else Config.colorId,
 				secondary = if contract then contract.secondaryColorId else nil,
 			}, sizes, contract ~= nil and (contract.minXP or 0) >= 120)
+			local restored = job.checkpoint ~= nil and Painting.restore(work, job.checkpoint)
+			ctx.work = work
 			ctx.character = player.Character
 			for _, wall in walls do
 				wall.Color = Color3.fromRGB(145, 148, 140)
 			end
 			local cloth = room.model:FindFirstChild("Protection")
 			if cloth and cloth:IsA("BasePart") then
-				cloth.Transparency = 1
+				cloth.Transparency = if restored then 0.35 else 1
 			end
+		elseif
+			old.phase == "Painting"
+			and job.checkpoint
+			and #job.checkpoint.masks == Painting.surface(old)
+		then
+			-- The write may have been confirmed during profile recovery.
+			Painting.restore(old, job.checkpoint)
 		end
 		ctx.wall = walls[if ctx.work then Painting.surface(ctx.work) else 1]
 	end
@@ -239,7 +258,7 @@ function Service.start(profiles: ProfileService.API): ()
 		acceptAck: Types.AcceptAck?,
 		reviewAck: string?
 	): ()
-		if player.Parent ~= Players then
+		if player.Parent ~= Players or ctx.reviewing then
 			return
 		end
 		local p = profiles.read(player)
@@ -317,6 +336,11 @@ function Service.start(profiles: ProfileService.API): ()
 			wallId = if work and Painting.surface(work) == 2 then "wall-b" else Config.wallId,
 			surfaceIndex = if work then Painting.surface(work) else 1,
 			surfaceTotal = if contract and contract.secondaryColorId then 2 else 1,
+			checkpointSaved = work ~= nil
+				and job ~= nil
+				and job.id == work.jobId
+				and job.checkpoint ~= nil
+				and (work.phase == "Ready" or #work.completedMasks > 0),
 			destination = if target then { target.X, target.Y, target.Z } else nil,
 			offers = Jobs.offers(p),
 			paintingXP = if p then p.progression.paintingXP else 0,
@@ -361,6 +385,9 @@ function Service.start(profiles: ProfileService.API): ()
 	end
 	local function changed(player: Player): ()
 		local ctx = contextFor(player)
+		if ctx.reviewing then
+			return
+		end
 		ensure(player, ctx)
 		local p = profiles.read(player)
 		if p and p.jobs.active and p.jobs.active.status == "Completed" and ctx.wall then
@@ -436,8 +463,10 @@ function Service.start(profiles: ProfileService.API): ()
 			return
 		end
 		if action == "sync" then
-			ensure(player, ctx)
-			send(player, ctx, nil)
+			if not ctx.reviewing then
+				ensure(player, ctx)
+				send(player, ctx, nil)
+			end
 			return
 		end
 		if ctx.saving then
@@ -548,9 +577,9 @@ function Service.start(profiles: ProfileService.API): ()
 			send(player, ctx, if ok then nil else "Unavailable")
 			return
 		end
-		local reviewAck: string? = nil
 		if action == "review" then
 			local requestId = data.requestId
+			local reviewAck: string? = nil
 			if requestId ~= nil then
 				if type(requestId) ~= "string" or #requestId == 0 or #requestId > 80 then
 					return
@@ -561,6 +590,21 @@ function Service.start(profiles: ProfileService.API): ()
 				send(player, ctx, nil, nil, nil, reviewAck)
 				return
 			end
+			local reason = if eligible(player, ctx)
+				then Painting.reviewError(work, now)
+				else "TooFar"
+			if reason then
+				send(player, ctx, reason, nil, nil, reviewAck)
+				return
+			end
+			ctx.saving, ctx.reviewing = true, true
+			local stored = profiles.change(player, function(candidate: Profile.Profile): boolean
+				return Jobs.checkpoint(candidate, work, now)
+			end, commitGuard(player, ctx, work))
+			ctx.saving, ctx.reviewing = false, false
+			ensure(player, ctx)
+			send(player, ctx, if stored then nil else "ReviewSave", nil, nil, reviewAck)
+			return
 		end
 		local valid = eligible(player, ctx)
 		local ok = false
@@ -585,15 +629,9 @@ function Service.start(profiles: ProfileService.API): ()
 			ok = valid and Painting.tool(work, data.toolId, p.progression.paintingXP)
 		elseif action == "submit" then
 			ctx.saving = true
-			local character = player.Character
 			ok = profiles.change(player, function(candidate: Profile.Profile): boolean
 				return Jobs.submit(candidate, work, os.time(), valid)
-			end, function(): boolean
-				return contexts[player] == ctx
-					and ctx.work == work
-					and player.Character == character
-					and eligible(player, ctx)
-			end)
+			end, commitGuard(player, ctx, work))
 			ctx.saving = false
 			if ok and ctx.wall then
 				ctx.wall.Color =
@@ -604,10 +642,6 @@ function Service.start(profiles: ProfileService.API): ()
 				then data.color
 				else nil
 			ok = Painting.step(work, action, color, now, valid)
-			if ok and action == "review" and ctx.wall then
-				ctx.wall.Color =
-					Color3.new(table.unpack(Config.palette[work.config.colorId] or Config.color))
-			end
 			if ok and action == "prepare" and ctx.room then
 				local room = ctx.room
 				local cloth = if room then room.model:FindFirstChild("Protection") else nil
@@ -623,16 +657,12 @@ function Service.start(profiles: ProfileService.API): ()
 				then nil
 				elseif not valid then "TooFar"
 				elseif action == "choose" then "Color"
-				elseif action == "review" then Painting.reviewError(work, now) or "Retry"
 				elseif action == "tool" then "ToolLocked"
 				elseif
 					action == "prepare"
 					and Painting.preparedCount(work) < work.preparationRequired
 				then "Preparation"
-				else "Retry",
-			nil,
-			nil,
-			reviewAck
+				else "Retry"
 		)
 	end)
 end

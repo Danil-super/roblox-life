@@ -62,7 +62,7 @@ for _, count in { 96, 77, 92, 95 } do
 	)
 	local loaded = Profile.decode(p, 7)
 	assert(
-		loaded and loaded.wallet.dollars == total and loaded.schemaVersion == 3,
+		loaded and loaded.wallet.dollars == total and loaded.schemaVersion == 4,
 		"Tip did not survive existing schema reload"
 	)
 end

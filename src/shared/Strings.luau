@@ -133,6 +133,8 @@ en["paintWait"] = "Coverage ready — wait a moment, then inspect again"
 ru["paintWait"] = "Площадь готова — подожди и проверь снова"
 en["paintChecking"] = "Checking…"
 ru["paintChecking"] = "Проверяем…"
+en["paintSavingWall"] = "Saving wall…"
+ru["paintSavingWall"] = "Сохраняем стену…"
 en["paintCheckAgain"] = "Retry check"
 ru["paintCheckAgain"] = "Проверить снова"
 en["jobErrorDrying"] = "The area is covered. Wait a moment, then inspect again."
@@ -176,9 +178,15 @@ ru["jobErrorStale"] =
 en["jobErrorUnavailable"] = "Waiting for the profile. Your progress is protected."
 ru["jobErrorUnavailable"] =
 	"Ждём подтверждение профиля. Прогресс защищён."
-en["jobErrorRestart"] = "After respawning, inspect and prepare the wall again."
+en["jobErrorReviewSave"] = "Save delayed. Try the wall check again."
+ru["jobErrorReviewSave"] =
+	"Стена ещё не сохранена. Повтори проверку."
+en["jobCheckpointRoute"] = "Checked walls are saved. Return to the client to continue."
+ru["jobCheckpointRoute"] =
+	"Проверенные стены сохранены. Вернись к заказчику, чтобы продолжить."
+en["jobErrorRestart"] = "Work mode closed. Open Jobs after respawning."
 ru["jobErrorRestart"] =
-	"После возрождения осмотри и подготовь стену заново."
+	"Рабочий режим закрыт. После возрождения открой «Заказы»."
 en["saving"] = "Confirming progress…"
 ru["saving"] = "Подтверждаем прогресс…"
 en["arrived"] = "You’re here"

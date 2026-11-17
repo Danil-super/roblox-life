@@ -235,6 +235,10 @@ function Controller.start(
 		if inflight == nil and reviewRequestId == nil then
 			return
 		end
+		if reviewRequestId ~= nil and player:GetAttribute("ProfileStatus") == "Saving" then
+			sentAt, syncSent = now, false
+			return
+		end
 		local elapsed = now - sentAt
 		if elapsed >= retryAfter then
 			if reviewRequestId ~= nil then
@@ -259,8 +263,9 @@ function Controller.start(
 		title.Text = string.format(
 			t("paintProgress"),
 			t(
-				if s.error == "Drying"
-					then "paintWait"
+				if s.error == "ReviewSave"
+					then "jobErrorReviewSave"
+					elseif s.error == "Drying" then "paintWait"
 					elseif coverage.covered then "paintCovered"
 					elseif missing then "paintMissing"
 					else "paintDrag"
@@ -268,7 +273,7 @@ function Controller.start(
 			coverage.percent,
 			coverage.target
 		)
-		if coverage.covered and s.error ~= "Drying" then
+		if coverage.covered and s.error ~= "Drying" and s.error ~= "ReviewSave" then
 			local finishKey = if coverage.percent == 100
 				then "paintPerfect"
 				elseif coverage.percent >= Config.finishExcellentPercent then "paintExcellent"
@@ -294,7 +299,9 @@ function Controller.start(
 		review.BackgroundTransparency = if review.Active then 0 else 0.6
 		review.Text = t(
 			if inspectPending
-				then "paintChecking"
+				then (if player:GetAttribute("ProfileStatus") == "Saving"
+					then "paintSavingWall"
+					else "paintChecking")
 				elseif reviewTimedOut then "paintCheckAgain"
 				else "inspectResult"
 		)

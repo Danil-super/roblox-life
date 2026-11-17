@@ -80,6 +80,7 @@ function Economy.completeJob(
 	profile.jobs.completedCount += 1
 	profile.jobs.settledSequence = job.sequence
 	job.status, job.receipt = "Completed", table.clone(receipt)
+	job.checkpoint = nil
 	if not profile.onboarding.completed and profile.onboarding.step ~= "PLACE" then
 		profile.onboarding.step = "BUY"
 	end
