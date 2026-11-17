@@ -24,6 +24,7 @@ export type Offer = {
 	colorId: string,
 	secondaryColorId: string?,
 	requiredXP: number,
+	needsCleaning: boolean?,
 	unlocked: boolean,
 	reward: number,
 	xp: number,

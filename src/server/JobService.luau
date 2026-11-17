@@ -181,7 +181,7 @@ function Service.start(profiles: ProfileService.API): ()
 			local work = Painting.new(job.id, HttpService:GenerateGUID(false), os.clock(), Config, {
 				primary = if contract then contract.colorId else Config.colorId,
 				secondary = if contract then contract.secondaryColorId else nil,
-			}, sizes, contract ~= nil and (contract.minXP or 0) >= 120)
+			}, sizes, Jobs.needsCleaning(job.templateId))
 			local restored = job.checkpoint ~= nil and Painting.restore(work, job.checkpoint)
 			ctx.work = work
 			ctx.character = player.Character

@@ -15,8 +15,13 @@ export type Offer = {
 	perfectBonus: number,
 	clientKey: string,
 	secondaryColorId: string?,
+	needsCleaning: boolean,
 }
 local Jobs = {}
+function Jobs.needsCleaning(templateId: string): boolean
+	local contract = Config.contracts[templateId]
+	return contract ~= nil and contract.minXP >= 120
+end
 function Jobs.offers(p: Profile.Profile?): { Offer }
 	local result: { Offer } = {}
 	for id, contract in Config.contracts do
@@ -34,6 +39,7 @@ function Jobs.offers(p: Profile.Profile?): { Offer }
 				perfectBonus = Economy.perfectTip(id),
 				clientKey = contract.clientKey,
 				secondaryColorId = contract.secondaryColorId,
+				needsCleaning = Jobs.needsCleaning(id),
 			})
 		end
 	end

@@ -184,6 +184,7 @@ b=source.index('\n\tend\n\tlocal function phaseOf',a)
 recovery=source[a:b]
 header='''
 local Painting=require("../src/server/Domain/Painting")
+local Jobs=require("../src/server/Domain/Jobs")
 local Config=require("../src/shared/PaintConfig")
 local oldCharacter,newCharacter={},{}
 local ctx={work=Painting.new("job","first",0,Config,{primary="mint",secondary="rose"}),character=oldCharacter}
@@ -193,7 +194,7 @@ assert(Painting.nextSurface(ctx.work,"second",1))
 assert(Painting.step(ctx.work,"choose","rose",2,true))
 assert(Painting.batch(ctx.work,1,{{u=.5,v=.5}},true,3,true))
 local player={Character=newCharacter}
-local job={id="job"}
+local job={id="job",templateId="paint-duo-v1"}
 local contract={colorId="mint",secondaryColorId="rose",minXP=210}
 local cloth={Transparency=.35,IsA=function()return true end}
 local room={model={FindFirstChild=function()return cloth end}}

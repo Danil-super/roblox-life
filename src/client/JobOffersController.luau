@@ -33,6 +33,7 @@ function Controller.start(
 	local target: Flow.Target? = nil
 	local pendingOffer: Types.Offer? = nil
 	local disposed = false
+	local availableOnly = false
 	local listKey = ""
 	local ancestor = panel:FindFirstAncestorOfClass("ScreenGui")
 	local screen = if ancestor and ancestor:IsA("ScreenGui") then ancestor else nil
@@ -48,7 +49,6 @@ function Controller.start(
 		return f
 	end
 	local list, details = scroll("List"), scroll("Details")
-	details.CanvasSize = UDim2.fromOffset(0, 506)
 	local function label(
 		parent: Instance,
 		name: string,
@@ -72,6 +72,18 @@ function Controller.start(
 	progressFill.Name, progressFill.Size = "Fill", UDim2.fromScale(0, 1)
 	progressFill.BackgroundColor3, progressFill.BorderSizePixel, progressFill.ZIndex, progressFill.Parent =
 		accent, 0, 11, progressTrack
+	local function filterButton(name: string, left: boolean): TextButton
+		local button = Instance.new("TextButton")
+		button.Name = name
+		button.Position = if left then UDim2.fromOffset(16, 72) else UDim2.new(0.5, 4, 0, 72)
+		button.Size = UDim2.new(0.5, -20, 0, 44)
+		button.TextColor3, button.TextSize, button.TextWrapped = paper, 13, true
+		button.Font, button.ZIndex, button.Parent = Enum.Font.GothamBold, 10, list
+		return button
+	end
+	local allJobs = filterButton("AllJobs", true)
+	local availableJobs = filterButton("AvailableJobs", false)
+	local empty = label(list, "NoAvailableJobs", 124, 56, 14)
 	local title = label(details, "Title", 0, 40, 18)
 	local reward = label(details, "Reward", 44, 28, 16)
 	local previewCaption = label(details, "PlanCaption", 78, 24, 13)
@@ -79,8 +91,9 @@ function Controller.start(
 	local requirements = label(details, "Requirements", 252, 62, 14)
 	local brief = label(details, "Brief", 322, 72, 14)
 	local shape = label(details, "SurfaceSize", 402, 44, 14)
-	local locked = label(details, "Availability", 454, 44, 14)
-	local tip = label(details, "PerfectTip", 506, 50, 14)
+	local preparation = label(details, "Preparation", 450, 48, 14)
+	local locked = label(details, "Availability", 504, 44, 14)
+	local tip = label(details, "PerfectTip", 556, 50, 14)
 	local confirm = Instance.new("TextButton")
 	confirm.Name, confirm.Position, confirm.Size =
 		"AcceptOffer", UDim2.new(0.5, 8, 1, -56), UDim2.new(0.5, -24, 0, 44)
@@ -95,6 +108,14 @@ function Controller.start(
 		return if o.secondaryColorId
 			then first .. " + " .. t(Config.colorKeys[o.secondaryColorId] or "warmWhite")
 			else first
+	end
+	local function difficulty(o: Types.Offer): string
+		return t(
+			if o.secondaryColorId
+				then "offerAdvanced"
+				elseif o.needsCleaning then "offerStandard"
+				else "offerQuick"
+		)
 	end
 	local function selectedOffer(): Types.Offer?
 		if target and pendingOffer and selected == target.offerId then
@@ -160,11 +181,27 @@ function Controller.start(
 			else t("offerWaiting")
 		progressTrack.Visible = mastery.ready
 		progressFill.Size = UDim2.fromScale(mastery.fraction, 1)
+		allJobs.Visible, availableJobs.Visible = mastery.ready, mastery.ready
+		allJobs.Text = t("offerFilterAll")
+		availableJobs.Text = string.format(t("offerFilterAvailable"), mastery.openCount)
+		if availableOnly then
+			availableJobs.Text = "✓ " .. availableJobs.Text
+		else
+			allJobs.Text = "✓ " .. allJobs.Text
+		end
+		allJobs.BackgroundColor3 = if availableOnly then color(Theme.colors.surface) else accent
+		availableJobs.BackgroundColor3 = if availableOnly
+			then accent
+			else color(Theme.colors.surface)
+		allJobs.Active, availableJobs.Active =
+			mastery.ready and availableOnly, mastery.ready and not availableOnly
+		empty.Visible = mastery.ready and availableOnly and mastery.openCount == 0
+		empty.Text = t("offerNoAvailable")
 		if offer then
 			local bonus = offer.perfectBonus or 0
 			tip.Visible = bonus > 0
 			tip.Text = if bonus > 0 then string.format(t("perfectTipOffer"), bonus) else ""
-			details.CanvasSize = UDim2.fromOffset(0, if bonus > 0 then 564 else 506)
+			details.CanvasSize = UDim2.fromOffset(0, if bonus > 0 then 614 else 556)
 			title.Text, brief.Text = t(offer.titleKey), t(offer.briefKey)
 			if target then
 				brief.Text = t("acceptPendingHint")
@@ -182,9 +219,16 @@ function Controller.start(
 					table.insert(sizes, size.width .. "×" .. size.height)
 				end
 			end
-			shape.Text = if layout
-				then string.format(t("paintSurfaceSizes"), table.concat(sizes, " + "))
-				else ""
+			shape.Text = string.format(t("offerPaintType"), difficulty(offer))
+			if layout then
+				shape.Text ..= "\n" .. string.format(
+					t("paintSurfaceSizes"),
+					table.concat(sizes, " + ")
+				)
+			end
+			preparation.Visible = offer.needsCleaning ~= nil
+			preparation.Text =
+				t(if offer.needsCleaning then "offerScrapeAndProtect" else "offerProtectFloor")
 			locked.Text = if target
 				then t("acceptPendingStatus")
 				elseif offer.unlocked then t("offerReady")
@@ -193,10 +237,23 @@ function Controller.start(
 					math.max(0, offer.requiredXP - experience)
 				)
 		end
-		local key = language() .. tostring(experience) .. tostring(s ~= nil and s.available)
+		local key = language()
+			.. tostring(experience)
+			.. tostring(mastery.ready)
+			.. tostring(availableOnly)
 		if s and s.offers then
 			for _, o in s.offers do
-				key ..= o.id .. o.reward .. o.xp .. tostring(o.unlocked)
+				key ..= table.concat({
+					o.id,
+					o.titleKey,
+					o.colorId,
+					o.secondaryColorId or "",
+					difficulty(o),
+					tostring(o.reward),
+					tostring(o.xp),
+					tostring(o.requiredXP),
+					tostring(o.unlocked),
+				}, "|")
 			end
 		end
 		if key == listKey then
@@ -204,20 +261,46 @@ function Controller.start(
 		end
 		listKey = key
 		for _, child in list:GetChildren() do
-			if child ~= xpLabel and child ~= progressTrack then
+			if
+				child ~= xpLabel
+				and child ~= progressTrack
+				and child ~= allJobs
+				and child ~= availableJobs
+				and child ~= empty
+			then
 				child:Destroy()
 			end
 		end
+		local y = 124
 		local offers: { Types.Offer } = if s then s.offers or {} else {}
-		for index, o in offers do
+		for _, o in offers do
+			if availableOnly and (not mastery.ready or not o.unlocked) then
+				continue
+			end
 			local b = Instance.new("TextButton")
-			b.Name, b.Position, b.Size =
-				o.id, UDim2.fromOffset(16, 72 + (index - 1) * 112), UDim2.new(1, -32, 0, 104)
+			b.Name, b.Position, b.Size = o.id, UDim2.fromOffset(16, y), UDim2.new(1, -32, 0, 128)
+			y += 136
 			b.Text, b.BackgroundColor3, b.ZIndex, b.Parent =
 				"", color(Theme.colors.surface), 9, list
-			local name = label(b, "Title", 8, 36, 16)
+			local name = label(b, "Title", 6, 32, 16)
 			name.Text = t(o.titleKey)
-			local info = label(b, "Info", 46, 50, 13)
+			local scope = label(b, "Scope", 38, 30, 13)
+			scope.Text = difficulty(o)
+			scope.Size, scope.TextXAlignment = UDim2.new(1, -70, 0, 30), Enum.TextXAlignment.Left
+			local paintColors = { o.colorId }
+			if o.secondaryColorId then
+				table.insert(paintColors, o.secondaryColorId)
+			end
+			for index, id in paintColors do
+				local swatch = Instance.new("Frame")
+				swatch.Name = "PaintSwatch" .. index
+				swatch.Size, swatch.Position =
+					UDim2.fromOffset(14, 14), UDim2.new(1, -56 + index * 18, 0, 46)
+				swatch.BackgroundColor3 =
+					Color3.new(table.unpack(Config.palette[id] or Config.color))
+				swatch.BorderSizePixel, swatch.ZIndex, swatch.Parent = 0, 10, b
+			end
+			local info = label(b, "Info", 70, 50, 13)
 			info.Text = string.format(t("contractReward"), o.reward, o.xp)
 				.. " · "
 				.. materials(o)
@@ -237,6 +320,8 @@ function Controller.start(
 					or not panel.Visible
 					or not root.Visible
 					or not list.Visible
+					or b.Parent ~= list
+					or (screen ~= nil and not screen.Enabled)
 				then
 					return
 				end
@@ -245,8 +330,31 @@ function Controller.start(
 				render()
 			end)
 		end
-		list.CanvasSize = UDim2.fromOffset(0, 72 + #offers * 112)
+		list.CanvasSize = UDim2.fromOffset(0, if empty.Visible then 188 else y)
 	end
+	local function setFilter(onlyAvailable: boolean): ()
+		if
+			disposed
+			or target
+			or not panel.Visible
+			or not root.Visible
+			or not list.Visible
+			or not allJobs.Visible
+			or (screen ~= nil and not screen.Enabled)
+			or availableOnly == onlyAvailable
+		then
+			return
+		end
+		availableOnly = onlyAvailable
+		list.CanvasPosition = Vector2.zero
+		render()
+	end
+	allJobs.Activated:Connect(function()
+		setFilter(false)
+	end)
+	availableJobs.Activated:Connect(function()
+		setFilter(true)
+	end)
 	confirm.Activated:Connect(function()
 		local offer = selectedOffer()
 		if
@@ -254,6 +362,7 @@ function Controller.start(
 			or not panel.Visible
 			or not root.Visible
 			or not confirm.Visible
+			or (screen ~= nil and not screen.Enabled)
 			or offer == nil
 		then
 			return

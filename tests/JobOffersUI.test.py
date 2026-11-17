@@ -43,10 +43,11 @@ local function find(name)
  for i=#pool,1,-1 do if pool[i].Name==name and not pool[i].Destroyed then return pool[i]end end
  error("Missing GUI "..name)
 end
-local UDim2={fromScale=function()return{}end,fromOffset=function()return{}end,new=function()return{}end}
+local UDim2={fromScale=function()return{}end,fromOffset=function(x,y)return{X=x,Y=y}end,
+ new=function(_,x,_,y)return{X=x,Y=y}end}
 local Vector2={zero=0}
-local Color3={fromRGB=function()return{}end}
-local Enum={Font={GothamMedium=1,GothamBold=2}}
+local Color3={fromRGB=function()return{}end,new=function(r,g,b)return{r,g,b}end}
+local Enum={Font={GothamMedium=1,GothamBold=2},TextXAlignment={Left=1}}
 local timers={}
 local task={delay=function(_,fn)table.insert(timers,fn)end}
 local requests={}
@@ -68,11 +69,40 @@ checks = r'''
 local api=Controller.start(panel,workBody,back,language,accept,ready)
 assert(#previews==1,"Offer details have no bounded plan renderer")
 local s=snapshot();api.render(s)
+local list=find("List")
+local all,available=find("AllJobs"),find("AvailableJobs")
+local staleCard=find("paint-rose-v1")
+assert(all.Size.Y>=44 and available.Size.Y>=44 and all.Position.Y==available.Position.Y)
+assert(not all.Active and available.Active and available.Text=="Available (1)")
+assert(staleCard:FindFirstChild("Scope").Text==Strings.text(lang,"offerStandard"))
+local duo=find("paint-duo-v1")
+assert(duo:FindFirstChild("Scope").Text==Strings.text(lang,"offerAdvanced"))
+assert(duo:FindFirstChild("PaintSwatch1").BackgroundColor3[1]==Config.palette.mint[1])
+assert(duo:FindFirstChild("PaintSwatch2").BackgroundColor3[1]==Config.palette.rose[1])
+assert(not staleCard:FindFirstChild("PaintSwatch2"),"One wall displayed two paint samples")
+list.CanvasPosition=27;available.clicked()
+assert(list.CanvasPosition==0 and find("paint-tutorial-v1") and staleCard.Destroyed)
+assert(#requests==0 and not find("AcceptOffer").Visible and not available.Active and all.Active)
+staleCard.clicked();assert(not find("AcceptOffer").Visible,"Filtered-out card opened detail")
+local first=find("paint-tutorial-v1");list.CanvasPosition=14
+api.render(s);assert(list.CanvasPosition==14 and find("paint-tutorial-v1")==first,"Sync rebuilt the same filtered list")
+local earned=Profile.new(1);earned.progression.paintingXP=210
+s.offers,s.paintingXP=Jobs.offers(earned),earned.progression.paintingXP
+api.render(s)
+assert(list:FindFirstChild("paint-duo-v1") and not list:FindFirstChild("paint-atelier-v1"))
+screenGui.Enabled=false;all.clicked();assert(all.Active and available.Text=="✓ Available (4)")
+screenGui.Enabled=true
+find("paint-duo-v1").clicked();all.clicked();assert(api.back() and all.Active)
+lang="ru";api.render(s);assert(available.Text=="✓ Доступные (4)")
+all.clicked();assert(list:FindFirstChild("paint-atelier-v1") and not all.Active)
+s=snapshot();api.render(s)
 for _,locale in {"en","ru"}do
  lang=locale;api.render(s);api.show(nil);find("paint-rose-v1").clicked()
  assert(find("PerfectTip").Visible and find("PerfectTip").Text==string.format(Strings.text(lang,"perfectTipOffer"),70),"Advanced offer lost potential tip")
+ assert(find("Preparation").Text==Strings.text(lang,"offerScrapeAndProtect"))
  assert(#requests==0,"Viewing tip accepted a job")
  assert(api.back());find("paint-tutorial-v1").clicked();assert(not find("PerfectTip").Visible,"Starter advertised tip")
+ assert(find("Preparation").Text==Strings.text(lang,"offerProtectFloor"))
 end
 lang="en";api.render(s);api.show("paint-mint-v1")
 assert(not find("AcceptOffer").Visible,"Locked recommendation opened as ready")
@@ -83,7 +113,7 @@ find("AcceptOffer").clicked()
 assert(#requests==0 and not find("AcceptOffer").Active,"Locked preview accepted")
 api.show("missing");assert(not find("AcceptOffer").Visible,"Missing offer selected")
 api.show("paint-tutorial-v1");assert(find("AcceptOffer").Active and #requests==0,"Preview auto-accepted")
-assert(find("SurfaceSize").Text==string.format(Strings.text("en","paintSurfaceSizes"),"12×8"),"Job details hid real shape")
+assert(find("SurfaceSize").Text=="Painting · Quick · 1 wall\n"..string.format(Strings.text("en","paintSurfaceSizes"),"12×8"),"Job details hid real scope or shape")
 local confirm=find("AcceptOffer")
 panel.Visible=false;panel.visibilityChanged();assert(previews[1].offer==nil,"Closed pending details retained the plan");confirm.clicked();assert(#requests==0,"Hidden confirm sent acceptance")
 panel.Visible=true;confirm.clicked();confirm.clicked()
@@ -121,4 +151,4 @@ with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as sc
     script.write(header + body + "\n" + checks)
     script.flush()
     subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
-print("PASS JobOffersUI: explicit accept, fixed retry, pending close/reopen, unknown/correlated replies, stale callbacks and cleanup")
+print("PASS JobOffersUI: localized work scope, confirmed availability filter, explicit acceptance, retry and cleanup")

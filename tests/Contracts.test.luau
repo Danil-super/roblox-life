@@ -6,6 +6,14 @@ local Config = require("../src/server/Domain/EconomyConfig")
 local p, other = Profile.new(1), Profile.new(2)
 local offers = Jobs.offers(p)
 assert(#offers == 6 and offers[1].id == "paint-tutorial-v1", "Board has no accessible first job")
+for index, offer in offers do
+	assert(offer.needsCleaning == (index >= 3), "Offer preview gave wrong preparation")
+	assert(Jobs.needsCleaning(offer.id) == offer.needsCleaning, "Offer and paint setup disagree")
+end
+assert(
+	not Jobs.needsCleaning("paint-room-v1") and not Jobs.needsCleaning("missing"),
+	"Legacy and unknown jobs cannot require scraping"
+)
 assert(
 	offers[1].unlocked
 		and not offers[2].unlocked
