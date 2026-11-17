@@ -236,7 +236,8 @@ function Service.start(profiles: ProfileService.API): ()
 		ctx: Context,
 		reason: string?,
 		conversation: Dialogue.Dialogue?,
-		acceptAck: Types.AcceptAck?
+		acceptAck: Types.AcceptAck?,
+		reviewAck: string?
 	): ()
 		if player.Parent ~= Players then
 			return
@@ -284,6 +285,7 @@ function Service.start(profiles: ProfileService.API): ()
 		end
 		local snapshot: Types.Snapshot = {
 			acceptAck = acceptAck,
+			reviewAck = reviewAck,
 			available = available,
 			phase = phase,
 			jobId = if job then job.id elseif work then work.jobId else "",
@@ -546,6 +548,20 @@ function Service.start(profiles: ProfileService.API): ()
 			send(player, ctx, if ok then nil else "Unavailable")
 			return
 		end
+		local reviewAck: string? = nil
+		if action == "review" then
+			local requestId = data.requestId
+			if requestId ~= nil then
+				if type(requestId) ~= "string" or #requestId == 0 or #requestId > 80 then
+					return
+				end
+				reviewAck = requestId
+			end
+			if work.phase == "Ready" then
+				send(player, ctx, nil, nil, nil, reviewAck)
+				return
+			end
+		end
 		local valid = eligible(player, ctx)
 		local ok = false
 		if action == "stroke" then
@@ -613,7 +629,10 @@ function Service.start(profiles: ProfileService.API): ()
 					action == "prepare"
 					and Painting.preparedCount(work) < work.preparationRequired
 				then "Preparation"
-				else "Retry"
+				else "Retry",
+			nil,
+			nil,
+			reviewAck
 		)
 	end)
 end

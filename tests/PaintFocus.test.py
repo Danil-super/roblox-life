@@ -22,6 +22,7 @@ local disposed=false
 local pointer=Vector2.new(0,0)
 local queue,current={},nil
 local sequence,inflight,inspectPending=7,7,false
+local reviewTimedOut=false
 local lastHit=10
 local sound={Playing=true}
 local flushed=0
@@ -97,34 +98,86 @@ start = source.index("\tlocal function flush(): ()")
 flush = source[start:source.index("\n\tlocal function render()", start)]
 start = source.index("\t\tupdate = function(")
 update = source[start:source.index("\n\t\tend,", start) + len("\n\t\tend")].replace("\t\tupdate =", "local update =", 1)
-fixture = header.replace("local function flush()flushed+=1 end", "") + """
-local reviewSent=false
+setup = header.replace("local function flush()flushed+=1 end", "") + """
+local now=0
+local os={clock=function()return now end}
+local syncAfter,retryAfter=2,5
+local reviewRequestId,syncSent=nil,false
 local Config={maxPoints=12,wallId="a"}
 local snapshot={workId="work",phase="Painting"}
 local sentAt=0
 local missing=false
-local sent=0
-local function send(action,_)assert(action=="review");sent+=1 end
+local requests,ids={},0
+local HttpService={GenerateGUID=function()ids+=1;return "review-"..ids end}
+local function send(action,data)table.insert(requests,{action=action,data=data})end
 local function render()end
-""" + flush + handlers + review + update + """
+""" + flush + handlers + review + update
+review_cases = """
 inflight=nil
-callbacks.review();assert(sent==1 and inspectPending,"Sending review released input before the answer")
+callbacks.review()
+assert(#requests==1 and requests[1].action=="review" and inspectPending,"Sending review released input before the answer")
+local firstId=requests[1].data.requestId
 callbacks.begin(finger,false);assert(not held and #queue==0)
 for _=1,4 do flush()end
-assert(sent==1,"A queued review repeated before its answer")
+assert(#requests==1,"A queued review repeated before its answer")
 update({phase="Painting",workId="work",sequence=7})
 callbacks.focus();callbacks.begin(mouse,false)
-assert(inspectPending and not held and sent==1,"Unrelated sync/focus released a pending review")
-update({phase="Painting",workId="work",sequence=7,error="Coverage"})
-assert(not inspectPending and not reviewSent,"Review refusal did not release input")
+assert(inspectPending and not held and #requests==1,"Unrelated sync/focus released a pending review")
+now=1.99;waitForConfirmation(snapshot,now);assert(#requests==1)
+now=2;waitForConfirmation(snapshot,now)
+assert(#requests==2 and requests[2].action=="sync" and inspectPending,"Lost review did not request authoritative state")
+now=4.99;waitForConfirmation(snapshot,now);assert(#requests==2 and inspectPending)
+now=5;waitForConfirmation(snapshot,now)
+assert(not inspectPending and reviewRequestId==nil and reviewTimedOut,"Review stayed locked after a lost answer")
+callbacks.review()
+local secondId=requests[3].data.requestId
+assert(secondId~=firstId and inspectPending and not reviewTimedOut,"Retry reused an expired review")
+update({phase="Painting",workId="work",sequence=7,error="Coverage",reviewAck=firstId})
+assert(inspectPending and reviewRequestId==secondId,"Delayed refusal unlocked a newer review")
+update({phase="Painting",workId="work",sequence=7,error="Coverage",reviewAck=secondId})
+assert(not inspectPending and reviewRequestId==nil,"Matching refusal did not release input")
 callbacks.begin(mouse,false);assert(held and #queue==1 and current.starts)
 callbacks.ended(mouse);queue={};inflight=nil
-callbacks.review();assert(sent==2 and inspectPending)
+callbacks.review();assert(#requests==4 and inspectPending)
+now=7;waitForConfirmation(snapshot,now);assert(requests[5].action=="sync")
 update({phase="Ready",workId="work",sequence=7})
-assert(not active and not inspectPending and not reviewSent,"Accepted review retained input")
+assert(not active,"Sync after a successful review did not close the view")
 """
-with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
-    script.write(fixture)
-    script.flush()
-    subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
-print("PASS PaintFocus: dispatched review blocks gestures through sync/focus until refusal or acceptance")
+stroke = """
+inflight=nil;sequence=7
+queue={{points={{u=.2,v=.3},{u=.25,v=.3}},starts=true}}
+current=queue[1];Config.maxPoints=1
+flush()
+assert(requests[1].action=="stroke" and requests[1].data.sequence==8 and inflight==8)
+now=2;waitForConfirmation(snapshot,now);assert(requests[2].action=="sync" and inflight==8)
+update({phase="Painting",workId="work",sequence=7,error="Coverage",reviewAck="old-review"})
+assert(inflight==8,"Old review refusal cleared a stroke")
+update({phase="Painting",workId="work",sequence=8})
+assert(inflight==nil and not current.starts,"Recovered stroke lost continuity")
+flush();assert(requests[3].data.sequence==9 and not requests[3].data.starts)
+table.insert(current.points,{u=.3,v=.3})
+now=4;waitForConfirmation(snapshot,now);assert(requests[4].action=="sync")
+now=7;waitForConfirmation(snapshot,now)
+assert(inflight==nil and sequence==8 and current.starts,"Lost batch left the next stroke connected to stale coordinates")
+flush();assert(requests[5].data.sequence==9 and requests[5].data.starts)
+"""
+drain = """
+inflight=nil;sequence=7
+queue={{points={{u=.2,v=.3}},starts=true}}
+current=queue[1]
+callbacks.review()
+assert(inspectPending and reviewRequestId==nil and requests[1].action=="stroke")
+flush();assert(#requests==1,"Review overtook an unconfirmed stroke")
+update({phase="Painting",workId="work",sequence=8})
+flush();assert(#requests==2 and requests[2].action=="review","Review did not follow the final stroke")
+"""
+for name, code in {
+    "review_recovery": review_cases,
+    "stroke_recovery": stroke,
+    "review_waits_for_final_stroke": drain,
+}.items():
+    with tempfile.NamedTemporaryFile("w", suffix=".luau", dir=ROOT / ".tools") as script:
+        script.write(setup + code)
+        script.flush()
+        subprocess.run([str(ROOT / ".tools/bin/luau"), script.name], cwd=ROOT, check=True)
+    print("PASS PaintFocus:", name)

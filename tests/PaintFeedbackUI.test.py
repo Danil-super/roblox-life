@@ -29,6 +29,7 @@ local cameraReady=true
 local toggle
 local gaps={Activated={Connect=function(_,fn)toggle=fn end}}
 local queue,current,inflight,sequence,inspectPending={17},{23},7,7,false
+local reviewTimedOut=false
 local held,touch=true,{}
 local sends=0
 local function send()sends+=1 end
@@ -62,6 +63,10 @@ snapshot.count=96;snapshot.mask=string.rep("1",96);render();assert(fill.Size.x==
 assert(gaps.Text=="paintNoGaps"and not gaps.Active,"Full wall still asks for repairs")
 snapshot.surfaceIndex=2;snapshot.surfaceTotal=2;render()
 assert(title.Text=="Wall 2 / 2 · perfect 100%","Two-wall toolbar lost current surface")
+inspectPending=true;render()
+assert(not review.Active and review.Text=="paintChecking","Review wait has no visible state")
+inspectPending=false;reviewTimedOut=true;render()
+assert(review.Active and review.Text=="paintCheckAgain","Timed-out review cannot be retried")
 '''
 start = source.index("\tgaps.Activated:Connect(")
 toggle_body = source[start:source.index("\n\treview.Activated:Connect(", start)]

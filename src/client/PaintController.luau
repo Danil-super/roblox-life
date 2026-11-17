@@ -4,6 +4,7 @@ local UIS = game:GetService("UserInputService")
 local CAS = game:GetService("ContextActionService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.PaintConfig)
 local Types = require(ReplicatedStorage.Shared.JobTypes)
@@ -15,6 +16,8 @@ local Aim = require(ReplicatedStorage.Shared.PaintAim)
 local PaintSurface = require("./PaintSurfaceController")
 local PaintRoller = require("./PaintRoller")
 local Controller = {}
+local syncAfter = 2
+local retryAfter = 5
 function Controller.start(
 	screen: ScreenGui,
 	send: (string, { [string]: unknown }?) -> (),
@@ -55,10 +58,12 @@ function Controller.start(
 	local sequence = 0
 	local inflight: number? = nil
 	local sentAt = 0
+	local syncSent = false
 	local lastSample = 0
 	local lastHit = 0
 	local inspectPending = false
-	local reviewSent = false
+	local reviewRequestId: string? = nil
+	local reviewTimedOut = false
 	local missing = false
 	local manualGaps = false
 	local toolbar = Instance.new("Frame")
@@ -132,7 +137,7 @@ function Controller.start(
 		current = nil
 		inflight = nil
 		inspectPending = false
-		reviewSent = false
+		reviewRequestId, syncSent, reviewTimedOut = nil, false, false
 		missing, manualGaps = false, false
 		toolbar.Visible = false
 		CAS:UnbindAction("PaintMovement")
@@ -194,6 +199,7 @@ function Controller.start(
 			sequence += 1
 			inflight = sequence
 			sentAt = os.clock()
+			syncSent = false
 			local packet: { [string]: unknown } = {
 				sequence = sequence,
 				points = points,
@@ -205,9 +211,40 @@ function Controller.start(
 			if #segment.points == 0 and segment ~= current then
 				table.remove(queue, 1)
 			end
-		elseif inspectPending and not reviewSent then
-			reviewSent = true
-			send("review", nil)
+		elseif inspectPending and reviewRequestId == nil then
+			local requestId = HttpService:GenerateGUID(false)
+			reviewRequestId = requestId
+			sentAt = os.clock()
+			syncSent = false
+			send("review", { requestId = requestId })
+		end
+	end
+	local function finishStroke(s: Types.Snapshot): ()
+		local pending = inflight
+		if pending == nil then
+			return
+		end
+		local segment = queue[1]
+		if s.sequence < pending and segment then
+			segment.starts = true
+		end
+		inflight = nil
+		sequence = s.sequence
+	end
+	local function waitForConfirmation(s: Types.Snapshot, now: number): ()
+		if inflight == nil and reviewRequestId == nil then
+			return
+		end
+		local elapsed = now - sentAt
+		if elapsed >= retryAfter then
+			if reviewRequestId ~= nil then
+				inspectPending, reviewRequestId, reviewTimedOut = false, nil, true
+			else
+				finishStroke(s)
+			end
+		elseif elapsed >= syncAfter and not syncSent then
+			syncSent = true
+			send("sync", nil)
 		end
 	end
 	local function render(): ()
@@ -255,7 +292,12 @@ function Controller.start(
 		review.Active = active and cameraReady and not inspectPending
 		review.AutoButtonColor = review.Active
 		review.BackgroundTransparency = if review.Active then 0 else 0.6
-		review.Text = t("inspectResult")
+		review.Text = t(
+			if inspectPending
+				then "paintChecking"
+				elseif reviewTimedOut then "paintCheckAgain"
+				else "inspectResult"
+		)
 		leave.Text = t("leaveWork")
 		local remaining = math.max(0, Config.columns * Config.rows - s.count)
 		local showGaps = manualGaps or (missing and not coverage.covered)
@@ -409,6 +451,7 @@ function Controller.start(
 		touch = nil
 		current = nil
 		inspectPending = true
+		reviewTimedOut = false
 		flush()
 	end)
 	leave.Activated:Connect(stop)
@@ -521,10 +564,7 @@ function Controller.start(
 			render()
 			return
 		end
-		if inflight and os.clock() - sentAt > 2 then
-			inflight = nil
-			sequence = s.sequence
-		end
+		waitForConfirmation(s, os.clock())
 		if os.clock() - lastSample >= 0.03 then
 			lastSample = os.clock()
 			local pos = if touch then pointer else UIS:GetMouseLocation()
@@ -606,11 +646,12 @@ function Controller.start(
 		update = function(s: Types.Snapshot): ()
 			local previous = snapshot
 			snapshot = s
-			if reviewSent and (s.error ~= nil or s.phase ~= "Painting") then
-				inspectPending, reviewSent = false, false
+			if reviewRequestId ~= nil and s.reviewAck == reviewRequestId then
+				inspectPending, reviewRequestId = false, nil
 			end
-			if inflight and (s.sequence >= inflight or s.error ~= nil) then
-				inflight = nil
+			if inflight and (s.sequence >= inflight or (s.error ~= nil and s.reviewAck == nil)) then
+				finishStroke(s)
+			elseif inflight == nil then
 				sequence = s.sequence
 			end
 			if s.error == "Coverage" then

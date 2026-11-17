@@ -37,7 +37,7 @@ DataStore: `NeighborhoodFixer_P0_v1`, scope по умолчанию, ключ `p
 
 ```text
 recordVersion = 1
-profile = единый Profile schemaVersion 2
+profile = единый Profile schemaVersion 3
 fence = монотонный номер владельца
 leaseOwner = уникальный GUID сессии или пустая строка после release
 leaseUntil = Unix time; 0 после release

@@ -11,7 +11,7 @@ entry = source[start:source.index("\n\t\tmissing = false", start)] + "\nend\n"
 start = source.index("\n\t\tif not active then", source.index("RunService:BindToRenderStep"))
 guard = source[start:source.index("\n\t\tlocal target, camera, s", start)]
 start = source.index("\t\tlocal inset = GuiService:GetGuiInset()", source.index("RunService:BindToRenderStep"))
-camera = source[start:source.index("\n\t\tif inflight", start)]
+camera = source[start:source.index("\n\t\twaitForConfirmation(", start)]
 header = r'''
 local now=10;local os={clock=function()return now end}
 local View=require("../src/shared/PaintView")

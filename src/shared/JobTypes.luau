@@ -31,6 +31,7 @@ export type Offer = {
 export type AcceptAck = { requestId: string, jobId: string, offerId: string, error: string }
 export type Snapshot = {
 	acceptAck: AcceptAck?,
+	reviewAck: string?,
 	available: boolean,
 	phase: string,
 	jobId: string,

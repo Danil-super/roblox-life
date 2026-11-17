@@ -56,6 +56,52 @@ with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
     subprocess.run([str(ROOT / '.tools/bin/luau'), f.name], cwd=ROOT, check=True)
 print('PASS PaintScopeAdapter: actual stale/phase/distance guards, next dedup and per-wall stroke identity')
 
+# Execute the review command's validation, state transition and acknowledgement.
+a = source.index('\t\tlocal reviewAck: string?')
+b = source.index('\n\tend)\nend\nreturn Service', a)
+review_handler = source[a:b]
+header = '''
+local Painting=require("../src/server/Domain/Painting")
+local Config=require("../src/shared/PaintConfig")
+local work=Painting.new("job","wall-work",0,Config,{primary="mint",secondary="rose"})
+work.phase="Painting"
+local job={status="Accepted"}
+local player,ctx={},{}
+local near,now=true,30
+local function eligible()return near end
+local replies={}
+local function send(_,_,reason,_,_,reviewAck)
+    table.insert(replies,{reason=reason,id=reviewAck,phase=work.phase})
+end
+local function request(data)
+    local action="review"
+'''
+checks = '''
+local function review(id,workId)
+    request({jobId="job",workId=workId or "wall-work",requestId=id})
+end
+review("old","old-work")
+assert(replies[1].reason=="Stale" and replies[1].id==nil and work.phase=="Painting")
+review("");review(123);review(string.rep("a",81))
+assert(#replies==1,"Malformed review was processed")
+review("coverage")
+assert(replies[2].id=="coverage" and replies[2].reason=="Coverage")
+work.count=96
+for i=1,96 do work.cells[i]=true end
+near=false;review("distance")
+assert(replies[3].id=="distance" and replies[3].reason=="TooFar" and work.phase=="Painting")
+near=true;review("accepted")
+assert(replies[4].id=="accepted" and replies[4].reason==nil and work.phase=="Ready")
+near=false;review("retry-after-success")
+assert(replies[5].id=="retry-after-success" and replies[5].reason==nil and work.phase=="Ready")
+assert(Painting.surface(work)==1 and work.count==96 and work.seq==0,"Review replay changed the work")
+'''
+with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
+    f.write(header + identity + review_handler + '\nend\n' + checks)
+    f.flush()
+    subprocess.run([str(ROOT / '.tools/bin/luau'), f.name], cwd=ROOT, check=True)
+print('PASS PaintScopeAdapter: actual review validation, correlated refusals and idempotent replay')
+
 # The real client resolves the server-assigned wall and flushes that wall's identifier.
 client=(ROOT/'src/client/JobController.luau').read_text()
 a=client.index('\tlocal function currentWall()');b=client.index('\n\tlocal function activate()',a)
@@ -73,7 +119,7 @@ local folder={FindFirstChild=function(_,name)return if name=="own"then room else
 local workspace={FindFirstChild=function()return folder end}
 local state={location="own",wallName="PaintableWallB"}
 local snapshot={wallId="wall-b"}
-local active,inflight,sequence,sentAt,inspectPending=true,nil,0,0,false
+local active,inflight,sequence,sentAt,inspectPending,syncSent=true,nil,0,0,false,false
 local queue={{points={{u=.5,v=.5}},starts=true}}
 local current=nil
 local packets={}
