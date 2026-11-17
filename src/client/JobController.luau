@@ -124,6 +124,10 @@ function Controller.start(
 	local progress = text(jobBody, "Progress", 74, 36, 15)
 	local hint = text(jobBody, "Hint", 116, 44, 14)
 	local action = button(jobBody, "Action", 168)
+	local touchUp = button(jobBody, "TouchUp", 168)
+	touchUp.Position, touchUp.Size = UDim2.new(0.5, 4, 0, 168), UDim2.new(0.5, -20, 0, 44)
+	touchUp.BackgroundColor3 = Color3.fromRGB(51, 79, 75)
+	touchUp.TextSize, touchUp.TextWrapped, touchUp.Visible = 13, true, false
 	local cancel = button(jobBody, "Cancel", 224)
 	local workPlan = WorkPlan.start(jobBody, language)
 	local colors = Instance.new("Frame")
@@ -450,6 +454,11 @@ function Controller.start(
 					else "doneHint"
 			)
 		end
+		if state and state.canTouchUp and state.near then
+			return t(
+				if phase == "SurfaceReady" then "nextSurfaceTouchUpHint" else "handoverTouchUpHint"
+			)
+		end
 		if not nearWall then
 			return t(
 				if state and state.checkpointSaved then "jobCheckpointRoute" else "jobRouteHint"
@@ -550,6 +559,15 @@ function Controller.start(
 			and not (abandon and abandon.pending())
 			and not preparationPending()
 		action.AutoButtonColor = action.Active
+		touchUp.Visible = s ~= nil and s.canTouchUp == true
+		touchUp.Active = touchUp.Visible and cancel.Active and s ~= nil and s.near
+		touchUp.AutoButtonColor, touchUp.BackgroundTransparency =
+			touchUp.Active, if touchUp.Active then 0 else 0.6
+		touchUp.Text = t("jobTouchUp")
+		action.Size = if touchUp.Visible
+			then UDim2.new(0.5, -20, 0, 44)
+			else UDim2.new(1, -32, 0, 44)
+		action.TextWrapped = touchUp.Visible
 		for index, b in swatches do
 			b.Text = t(({ "rose", "warmWhite", "mint" })[index])
 			b.Active = s ~= nil and s.available
@@ -707,6 +725,11 @@ function Controller.start(
 		end
 	end
 	action.Activated:Connect(activate)
+	touchUp.Activated:Connect(function()
+		if jobs.Visible and jobBody.Visible and touchUp.Active then
+			send("touchUp", nil)
+		end
+	end)
 	resultContinue.Activated:Connect(function()
 		local s = state
 		if
@@ -802,7 +825,14 @@ function Controller.start(
 				map.show()
 			end
 		end
-		if s.phase == "Painting" and old and old.phase == "ChooseMaterial" then
+		if
+			s.phase == "Painting"
+			and old
+			and (
+				old.phase == "ChooseMaterial"
+				or (jobs.Visible and s.touchingUp and old.canTouchUp and old.workId ~= s.workId)
+			)
+		then
 			local wall = currentWall()
 			if wall and s.near then
 				hidePanels()

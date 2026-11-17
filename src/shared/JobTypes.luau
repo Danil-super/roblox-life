@@ -33,6 +33,8 @@ export type Snapshot = {
 	acceptAck: AcceptAck?,
 	reviewAck: string?,
 	checkpointSaved: boolean?,
+	canTouchUp: boolean?,
+	touchingUp: boolean?,
 	available: boolean,
 	phase: string,
 	jobId: string,

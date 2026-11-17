@@ -49,6 +49,18 @@ request("stroke",{jobId="job",workId="second",wallId="wall-a",sequence=1,points=
 assert(work.count==0 and work.seq==0,"Old nonce/wall painted second surface")
 request("stroke",{jobId="job",workId="second",wallId="wall-b",sequence=1,points={{u=.5,v=.5}},starts=true})
 assert(work.count>0 and work.seq==1,"Assigned second wall rejected")
+work=Painting.new("job","checked",0,Config,{primary="mint",secondary="rose"})
+job.checkpoint={columns=12,rows=8,masks={string.rep("1",84)..string.rep("0",12)}}
+assert(Painting.restore(work,job.checkpoint))
+near=false;request("touchUp",{jobId="job",workId="checked"})
+assert(work.phase=="Ready","Distant actor reopened the wall")
+near=true;request("touchUp",{jobId="foreign",workId="checked"})
+assert(work.phase=="Ready","Different job reopened the wall")
+request("touchUp",{jobId="job",workId="checked"})
+assert(work.phase=="Painting" and work.workId=="second" and work.count==84,"Touch-up lost checked progress")
+request("touchUp",{jobId="job",workId="checked"})
+request("stroke",{jobId="job",workId="checked",wallId="wall-a",sequence=1,points={{u=.5,v=.5}},starts=true})
+assert(work.seq==0 and work.count==84,"Old work accepted commands after touch-up")
 '''
 with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
     f.write(header + identity + routing + '\nend\n' + checks)
@@ -105,8 +117,8 @@ review("");review(123);review(string.rep("a",81))
 assert(#replies==1,"Malformed review was processed")
 review("coverage")
 assert(replies[2].id=="coverage" and replies[2].reason=="Coverage")
-work.count=96
-for i=1,96 do work.cells[i]=true end
+work.count=84
+for i=1,84 do work.cells[i]=true end
 near=false;review("distance")
 assert(replies[3].id=="distance" and replies[3].reason=="TooFar" and work.phase=="Painting")
 near=true;denyCommit=true;review("interrupted")
@@ -115,7 +127,14 @@ denyCommit=false;review("accepted")
 assert(replies[5].id=="accepted" and replies[5].reason==nil and work.phase=="Ready" and job.checkpoint)
 near=false;review("retry-after-success")
 assert(replies[6].id=="retry-after-success" and replies[6].reason==nil and work.phase=="Ready")
-assert(Painting.surface(work)==1 and work.count==96 and work.seq==0 and changes==2 and p.wallet.dollars==0 and not ctx.reviewing,"Review replay changed the work")
+assert(Painting.surface(work)==1 and work.count==84 and work.seq==0 and changes==2 and p.wallet.dollars==0 and not ctx.reviewing,"Review replay changed the work")
+near=true
+assert(Painting.touchUp(work,job.checkpoint,"refine",30))
+review("stale-during-touch-up")
+assert(replies[7].reason=="Stale" and work.phase=="Painting")
+review("unchanged","refine")
+assert(replies[8].id=="unchanged" and replies[8].reason==nil and work.phase=="Ready" and work.count==84)
+assert(changes==2 and work.touchUpBase==nil,"Rechecking unchanged touch-up wrote progress")
 '''
 with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
     f.write(header + guard + '\nlocal function request(data)\n local action="review"\n'
@@ -198,8 +217,15 @@ player.Character={}
 ensure()
 assert(ctx.work.phase=="Ready" and ctx.work.count==84 and Painting.mask(ctx.work)==checked and cloth.Transparency==.35)
 assert(Painting.preparedCount(ctx.work)==3 and ctx.wall==walls[1],"Saved wall restored at the wrong step")
-assert(Painting.nextSurface(ctx.work,"second-after-rejoin",101))
-assert(Painting.step(ctx.work,"choose","rose",102,true))
+assert(Painting.touchUp(ctx.work,job.checkpoint,"refine",101))
+ctx.work.cells[85]=true;ctx.work.count=85
+ensure();ensure()
+assert(ctx.work.phase=="Painting" and ctx.work.count==85 and ctx.work.workId=="refine","Ordinary sync closed a touch-up")
+job.checkpoint.masks[1]=Painting.mask(ctx.work)
+ensure()
+assert(ctx.work.phase=="Ready" and ctx.work.touchUpBase==nil and ctx.work.count==85,"New confirmed mask was ignored")
+assert(Painting.nextSurface(ctx.work,"second-after-rejoin",102))
+assert(Painting.step(ctx.work,"choose","rose",103,true))
 local second=ctx.work
 ensure()
 assert(ctx.work==second and second.phase=="Painting" and second.count==0 and ctx.wall==walls[2],"Sync rewound unchecked wall")
@@ -212,15 +238,19 @@ with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
     subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)
 print('PASS PaintScopeAdapter: actual ensure resets unchecked work, restores saved walls and reconciles a delayed confirmation')
 
-# A player may finish A from its far end. Do not offer an unusable palette at B.
+# Opening a new wall or a touch-up follows the matching server state.
 a=client.index('\t\tif s.phase == "ChooseMaterial" and old and old.phase == "SurfaceReady" then')
-b=client.index('\n\t\tif s.phase == "Painting"',a)
+b=client.index('\n\t\tlocal result = s.result',a)
 transition=client[a:b]
 header='''
 local jobs,homePanel={Visible=false},{Visible=true}
 local mapVisible=false
 local map={show=function()mapVisible=true end}
 local function hidePanels()jobs.Visible=false;mapVisible=false end
+local wall={}
+local function currentWall()return wall end
+local opened=0
+local painter={enter=function(w,s)assert(w==wall);opened+=1 end}
 local function advance(s,old)
 '''
 checks='''
@@ -228,11 +258,23 @@ advance({phase="ChooseMaterial",near=false},{phase="SurfaceReady"})
 assert(mapVisible and not jobs.Visible and not homePanel.Visible,"Distant second wall opened unusable palette")
 advance({phase="ChooseMaterial",near=true},{phase="SurfaceReady"})
 assert(not mapVisible and jobs.Visible,"Nearby second wall did not open palette")
+local ready={phase="Ready",canTouchUp=true,workId="previous"}
+local editing={phase="Painting",touchingUp=true,near=true,workId="latest"}
+advance(editing,ready)
+assert(opened==1 and not jobs.Visible,"Confirmed touch-up did not reopen roller")
+advance(editing,ready)
+assert(opened==1,"Closed Jobs panel opened a late touch-up")
+jobs.Visible=true;editing.workId="previous"
+advance(editing,ready)
+assert(opened==1 and jobs.Visible,"Unchanged working session reopened roller")
+editing.workId="latest";editing.near=false
+advance(editing,ready)
+assert(opened==1,"Distant player entered touch-up camera")
 '''
 with tempfile.NamedTemporaryFile('w',suffix='.luau',dir=ROOT/'.tools')as f:
     f.write(header+transition+'\nend\n'+checks);f.flush()
     subprocess.run([str(ROOT/'.tools/bin/luau'),f.name],cwd=ROOT,check=True)
-print('PASS PaintScopeAdapter: actual second-wall transition routes distant actors and opens nearby palette')
+print('PASS PaintScopeAdapter: actual second-wall routing and confirmed touch-up camera transition')
 
 a = client.index('\tlocal function stepHint(')
 b = client.index('\n\tlocal function render()', a)
@@ -253,6 +295,10 @@ for _,locale in {"en","ru"} do
     nearWall=true
     assert(stepHint("SurfaceReady")==t("nextSurfaceHint"))
     assert(stepHint("Ready")==t("handoverClientHint"))
+    state.canTouchUp,state.near=true,true
+    assert(stepHint("Ready")==t("handoverTouchUpHint"))
+    assert(stepHint("SurfaceReady")==t("nextSurfaceTouchUpHint"))
+    state.canTouchUp,state.near=false,false
     nearWall=false;state.checkpointSaved=false
     assert(stepHint("Inspect")==t("jobRouteHint"))
 end
@@ -261,3 +307,58 @@ with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
     f.write(header + hint + '\n' + checks);f.flush()
     subprocess.run([str(ROOT / '.tools/bin/luau'), f.name], cwd=ROOT, check=True)
 print('PASS PaintScopeAdapter: saved-wall routing and stage guidance in EN/RU')
+
+a = client.index('\tlocal action = button(jobBody, "Action"')
+b = client.index('\n\tlocal cancel =', a)
+widgets = client[a:b]
+a = client.index('\t\ttouchUp.Visible = s ~= nil')
+b = client.index('\n\t\tfor index, b in swatches', a)
+layout = client[a:b]
+a = client.index('\ttouchUp.Activated:Connect(')
+b = client.index('\n\tresultContinue.Activated', a)
+click = client[a:b]
+header = '''
+local Strings=require("../src/shared/Strings")
+local language="en"
+local function t(key)return Strings.text(language,key)end
+local function pair(a,b)return {Scale=a,Offset=b}end
+local UDim2={new=function(xs,xo,ys,yo)return {X=pair(xs,xo),Y=pair(ys,yo)}end}
+local Color3={fromRGB=function()return {}end}
+local buttons={}
+local function button(_,name,y)
+    local b={Position=UDim2.new(0,16,0,y),Size=UDim2.new(1,-32,0,44)}
+    b.Activated={Connect=function(_,fn)b.click=fn end}
+    buttons[name]=b
+    return b
+end
+local jobBody,cancel,jobs={Visible=true},{Active=true},{Visible=true}
+local requests={}
+local function send(command)table.insert(requests,command)end
+'''
+checks = '''
+local function pixel(size,width)return size.Scale*width+size.Offset end
+for _,locale in {"en","ru"} do
+    language=locale
+    render({canTouchUp=true,near=true})
+    assert(touchUp.Visible and touchUp.Active and touchUp.Text==t("jobTouchUp"))
+    for _,width in {256,350,556} do
+        local mainWidth=pixel(action.Size.X,width)
+        assert(pixel(touchUp.Size.X,width)>=44 and mainWidth>=44 and touchUp.Size.Y.Offset==44)
+        assert(pixel(action.Position.X,width)+mainWidth<pixel(touchUp.Position.X,width))
+    end
+end
+jobBody.Visible=false;touchUp.click();assert(#requests==0,"Hidden Jobs body submitted touch-up")
+jobBody.Visible=true
+render({canTouchUp=true,near=false});touchUp.click()
+cancel.Active=false;render({canTouchUp=true,near=true});touchUp.click()
+assert(#requests==0,"Distant or preoccupied player emitted touch-up")
+cancel.Active=true;render({canTouchUp=true,near=true});touchUp.click()
+assert(#requests==1 and requests[1]=="touchUp")
+render({canTouchUp=false,near=true});touchUp.click()
+assert(not touchUp.Visible and not touchUp.Active and #requests==1 and action.Size.X.Scale==1)
+'''
+with tempfile.NamedTemporaryFile('w', suffix='.luau', dir=ROOT / '.tools') as f:
+    f.write(header + widgets + '\nlocal function render(s)\n' + layout + '\nend\n' + click + checks)
+    f.flush()
+    subprocess.run([str(ROOT / '.tools/bin/luau'), f.name], cwd=ROOT, check=True)
+print('PASS PaintScopeAdapter: responsive optional Jobs action, labels and guarded input')

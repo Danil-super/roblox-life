@@ -83,6 +83,17 @@ function Jobs.cancel(p: Profile.Profile, id: string): boolean
 	p.revision += 1
 	return true
 end
+local function improvesMask(original: string, updated: string): boolean
+	if original == updated then
+		return false
+	end
+	for i = 1, #original do
+		if original:sub(i, i) == "1" and updated:sub(i, i) ~= "1" then
+			return false
+		end
+	end
+	return true
+end
 function Jobs.checkpoint(p: Profile.Profile, work: Painting.State, now: number): boolean
 	local job = p.jobs.active
 	if
@@ -108,16 +119,22 @@ function Jobs.checkpoint(p: Profile.Profile, work: Painting.State, now: number):
 		return false
 	end
 	local previous = job.checkpoint
+	local touchUpBase = work.touchUpBase
 	if previous and Painting.validCheckpoint(work, previous) then
-		if #previous.masks + 1 ~= #saved.masks then
+		local expected = #previous.masks + (if touchUpBase then 0 else 1)
+		if #saved.masks ~= expected then
 			return false
 		end
 		for i, mask in previous.masks do
-			if saved.masks[i] ~= mask then
+			if touchUpBase and i == expected then
+				if touchUpBase ~= mask or not improvesMask(mask, saved.masks[i]) then
+					return false
+				end
+			elseif saved.masks[i] ~= mask then
 				return false
 			end
 		end
-	elseif #saved.masks ~= 1 then
+	elseif touchUpBase or #saved.masks ~= 1 then
 		return false
 	end
 	job.checkpoint = saved

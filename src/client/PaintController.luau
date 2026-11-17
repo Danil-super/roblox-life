@@ -366,7 +366,7 @@ function Controller.start(
 		focusStarted = os.clock()
 		cameraReady = false
 		missing = false
-		manualGaps = false
+		manualGaps = s.touchingUp == true
 		toolbar.Visible = true
 		for _, container in { target.Parent, player.Character } do
 			if container then

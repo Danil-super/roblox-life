@@ -7,7 +7,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 source = (ROOT / "src/client/PaintController.luau").read_text()
 start = source.index("\tlocal function enter(")
-entry = source[start:source.index("\n\t\tmissing = false", start)] + "\nend\n"
+entry = source[start:source.index("\n\t\tfor _, container", start)] + "\nend\n"
 start = source.index("\n\t\tif not active then", source.index("RunService:BindToRenderStep"))
 guard = source[start:source.index("\n\t\tlocal target, camera, s", start)]
 start = source.index("\t\tlocal inset = GuiService:GetGuiInset()", source.index("RunService:BindToRenderStep"))
@@ -32,7 +32,7 @@ local humanoid={Health=100,Died={Once=function()return{}end}}
 local player={Character={FindFirstChildOfClass=function()return humanoid end}}
 local target={Size=Vector3.new(16,8,1),Position=Vector3.new(0,4,0),CFrame={PointToWorldSpace=function(_,v)return v end}}
 local s={sequence=7};local active,disposed=false,false
-local wall,snapshot,sequence,deathConnection
+local wall,snapshot,sequence,deathConnection,missing,manualGaps
 local previousCameraType,previousSubject,previousFrame,previousFov
 local focusStarted=0;local cameraReady=false
 local GuiService={ReducedMotionEnabled=false,GetGuiInset=function()return{Y=32}end}
@@ -50,6 +50,7 @@ end
 '''
 checks = r'''
 enter(target,s);assert(active and not cameraReady and previousFrame==initial)
+assert(not manualGaps,"Initial painting started with the touch-up guide")
 tick();assert(camera.CFrame.alpha==0 and camera.FieldOfView==70 and samples==0,"Paint camera snapped instead of entering smoothly")
 now+=.15;tick()
 assert(math.abs(camera.CFrame.alpha-.5)<1e-8 and math.abs(camera.FieldOfView-60)<1e-8 and not cameraReady and samples==0,"Midpoint admitted paint or changed easing/FOV")
@@ -69,6 +70,8 @@ GuiService.ReducedMotionEnabled=false;tick();assert(cameraReady and camera.Field
 reopen();light=true;tick();assert(cameraReady and samples==5,"Light effects kept camera motion")
 light=false;tick();assert(cameraReady and samples==6,"Turning full effects on replayed entry")
 assert(sequence==7 and snapshot==s,"Camera rewrote packet/job state")
+s.touchingUp=true;reopen()
+assert(manualGaps,"Review touch-up did not highlight the existing gaps")
 reopen();now+=.1;tick();active=false
 local stopped=camera.CFrame;local count=samples;now+=1;tick()
 assert(camera.CFrame==stopped and samples==count,"Stopped frame resumed the transition")

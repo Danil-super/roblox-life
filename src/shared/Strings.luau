@@ -456,6 +456,13 @@ en["paintPerfect"], ru["paintPerfect"] =
 	"Идеально · %d%% · Проверь результат"
 en["paintGapsShow"], ru["paintGapsShow"] = "Show gaps · %d", "Пропуски · %d"
 en["paintGapsHide"], ru["paintGapsHide"] = "Hide gaps · %d", "Скрыть · %d"
+en["jobTouchUp"], ru["jobTouchUp"] = "Touch up wall", "Доработать стену"
+en["handoverTouchUpHint"] = "Touch up the wall in Jobs or show it to the client."
+ru["handoverTouchUpHint"] =
+	"Доработай стену в «Заказах» или покажи её заказчику."
+en["nextSurfaceTouchUpHint"] = "Touch up the wall in Jobs or move on to the next wall."
+ru["nextSurfaceTouchUpHint"] =
+	"Доработай стену в «Заказах» или перейди ко второй."
 en["paintNoGaps"], ru["paintNoGaps"] = "No gaps", "Без пропусков"
 en["resultAfter"] = "After · accepted"
 ru["resultAfter"] = "После · принято"

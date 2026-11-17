@@ -62,6 +62,11 @@ view.update(work,job,true);assert(decoded(first,mint)==partial and decoded(secon
 local gui=first:FindFirstChild("ConfirmedPaint");local n=#pool
 for _=1,30 do view.update(work,job,true)end
 assert(#pool==n and first:FindFirstChild("ConfirmedPaint")==gui,"Sync rebuilt world finish")
+assert(Painting.touchUp(work,{columns=12,rows=8,masks={partial}},"refine",1))
+work.cells[85]=true;work.count=85
+view.update(work,job,true)
+assert(decoded(first,mint)==partial and first:FindFirstChild("ConfirmedPaint")==gui,"Touch-up leaked an unreviewed addition or removed saved paint")
+assert(Painting.restore(work,{columns=12,rows=8,masks={partial}}))
 assert(Painting.nextSurface(work,"b",1),"Next surface fixture failed")
 view.update(work,job,true);assert(decoded(first,mint)==partial,"Next surface erased inspected first wall")
 work.phase="Ready";work.count=96;for i=1,96 do work.cells[i]=true end

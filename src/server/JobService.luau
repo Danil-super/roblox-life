@@ -196,6 +196,7 @@ function Service.start(profiles: ProfileService.API): ()
 			old.phase == "Painting"
 			and job.checkpoint
 			and #job.checkpoint.masks == Painting.surface(old)
+			and job.checkpoint.masks[Painting.surface(old)] ~= old.touchUpBase
 		then
 			-- The write may have been confirmed during profile recovery.
 			Painting.restore(old, job.checkpoint)
@@ -340,7 +341,12 @@ function Service.start(profiles: ProfileService.API): ()
 				and job ~= nil
 				and job.id == work.jobId
 				and job.checkpoint ~= nil
-				and (work.phase == "Ready" or #work.completedMasks > 0),
+				and (work.phase == "Ready" or work.touchUpBase ~= nil or #work.completedMasks > 0),
+			canTouchUp = work ~= nil
+				and job ~= nil
+				and job.id == work.jobId
+				and Painting.canTouchUp(work, job.checkpoint),
+			touchingUp = work ~= nil and work.touchUpBase ~= nil,
 			destination = if target then { target.X, target.Y, target.Z } else nil,
 			offers = Jobs.offers(p),
 			paintingXP = if p then p.progression.paintingXP else 0,
@@ -597,6 +603,17 @@ function Service.start(profiles: ProfileService.API): ()
 				send(player, ctx, reason, nil, nil, reviewAck)
 				return
 			end
+			local saved = job.checkpoint
+			if
+				work.touchUpBase
+				and saved
+				and saved.masks[Painting.surface(work)] == work.touchUpBase
+				and Painting.mask(work) == work.touchUpBase
+				and Painting.restore(work, saved)
+			then
+				send(player, ctx, nil, nil, nil, reviewAck)
+				return
+			end
 			ctx.saving, ctx.reviewing = true, true
 			local stored = profiles.change(player, function(candidate: Profile.Profile): boolean
 				return Jobs.checkpoint(candidate, work, now)
@@ -617,6 +634,9 @@ function Service.start(profiles: ProfileService.API): ()
 				return
 			end
 			ok = Painting.batch(work, data.sequence, data.points, data.starts, now, valid)
+		elseif action == "touchUp" then
+			ok = valid
+				and Painting.touchUp(work, job.checkpoint, HttpService:GenerateGUID(false), now)
 		elseif action == "nextSurface" then
 			ok = valid and Painting.nextSurface(work, HttpService:GenerateGUID(false), now)
 			if ok then

@@ -32,6 +32,7 @@ export type State = {
 	toolId: string,
 	basicRadius: number,
 	completedMasks: { string },
+	touchUpBase: string?,
 	sizes: { Size },
 	preparationRequired: number,
 	prepared: { [number]: boolean },
@@ -258,7 +259,9 @@ function Painting.reviewError(s: State, now: number): string?
 	if s.count / (s.config.columns * s.config.rows) < s.config.threshold then
 		return "Coverage"
 	end
-	return if now - s.startedAt < s.config.minSeconds then "Drying" else nil
+	return if s.touchUpBase == nil and now - s.startedAt < s.config.minSeconds
+		then "Drying"
+		else nil
 end
 function Painting.step(
 	s: State,
@@ -444,6 +447,32 @@ function Painting.validCheckpoint(s: State, saved: Finish): boolean
 	end
 	return true
 end
+function Painting.canTouchUp(s: State, saved: Finish?): boolean
+	return s.phase == "Ready"
+		and s.count < s.config.columns * s.config.rows
+		and Painting.preparedCount(s) == s.preparationRequired
+		and saved ~= nil
+		and #saved.masks == Painting.surface(s)
+		and Painting.validCheckpoint(s, saved)
+		and saved.masks[#saved.masks] == Painting.mask(s)
+end
+function Painting.touchUp(s: State, saved: Finish?, workId: string, now: number): boolean
+	if
+		workId == s.workId
+		or #workId == 0
+		or #workId > 80
+		or not finite(now)
+		or now < s.lastAt
+		or not Painting.canTouchUp(s, saved)
+	then
+		return false
+	end
+	assert(saved, "Missing checked wall")
+	s.touchUpBase = saved.masks[#saved.masks]
+	s.tokens = math.min(s.config.areaBurst, s.tokens + (now - s.lastAt) * s.config.areaPerSecond)
+	s.workId, s.phase, s.seq, s.lastAt, s.lastPoint = workId, "Painting", 0, now, nil
+	return true
+end
 local function checkedMasks(s: State): Finish?
 	local masks = table.clone(s.completedMasks)
 	table.insert(masks, Painting.mask(s))
@@ -483,6 +512,7 @@ function Painting.restore(s: State, saved: Finish): boolean
 		end
 	end
 	s.completedMasks, s.phase, s.prepTarget = masks, "Ready", nil
+	s.touchUpBase = nil
 	for i = 1, s.preparationRequired do
 		s.prepared[i] = true
 	end

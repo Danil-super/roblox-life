@@ -120,6 +120,8 @@ function View.attach(room: Model): API
 					local masks = table.clone(work.completedMasks)
 					if work.phase == "Ready" then
 						table.insert(masks, Painting.mask(work))
+					elseif work.touchUpBase then
+						table.insert(masks, work.touchUpBase)
 					end
 					data = { columns = work.config.columns, rows = work.config.rows, masks = masks }
 				end
